@@ -53,8 +53,8 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-None. Wave 0 is orchestrated through governed packages, but execution is
-blocked honestly rather than bypassing authority or dependencies:
+None. Wave 0 and DB06 are terminally held rather than bypassing authority or
+dependencies:
 
 - [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-DRILL` after its repository and isolated encrypted
@@ -68,11 +68,17 @@ blocked honestly rather than bypassing authority or dependencies:
   [DB04](work-packages/20260716-db04-legacy-loader-guardrails/package.md), and
   [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
   are scaffolded but not authorized and may not claim dependent evidence.
+- [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
+  `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
+  read-only command, tests, and development gates passed; the development domain
+  is empty and production read-only evidence remains unauthorized.
 
 The first unblock is now a bounded `wepp3`-to-`forest1` encrypted backup and
 isolated production-shaped restore drill. In parallel, grant an explicit
-read-only `wepp3` identity/reachability freeze for DB02; that does not grant
-runtime mutation. DB03 remains blocked until both packages complete.
+read-only `wepp3` identity/reachability freeze for DB02 and authorize DB06's
+aggregate-only identity audit; neither grants runtime mutation. DB03 remains
+blocked until DB01 and DB02 complete, and DB07 remains blocked until DB06
+completes.
 
 ## Execution environments and Wave 0 readiness
 

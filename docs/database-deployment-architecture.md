@@ -508,12 +508,16 @@ are already assumed by the loader:
 - one channel per `(watershed_id, topazid, weppid, order)`.
 
 Constraint introduction requires a duplicate audit and an explicit Django
-migration. A read-only production audit on 2026-07-16 found no duplicate
-`topazid` values within a watershed. Because current Parquet enrichment joins
-on `topazid`, every release must enforce exactly one matching subcatchment and
-at most one authoritative Parquet row per `(watershed, topazid)`. A future
-artifact that needs a different business key requires a new data contract and
-join implementation rather than an implicit fallback.
+migration. DB06 found no preserved command or report supporting an earlier
+design-draft assertion that a 2026-07-16 production query found no duplicate
+`topazid` values within a watershed, so production uniqueness remains
+unverified. Because current Parquet enrichment joins on `topazid`, every release
+must enforce exactly one matching subcatchment and at most one authoritative
+Parquet row per `(watershed, topazid)`. A future artifact that needs a different
+business key requires a new data contract and join implementation rather than
+an implicit fallback. The current ownership, key, join, and compatibility audit
+is maintained in
+[the DB06 domain identity audit](database-domain-identity-audit.md).
 
 ### 9.4 Stable logical identity
 
