@@ -1046,6 +1046,12 @@ cutover must therefore:
 
 ### 19.4 Backups
 
+The repository-owned operational commands, scheduler units, credential
+contract, retention procedure, maintenance sequence, disaster restore, and
+selective restore process are defined in the
+[database backup and restore runbook](runbooks/database-backup-restore.md).
+That runbook does not authorize production execution.
+
 - every destructive deployment and storage cutover requires a newly verified,
   encrypted off-host backup before activation;
 - retain backups for the active release and at least two rollback releases;

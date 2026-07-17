@@ -1,0 +1,20 @@
+[Unit]
+Description=Verify Utility Watershed Analytics off-host backup freshness
+Documentation=file:/workdir/utility-watershed-analytics/docs/runbooks/database-backup-restore.md
+After=network-online.target
+Wants=network-online.target
+OnFailure=utility-watershed-analytics-backup-failure@%n.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/workdir/utility-watershed-analytics
+EnvironmentFile=/etc/utility-watershed-analytics/backup.env
+ExecStart=/workdir/utility-watershed-analytics/scripts/with_operation_lock.sh --mode shared -- /workdir/utility-watershed-analytics/scripts/check_backup_freshness.sh
+TimeoutStartSec=15m
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

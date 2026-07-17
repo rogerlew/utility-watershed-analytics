@@ -1,7 +1,23 @@
 # Deployment Guide
 This document provides information on how the Utility Watershed Analytics application is deployed in a production environment and provides guidelines for maintaining and managing the setup.
 
-## Hosting Environment
+## Environment Roles
+
+| Hostname | Role | Use and authority boundary |
+| --- | --- | --- |
+| `forest1` | Shared development server | Repository authoring, builds, tests, and explicitly isolated non-production rehearsals. Other projects share this host, so verify ports, storage, and service names before use. Results observed here do not establish production state. |
+| `wepp3` | Production server | Runs the public application and production data. Read-only inspection and mutation each require explicit production authority; repository approval alone is insufficient. |
+
+Unless a section explicitly says otherwise, production commands and host facts
+in this guide apply to `wepp3`. Never run a production command merely because
+the repository and `compose.prod.yml` are available on `forest1`.
+
+Database backup, retention, restore testing, maintenance, disaster recovery,
+and selective restore follow the governed
+[database backup and restore runbook](docs/runbooks/database-backup-restore.md).
+The runbook is a repository contract, not standing production authority.
+
+## Production Hosting Environment
 The application is deployed on a virtual machine (VM) provided by the [University of Idaho's Research Computing and Data Services (RCDS)](https://hpc.uidaho.edu/index.html).
 
 **Server Details:**
@@ -28,17 +44,21 @@ When code is pushed to the `main` branch:
 
 1. **CI checks run** - Server and client CI workflows validate the build
 2. **Deploy job starts** - Runs on the self-hosted runner on the production VM
-3. **Environment setup** - Creates `.env` from GitHub secrets (`PRODUCTION_ENV`)
+3. **Environment setup** - Creates a mode-`0600`, allowlisted runtime file from
+   GitHub secrets (`PRODUCTION_ENV`)
 
 > **Note:** The `PRODUCTION_ENV` secret must include:
 > - `WEPPCLOUD_JWT_TOKEN` – JWT for the nasa-roses-2026-sbs batch (required).
-> - `WEPPCLOUD_JWT_TOKEN_2` – JWT for the victoria-ca-2026-sbs batch (required). Expires 2026-07-31.
+> - `WEPPCLOUD_JWT_TOKEN_2` – Current JWT for the victoria-ca-2026-sbs batch (required).
 >
 > Both batches are loaded in a single `load_watershed_data` or `download_data` run. Contact the project maintainer to obtain tokens.
-4. **Frontend rebuild** - Builds React static files into shared volume
-5. **Services restart** - Rebuilds server container and restarts Caddy
-6. **Health check** - Verifies services are running
-7. **Cleanup** - Removes temporary `.env` file
+4. **Serialized deployment** - Acquires the canonical host lock, freezes the
+   database identity, and rejects an unpinned image or database action
+5. **Explicit migration and build** - Runs migrations, rebuilds the server and
+   frontend, and replaces only server/Caddy
+6. **Identity and health checks** - Reasserts the unchanged database container,
+   image, project, and volume, then checks the HTTPS endpoint
+7. **Cleanup** - Shreds the temporary runtime file even after failure
 
 ### Manual Deployment
 
@@ -67,7 +87,10 @@ The backend runs with configurable Gunicorn process/thread concurrency via envir
 - `GUNICORN_MAX_REQUESTS` (default `2000`)
 - `GUNICORN_MAX_REQUESTS_JITTER` (default `200`)
 
-Set these in the production `.env` (GitHub secret `PRODUCTION_ENV`) to tune per host capacity.
+Set these in the protected minimized runtime environment derived from the
+GitHub `PRODUCTION_ENV` secret. The complete contract, lock behavior, and
+adoption boundary are defined in the
+[production runtime runbook](docs/runbooks/production-runtime.md).
 
 To ensure the Docker Compose stack autostarts on VM reboot, a [systemd service](utility-watershed-analytics.service) is configured on the host VM.
 
@@ -84,19 +107,33 @@ ssh your_netid@unstable.wepp.cloud
 
 ### Project Location
 
-The project is managed by the GitHub Actions self-hosted runner and is located at:
+The canonical long-lived production checkout target is:
 
 ```bash
-cd /workdir/actions-runner/_work/utility-watershed-analytics/utility-watershed-analytics
+cd /workdir/utility-watershed-analytics
 ```
 
-> **Note:** The nested directory structure is standard for GitHub Actions runners. The runner manages this directory, so avoid making manual changes that could conflict with automated deployments.
+The self-hosted runner checkout is a transient build/dispatch workspace, not
+the runtime identity. DB03 must reconcile the observed current checkout with
+this target without changing the database container or anonymous volume.
 
 ## Data Management
 
 Data loading is **not automated** by CI/CD and must be done manually when data updates are needed.
 
 The loader uses a **local-first approach**: it checks for cached files first, then falls back to fetching from remote URLs.
+
+For every separately authorized legacy data-management shell, define the exact
+runtime coordinates once:
+
+```bash
+production_compose=(
+  docker compose
+  --project-name utility-watershed-analytics
+  --env-file /etc/utility-watershed-analytics/runtime.env
+  --file /workdir/utility-watershed-analytics/compose.prod.yml
+)
+```
 
 ### Running Long Data Operations
 
@@ -107,8 +144,11 @@ Data loading can take a significant amount of time. Use `tmux` to run commands i
 tmux new -s data-load
 
 # Run your data loading command inside tmux
-cd /workdir/actions-runner/_work/utility-watershed-analytics/utility-watershed-analytics
-docker compose -f compose.prod.yml exec server python manage.py load_watershed_data
+cd /workdir/utility-watershed-analytics
+scripts/with_operation_lock.sh --mode exclusive -- \
+  docker compose --project-name utility-watershed-analytics \
+  --env-file /etc/utility-watershed-analytics/runtime.env \
+  --file compose.prod.yml exec server python manage.py load_watershed_data
 
 # Detach from session: Press Ctrl+B, then D
 # You can now safely disconnect from SSH
@@ -127,7 +167,7 @@ checksum; remove or replace stale cache entries only under an approved runbook.
 
 ```bash
 # Download ALL production data (recommended for production)
-docker compose -f compose.prod.yml exec server python manage.py download_data --all
+"${production_compose[@]}" exec server python manage.py download_data --all
 ```
 
 Do not use `download_data --runids` for the NASA batch in the current
@@ -144,16 +184,16 @@ update procedure.
 
 ```bash
 # Load ALL watersheds (production - discovers all from API)
-docker compose -f compose.prod.yml exec server python manage.py load_watershed_data --all
+"${production_compose[@]}" exec server python manage.py load_watershed_data --all
 
 # Load specific watersheds by runid
-docker compose -f compose.prod.yml exec server python manage.py load_watershed_data --runids <runid1> <runid2>
+"${production_compose[@]}" exec server python manage.py load_watershed_data --runids <runid1> <runid2>
 
 # Load development subset only (defaults if no args provided - testing only)
-docker compose -f compose.prod.yml exec server python manage.py load_watershed_data
+"${production_compose[@]}" exec server python manage.py load_watershed_data
 
 # Print the selected configuration only; this does not fetch or validate data
-docker compose -f compose.prod.yml exec server python manage.py load_watershed_data --dry-run
+"${production_compose[@]}" exec server python manage.py load_watershed_data --dry-run
 ```
 
 ### Complete Data Setup (Download + Load)
@@ -162,10 +202,10 @@ For an initial empty-database load only:
 
 ```bash
 # 1. (Optional) Pre-download all production data files to avoid network fetches
-docker compose -f compose.prod.yml exec server python manage.py download_data --all
+"${production_compose[@]}" exec server python manage.py download_data --all
 
 # 2. Load all watershed data into database
-docker compose -f compose.prod.yml exec server python manage.py load_watershed_data --all
+"${production_compose[@]}" exec server python manage.py load_watershed_data --all
 ```
 
 **Note:** The download step is optional—the loader will fetch from remote URLs
@@ -194,19 +234,23 @@ database.
 
 ```bash
 # View service logs
-docker compose -f compose.prod.yml logs -f [service_name]
+docker compose --project-name utility-watershed-analytics \
+  --env-file /etc/utility-watershed-analytics/runtime.env \
+  --file compose.prod.yml logs -f [service_name]
 
 # Check service status
-docker compose -f compose.prod.yml ps
+docker compose --project-name utility-watershed-analytics \
+  --env-file /etc/utility-watershed-analytics/runtime.env \
+  --file compose.prod.yml ps
 
-# Stop services without removing containers or losing the database reference
-docker compose -f compose.prod.yml stop
+# Stop application-facing services only; never use compose down
+sudo systemctl stop utility-watershed-analytics.service
 
-# Start services
-docker compose -f compose.prod.yml up -d
+# Start existing images without recreating containers
+sudo systemctl start utility-watershed-analytics.service
 
-# Restart a specific service
-docker compose -f compose.prod.yml restart server
+# Reconcile application services only under the canonical lock
+sudo systemctl reload utility-watershed-analytics.service
 ```
 
 ## Troubleshooting
@@ -220,17 +264,25 @@ Check the GitHub Actions logs for the failed workflow run. Common issues:
 ### Services Not Starting
 ```bash
 # Check container status and logs
-docker compose -f compose.prod.yml ps
-docker compose -f compose.prod.yml logs server
+docker compose --project-name utility-watershed-analytics \
+  --env-file /etc/utility-watershed-analytics/runtime.env \
+  --file compose.prod.yml ps
+docker compose --project-name utility-watershed-analytics \
+  --env-file /etc/utility-watershed-analytics/runtime.env \
+  --file compose.prod.yml logs server
 ```
 
 ### Database Issues
 ```bash
 # Check database connectivity
-docker compose -f compose.prod.yml exec server python manage.py check
+docker compose --project-name utility-watershed-analytics \
+  --env-file /etc/utility-watershed-analytics/runtime.env \
+  --file compose.prod.yml exec server python manage.py check
 
-# Run migrations manually if needed
-docker compose -f compose.prod.yml exec server python manage.py migrate
+# Migrations run through the locked deployment orchestrator, not ad hoc
+scripts/deploy_application.sh \
+  --env-file /etc/utility-watershed-analytics/runtime.env \
+  --healthcheck-url https://unstable.wepp.cloud/api/schema/
 ```
 
 ## Acknowledgements

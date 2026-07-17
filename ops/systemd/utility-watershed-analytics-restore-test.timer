@@ -1,0 +1,11 @@
+[Unit]
+Description=Restore-test Utility Watershed Analytics backups weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 06:00:00 UTC
+RandomizedDelaySec=30m
+Persistent=true
+Unit=utility-watershed-analytics-restore-test.service
+
+[Install]
+WantedBy=timers.target

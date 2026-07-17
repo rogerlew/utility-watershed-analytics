@@ -1,4 +1,6 @@
 # PRODUCTION COMPOSE CONFIG
+name: utility-watershed-analytics
+
 services:
 
   # Frontend build container - builds static files to shared volume
@@ -17,8 +19,9 @@ services:
     build:
       context: ./server
       target: production
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
+    restart: unless-stopped
     volumes:
       # Watershed data cache directory - must match LOADER_DATA_DIR environment variable
       - watershed_data:/data
@@ -26,11 +29,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PW=${POSTGRES_PW}
       - POSTGRES_DB=${POSTGRES_DB}
-      - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME}
-      - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL}
-      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DEBUG=False
+      - APP_ENVIRONMENT=production
       # Data directory for watershed GeoJSON/Parquet caching (created in Dockerfile with proper permissions)
       - LOADER_DATA_DIR=/data
       - WEPPCLOUD_JWT_TOKEN=${WEPPCLOUD_JWT_TOKEN}
@@ -62,10 +63,11 @@ services:
 
   # PostgreSQL database with PostGIS
   db:
-    image: postgis/postgis
+    image: ${POSTGIS_IMAGE:?POSTGIS_IMAGE must pin the observed production image by digest}
     container_name: postgis
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PW}
@@ -74,7 +76,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
-      retries: 5 
+      retries: 5
+      start_period: 30s
 
   # Backend reverse proxy & frontend file server
   caddy:
@@ -92,4 +95,3 @@ volumes:
   caddy_data: {}
   frontend-build: {}
   watershed_data: {}
-  

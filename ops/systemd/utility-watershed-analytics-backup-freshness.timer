@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Utility Watershed Analytics backup freshness every six hours
+
+[Timer]
+OnCalendar=*-*-* 00/6:30:00 UTC
+RandomizedDelaySec=5m
+Persistent=true
+Unit=utility-watershed-analytics-backup-freshness.service
+
+[Install]
+WantedBy=timers.target

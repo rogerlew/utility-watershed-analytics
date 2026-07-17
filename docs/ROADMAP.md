@@ -53,9 +53,46 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-None. The next recommended package is **DB01 — Backup and restore baseline**.
-Creating a package does not authorize access to production; its authority must
-state explicitly which read-only and mutating operations are allowed.
+None. Wave 0 is orchestrated through governed packages, but execution is
+blocked honestly rather than bypassing authority or dependencies:
+
+- [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is on
+  `EXECUTED-HOLD-PRODUCTION-DRILL` after its repository and isolated encrypted
+  backup/restore gates passed and the operator accepted
+  `forest1:/wc1/utility-watershed-analytics-db-backups`, single-operator
+  ownership, 24-hour RPO/RTO, and local journal alerts.
+- [DB02](work-packages/20260716-db02-production-runtime-bundle/package.md) is on
+  `EXECUTED-HOLD-PRODUCTION-IDENTITY` after its target runtime and isolated
+  gates passed.
+- [DB03](work-packages/20260716-db03-production-runtime-convergence/package.md),
+  [DB04](work-packages/20260716-db04-legacy-loader-guardrails/package.md), and
+  [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
+  are scaffolded but not authorized and may not claim dependent evidence.
+
+The first unblock is now a bounded `wepp3`-to-`forest1` encrypted backup and
+isolated production-shaped restore drill. In parallel, grant an explicit
+read-only `wepp3` identity/reachability freeze for DB02; that does not grant
+runtime mutation. DB03 remains blocked until both packages complete.
+
+## Execution environments and Wave 0 readiness
+
+- `forest1` is the shared development server for repository authoring, tests,
+  and isolated non-production rehearsals.
+- `wepp3` is the production server. Repository work on `forest1` does not
+  authorize inspection or mutation of `wepp3`.
+
+The 2026-07-16 [Wave 0 environment readiness record](wave-0-readiness.md)
+concludes that `forest1` is ready to start repository-only DB01 and DB02 work.
+The local database/API subset also starts cleanly after the operator released
+ports 8000 and 5432, and DB01 later passed an encrypted empty-development
+backup/restore drill with exact database comparison and application smoke. It
+is not yet ready to claim complete full-stack or production-shaped restore
+evidence: port 5173 remains assigned to an unrelated development service, the
+ignored pgAdmin definition is absent, the copied WEPPcloud tokens are expired,
+  while production-shaped restore evidence remains open. The only production access during the
+preflight was an explicitly authorized read of environment-file metadata and
+the two external WEPPcloud tokens; no production runtime or database inspection
+or mutation was performed.
 
 ## Database deployment implementation campaign
 

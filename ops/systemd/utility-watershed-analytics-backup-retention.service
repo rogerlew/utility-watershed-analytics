@@ -1,0 +1,23 @@
+[Unit]
+Description=Apply Utility Watershed Analytics backup retention
+Documentation=file:/workdir/utility-watershed-analytics/docs/runbooks/database-backup-restore.md
+After=network-online.target
+Wants=network-online.target
+OnFailure=utility-watershed-analytics-backup-failure@%n.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/workdir/utility-watershed-analytics
+EnvironmentFile=/etc/utility-watershed-analytics/backup.env
+ExecStart=/workdir/utility-watershed-analytics/scripts/with_operation_lock.sh --mode exclusive -- /workdir/utility-watershed-analytics/scripts/run_backup_retention.sh
+TimeoutStartSec=4h
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,15 +1,25 @@
 [Unit]
-Description=Utility Watershed Analystics Docker Compose Application Service
+Description=Utility Watershed Analytics canonical production runtime
+Documentation=file:/workdir/utility-watershed-analytics/DEPLOYMENT.md
 Requires=docker.service
-After=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/utility-watershed-analytics/runtime.env
 
 [Service]
-WorkingDirectory=/workdir/utility-watershed-analytics
-ExecStart=/usr/bin/docker compose up
-ExecStop=/usr/bin/docker compose down
-TimeoutStartSec=0
-Restart=always
+Type=oneshot
 RemainAfterExit=yes
+User=root
+Group=root
+WorkingDirectory=/workdir/utility-watershed-analytics
+ExecStartPre=/workdir/utility-watershed-analytics/scripts/check_runtime_environment.sh --env-file /etc/utility-watershed-analytics/runtime.env --expected-uid 0
+ExecStart=/workdir/utility-watershed-analytics/scripts/with_operation_lock.sh --mode exclusive -- /usr/bin/docker compose --project-name utility-watershed-analytics --env-file /etc/utility-watershed-analytics/runtime.env --file /workdir/utility-watershed-analytics/compose.prod.yml up --detach --no-build --no-recreate db server caddy
+ExecReload=/workdir/utility-watershed-analytics/scripts/with_operation_lock.sh --mode exclusive -- /usr/bin/docker compose --project-name utility-watershed-analytics --env-file /etc/utility-watershed-analytics/runtime.env --file /workdir/utility-watershed-analytics/compose.prod.yml up --detach --no-build --no-deps server caddy
+ExecStop=/workdir/utility-watershed-analytics/scripts/with_operation_lock.sh --mode exclusive -- /usr/bin/docker compose --project-name utility-watershed-analytics --env-file /etc/utility-watershed-analytics/runtime.env --file /workdir/utility-watershed-analytics/compose.prod.yml stop --timeout 30 server caddy
+TimeoutStartSec=15m
+TimeoutStopSec=2m
+UMask=0077
+SuccessExitStatus=143
 
 [Install]
 WantedBy=multi-user.target

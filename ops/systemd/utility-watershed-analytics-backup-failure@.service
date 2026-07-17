@@ -1,0 +1,15 @@
+[Unit]
+Description=Report Utility Watershed Analytics backup failure for %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/workdir/utility-watershed-analytics
+EnvironmentFile=/etc/utility-watershed-analytics/backup.env
+ExecStart=/workdir/utility-watershed-analytics/scripts/notify_backup_failure.sh %i
+TimeoutStartSec=5m
+UMask=0077
+NoNewPrivileges=true

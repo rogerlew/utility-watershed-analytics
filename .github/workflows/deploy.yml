@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:  # Allows manual triggering from GitHub UI for testing
 
+concurrency:
+  group: utility-watershed-analytics-production
+  cancel-in-progress: false
+
 jobs:
   server-ci:
     name: Reuse Server CI
@@ -23,40 +27,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env file from secrets
+      - name: Create protected runtime environment
+        env:
+          PRODUCTION_ENV: ${{ secrets.PRODUCTION_ENV }}
         run: |
-          echo "Creating production .env file"
-          cat << EOF > .env
-          ${{ secrets.PRODUCTION_ENV }}
-          EOF
+          umask 077
+          install -m 0600 /dev/null .env.production-runtime
+          printf '%s\n' "$PRODUCTION_ENV" > .env.production-runtime
+          test "$(stat -c '%a' .env.production-runtime)" = 600
 
-      - name: Rebuild frontend static files
-        run: docker compose -f compose.prod.yml run --rm --build frontend-build
+      - name: Deploy under canonical operations lock
+        run: >-
+          scripts/deploy_application.sh
+          --env-file .env.production-runtime
+          --healthcheck-url https://unstable.wepp.cloud/api/schema/
 
-      - name: Restart stack
-        run: |
-          docker compose -f compose.prod.yml up -d --build server
-          docker compose -f compose.prod.yml up -d caddy
-
-      - name: Health Check
-        run: |
-          echo "Waiting for services to be healthy..."
-          sleep 10
-          
-          # Check if services are running
-          docker compose -f compose.prod.yml ps
-
-          # TODO: design and implement actual health check
-          
-          # Potentially a health check endpoint
-          # curl -f http://localhost:80/api/health || exit 1
-      
       - name: Deployment Summary
         run: |
-          echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Deployment completed successfully!" >> $GITHUB_STEP_SUMMARY
+          {
+            printf '### Deployment Summary\n\n'
+            printf '✅ Deployment completed successfully!\n'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cleanup
         if: always()
-        run: rm -f .env
+        run: |
+          if [[ -f .env.production-runtime ]]; then
+            shred --remove --zero .env.production-runtime \
+              || { truncate --size 0 .env.production-runtime; rm .env.production-runtime; }
+          fi
