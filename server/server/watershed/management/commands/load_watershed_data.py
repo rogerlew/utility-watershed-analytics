@@ -1,13 +1,18 @@
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from server.watershed.models import Watershed, Subcatchment, Channel
-from server.watershed.load import run
+
 from server.watershed.constants import DEV_RUNIDS
+from server.watershed.load import run
+from server.watershed.models import Channel, Subcatchment, Watershed
+
+
+ALLOWED_APP_ENVIRONMENTS = {"development", "test", "production"}
 
 
 class Command(BaseCommand):
     help = 'Load watershed data from GeoJSON files into the database'
-    
+
     def add_arguments(self, parser):
         parser.add_argument(
             '--force',
@@ -30,13 +35,41 @@ class Command(BaseCommand):
             help='Load ALL watersheds (overrides default dev subset)',
         )
     
+    def validate_options(self, *, force, load_all, runids):
+        environment = getattr(settings, "APP_ENVIRONMENT", None)
+        if environment not in ALLOWED_APP_ENVIRONMENTS:
+            raise CommandError(
+                "APP_ENVIRONMENT must explicitly identify development, test, "
+                "or production"
+            )
+        if load_all and runids:
+            raise CommandError("--all and --runids cannot be used together")
+        if force and environment == "production":
+            raise CommandError("--force is prohibited in production")
+        if force and runids:
+            raise CommandError(
+                "--force cannot be combined with --runids because it deletes "
+                "all watershed data before loading a subset"
+            )
+        if force and not load_all:
+            raise CommandError(
+                "--force requires --all outside production because the default "
+                "load is only a development subset"
+            )
+
     def handle(self, *args, **options):
         verbosity = options['verbosity']
         force = options['force']
         dry_run = options['dry_run']
         load_all = options['all']
         runids = options.get('runids')
-        
+
+        self.validate_options(
+            force=force,
+            load_all=load_all,
+            runids=runids,
+        )
+
         # Default to dev subset unless --all or explicit --runids provided
         if not load_all and not runids:
             runids = DEV_RUNIDS
@@ -47,12 +80,12 @@ class Command(BaseCommand):
             )
         elif load_all:
             runids = None  # None means load all
-        
+
         if dry_run:
             self.stdout.write(
                 self.style.WARNING('DRY RUN MODE - No data will be loaded')
             )
-        
+
         # Check if data already exists
         existing_count = Watershed.objects.count()
         if existing_count > 0 and not force:
@@ -85,11 +118,11 @@ class Command(BaseCommand):
                 self.stdout.write(f'Loading watershed data for {len(runids)} runids: {', '.join(runids)}...')
             else:
                 self.stdout.write('Loading all watershed data...')
-            
+
             with transaction.atomic():
                 # Run the main data loading function (includes geometry simplification)
                 run(verbose=verbosity > 1, runids=runids)
-            
+
             # Report results
             final_watershed_count = Watershed.objects.count()
             final_subcatchment_count = Subcatchment.objects.count()

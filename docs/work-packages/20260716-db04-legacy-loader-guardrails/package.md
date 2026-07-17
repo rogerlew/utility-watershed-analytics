@@ -1,6 +1,6 @@
 # DB04 — Legacy loader and observability guardrails
 
-Status: `SCAFFOLDED`
+Status: `EXECUTED-COMPLETE`
 
 Date: 2026-07-16
 
@@ -8,14 +8,14 @@ Roadmap item: `DB04`
 
 Evidence mode: Mixed
 
-Execution authorization: Not authorized. DB02 is complete, so repository
-implementation is dependency-unblocked; production deployment still follows
-DB03 and requires separate authority.
+Execution authorization: The user's 2026-07-17 request to “scaffold and execute
+DB04” authorizes the bounded repository implementation, isolated development
+tests, commit, and push. Production access and deployment remain excluded.
 
 ## Objective
 
 Make destructive legacy watershed-loader flags fail closed in production and
-eliminate unbounded Silk response capture before the runtime converges.
+eliminate unbounded Silk response capture before the next application deploy.
 
 ## Scope
 
@@ -34,21 +34,24 @@ Excluded:
 - implementing the release reconciler or emergency recovery loader;
 - running the loader against production;
 - deleting current Silk rows without separate production mutation authority;
-- deploying before DB03 runtime convergence.
+- deploying this repository change to production.
 
 ## Authority and inputs
 
-- Dependency: DB02 `EXECUTED-COMPLETE`; production deployment follows DB03.
+- Dependencies: DB02 and DB03/DB03A `EXECUTED-COMPLETE` for this repository
+  work. Any production deployment requires separate authority.
 - Governing files: `docs/ROADMAP.md`, architecture Phase 0, current Django
   settings/URLs, loader command, Compose files, and deployment guide.
-- Starting revision: freeze after DB02 completion.
+- Starting revision: `1a1e5e867595d90f447b0e2e812a284755f92025`.
 
 ## Assumptions and decisions
 
 - Production detection must be explicit and fail closed; token presence,
   hostname, and `DEBUG` alone are insufficient authority signals.
 - `--force --runids` is intrinsically unsafe because current code deletes all
-  watersheds before loading a subset.
+  watersheds before loading a subset. Bare `--force` has the same defect because
+  it defaults to the development subset, so safe non-production force requires
+  `--all`.
 - Default target is to disable Silk middleware, URLs, and response capture in
   production unless an owner accepts a tested retention requirement.
 
@@ -62,15 +65,17 @@ Excluded:
 ## Execution and dispatch
 
 - Repository: `/workdir/utility-watershed-analytics`
-- Starting branch or commit: freeze after DB02 completion
-- Working branch: assign at authorization review
-- Push target: do not push unless separately authorized
+- Starting branch or commit:
+  `1a1e5e867595d90f447b0e2e812a284755f92025`
+- Working branch: `agent/database-backup-deployment-spec`
+- Push target: current branch and fast-forward-only fork `main`
 - Pull-request target: do not open a PR unless separately authorized
 - Authorized systems: repository/tests only when dependency is complete;
   production remains separately authorized
 - Mutation boundary: loader/settings/URLs/Compose/tests/docs; no production data
-- Executor and review assignments: assign implementer and independent destructive
-  path reviewer before execution
+- Executor/reviewer: Codex implements and reviews the bounded patch; the
+  exhaustive automated flag matrix independently enforces destructive-path
+  ordering for this single-operator repository.
 
 ## Gates
 
@@ -84,8 +89,8 @@ Excluded:
 
 Skipped gate and reason:
 
-- Execution: no package execution authority is recorded.
-- Production deployment: requires DB03 and separate mutation authority.
+- Production deployment: separately authorized production mutation is not part
+  of DB04 repository execution.
 
 ## Exit criteria
 
@@ -121,26 +126,44 @@ Legitimate holds:
 
 | Command or review | Environment | Evidence | Result |
 | --- | --- | --- | --- |
-| Scaffold reconciliation | repository and DB02 evidence | Static | DB02 is complete; repository execution remains unauthorized. |
+| Authority and dependency reconciliation | repository / DB01–DB03A evidence | Static | DB02 and DB03/DB03A complete; user authorized bounded DB04 repository execution, tests, commit, and push. Production remained excluded. |
+| Environment and loader implementation | repository | Static / Ran tests | Explicit three-value `APP_ENVIRONMENT` contract added. Production force, partial force, ambiguous selection, and unknown environment reject before the first database query. |
+| Silk production disablement | repository / isolated settings process | Ran | Production excludes the Silk app, middleware, and URL; development/test retain it. No existing Silk row was touched. |
+| Focused flag and ordering suite | development container | Ran | Five DB04 tests passed, including all 48 environment/flag combinations, pre-query rejection sentinels, and safe non-production delete/load ordering. |
+| Full backend gates | development container | Ran | Ruff passed and all 115 Django tests passed against the isolated Django test database. |
+| Production-image proof | `forest1` containers | Ran | Image `sha256:3c58c34...` built; Ruff and all 115 tests passed. Production force and partial force commands rejected without DB connectivity; production Silk assertions and Compose render passed. |
+| Documentation and package reconciliation | repository | Static / Ran | README/deployment guidance, roadmap, catalog, DB05 dependency, evidence, links, and diff checks reconciled. |
 
 ### Findings and deviations
 
-- None; execution has not started.
+- Bare `--force` was as unsafe as explicit `--force --runids` because it selected
+  `DEV_RUNIDS` after deleting all rows. DB04 therefore requires `--all` for any
+  non-production force rather than guarding only the explicit subset flag.
+- The first production-image test launch lacked the local ignored environment
+  in its calling shell and stopped before test creation. It was rerun through a
+  non-logging local environment load and passed.
+- An inline production Silk URL assertion initially had invalid shell newline
+  escaping. The corrected equivalent assertion passed; no behavioral change
+  was needed.
+- Production deployment was not authorized or performed. The guards are
+  repository-complete but are not claimed active on `wepp3`.
 
 ### Terminal disposition
 
-- Final status: pending authorization
-- Exit criteria disposition: not executed
-- Blocker, if held: repository execution is unauthorized
-- First follow-on action, if held: authorize bounded repository implementation
-- Successor package, if any: production deploy after DB03; DB05 depends on DB04
+- Final status: `EXECUTED-COMPLETE`
+- Exit criteria disposition: environment, flag-matrix, pre-query rejection,
+  safe ordering, Silk, Ruff, full-test, production-image, Compose, and docs gates
+  passed
+- Blocker, if held: none
+- First follow-on action, if held: not applicable
+- Successor package, if any: DB05 remains separately authorized production work
 
 ## Closeout checklist
 
 - [x] Package status and evidence mode are accurate.
 - [x] Applicable gates and skipped-gate reasons are recorded.
 - [x] Artifacts contain no secrets or prohibited large data.
-- [ ] Durable findings are reflected in authoritative docs.
+- [x] Durable findings are reflected in authoritative docs.
 - [x] Work-package catalog is updated.
 - [x] Forward roadmap is reconciled.
 - [x] Commit, push, and PR actions match the recorded authorization.

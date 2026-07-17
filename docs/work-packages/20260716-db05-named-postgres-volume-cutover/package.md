@@ -8,8 +8,8 @@ Roadmap item: `DB05`
 
 Evidence mode: Mixed
 
-Execution authorization: Not authorized. DB01 and DB03/DB03A are complete;
-DB04, rehearsal, and production cutover authority remain outstanding.
+Execution authorization: Not authorized. DB01 through DB04 dependencies are
+complete; rehearsal and production cutover authority remain outstanding.
 
 ## Objective
 
@@ -136,7 +136,7 @@ authorizes deletion or an upgrade.
 
 | Command or review | Environment | Evidence | Result |
 | --- | --- | --- | --- |
-| Scaffold review | repository only | Static | DB01 and DB03/DB03A complete; blocked on DB04, rehearsal, and authority. |
+| Scaffold review | repository only | Static | DB01 through DB04 dependencies complete; blocked on rehearsal and authority. |
 
 ### Findings and deviations
 
@@ -146,7 +146,7 @@ authorizes deletion or an upgrade.
 
 - Final status: pending dependencies and authorization
 - Exit criteria disposition: not executed
-- Blocker, if held: DB04 incomplete; no rehearsal or production authority
+- Blocker, if held: no accepted rehearsal or production authority
 - First follow-on action, if held: complete dependencies and authorize a
   production-shaped cutover/rollback rehearsal
 - Successor package, if any: DB05A after rollback window and post-cutover

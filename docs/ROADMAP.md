@@ -53,8 +53,9 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-No production package is currently active. DB04 is the next bounded repository
-wave and remains scaffolded, not authorized:
+No production package is currently active. DB04 repository execution is
+complete. DB05 is the next Wave 0 package, but remains scaffolded and requires
+a production-shaped rehearsal plus explicit production authority:
 
 - [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is
   `EXECUTED-COMPLETE` after permanent restricted transport, production
@@ -67,14 +68,18 @@ wave and remains scaffolded, not authorized:
   adoption boundary passed without production mutation.
 - [DB03](work-packages/20260716-db03-production-runtime-convergence/package.md)
   completed host convergence; its historical publication hold is resolved by
-  DB03A. [DB04](work-packages/20260716-db04-legacy-loader-guardrails/package.md)
-  and [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
-  remain scaffolded and not authorized. DB04's dependency is met; DB05 still
-  depends on completed DB04 and separate cutover authority.
+  DB03A.
 - [DB03A](work-packages/20260717-db03a-production-runner-ownership-closure/package.md)
   is `EXECUTED-COMPLETE`: fork `main`, protected secret delivery, verified
   runner installation, online/idle state, old-runner disablement, unchanged
   production, and temporary-privilege removal passed without job dispatch.
+- [DB04](work-packages/20260716-db04-legacy-loader-guardrails/package.md) is
+  `EXECUTED-COMPLETE`: destructive legacy loader selections reject before any
+  database query, production Silk is disabled, and all isolated repository and
+  production-image gates passed without production access.
+- [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
+  remains scaffolded and unauthorized. Its package dependencies are complete;
+  rehearsal, exact cutover inputs, and production authority remain outstanding.
 - [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
   read-only command, tests, and development gates passed; the development domain
@@ -87,8 +92,8 @@ The safe unit is enabled, server port 8000 is closed, the
 canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. The exact anonymous-volume database remains unchanged. Temporary
-sudo was removed. DB04 may proceed under separate repository execution
-authority. DB07 remains blocked until DB06 completes.
+sudo was removed. DB04 is repository-complete but not deployed to production.
+DB07 remains blocked until DB06 completes.
 
 ## Execution environments and Wave 0 readiness
 

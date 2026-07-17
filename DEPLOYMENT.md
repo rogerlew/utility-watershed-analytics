@@ -180,7 +180,9 @@ tested.
 
 The commands below are legacy initial-load tools for an empty database. They do
 not reconcile a populated production database and must not be used as a routine
-update procedure.
+update procedure. `APP_ENVIRONMENT=production` rejects every `--force` use
+before querying or deleting watershed rows. Production also omits the Silk app,
+middleware, and `/silk/` route so request and response capture cannot grow.
 
 ```bash
 # Load ALL watersheds (production - discovers all from API)
@@ -214,11 +216,13 @@ populated production database.
 
 ### Major Schema or Data Source Updates
 
-Do not use `docker compose down` or `load_watershed_data --force` as a routine
-production data-update procedure. PostgreSQL currently uses an anonymous
-volume, and the loader deletes all watershed rows before replacement loading;
-a failure or partial source load can therefore leave production empty or
-incomplete.
+Do not use `docker compose down` as a routine production data-update procedure.
+The loader now rejects `--force` in production. Outside production, `--force`
+requires `--all`; combining it with `--runids` or relying on the default subset
+is rejected before the database is queried. PostgreSQL currently uses an
+anonymous volume, and an older deployed loader can delete all watershed rows
+before replacement loading, so do not treat the repository guard as active on
+a host until a separately authorized application deployment is verified.
 
 The proposed reproducible release, reconciliation, validation, and rollback
 workflow is specified in

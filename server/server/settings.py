@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,6 +27,16 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
+
+APP_ENVIRONMENT = os.getenv("APP_ENVIRONMENT", "development").strip().lower()
+ALLOWED_APP_ENVIRONMENTS = {"development", "test", "production"}
+if APP_ENVIRONMENT not in ALLOWED_APP_ENVIRONMENTS:
+    allowed = ", ".join(sorted(ALLOWED_APP_ENVIRONMENTS))
+    raise ImproperlyConfigured(
+        f"APP_ENVIRONMENT must be one of: {allowed}"
+    )
+
+SILK_ENABLED = APP_ENVIRONMENT != "production"
 
 ALLOWED_HOSTS = [] if DEBUG else ['unstable.wepp.cloud', 'firewisewatersheds.org']
 
@@ -42,14 +54,15 @@ INSTALLED_APPS = [
     'rest_framework_gis',
     'server.watershed',
     'corsheaders',
-    'silk',
     'drf_spectacular',
 ]
+
+if SILK_ENABLED:
+    INSTALLED_APPS.append('silk')
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'silk.middleware.SilkyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -57,6 +70,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if SILK_ENABLED:
+    MIDDLEWARE.insert(2, 'silk.middleware.SilkyMiddleware')
 
 ROOT_URLCONF = 'server.urls'
 

@@ -171,8 +171,9 @@ docker compose exec server python manage.py load_watershed_data --all
 # Preview selected configuration only (does not fetch or validate source data)
 docker compose exec server python manage.py load_watershed_data --dry-run
 
-# Force reload data (clears existing data first)
-docker compose exec server python manage.py load_watershed_data --force
+# Force a complete non-production reload. --force is rejected unless --all is
+# present, and is always rejected when APP_ENVIRONMENT=production.
+docker compose exec server python manage.py load_watershed_data --force --all
 
 # Verbose output for debugging
 docker compose exec server python manage.py load_watershed_data --verbosity=2
@@ -195,8 +196,8 @@ docker volume rm <watershed_data_volume_name>
 
 docker compose up -d
 
-# Force reload data into database (clears DB first, then reloads)
-docker compose exec server python manage.py load_watershed_data --force
+# Force a complete development reload (clears watershed rows, then loads all)
+docker compose exec server python manage.py load_watershed_data --force --all
 ```
 
 ### Full Container Management
