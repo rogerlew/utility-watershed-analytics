@@ -88,6 +88,11 @@ packages DB01 through DB05 are complete:
   authorized aggregate-only production audit found 126 watersheds, 195,457
   subcatchments, and 86,895 channels with zero duplicate groups or child
   orphans and no production mutation.
+- [DB07](work-packages/20260717-db07-identity-metadata-contract/package.md) is
+  `EXECUTED-COMPLETE`: stable collection/watershed keys, source aliases, child
+  identities, split/merge/removal lineage, route compatibility, and the
+  field-level authority matrix are frozen. Nine accepted and three rejected
+  fixtures plus seven validator/model-coverage tests passed.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -97,8 +102,8 @@ canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
-DB04 is repository-complete but not deployed to production. DB07 is unblocked
-and is the next contract package.
+DB04 is repository-complete but not deployed to production. DB07 is complete;
+DB08 is the next contract package.
 
 ## Execution environments and Wave 0 readiness
 

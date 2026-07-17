@@ -55,6 +55,24 @@ The full Victoria batch identifier is
 `batch;;victoria-ca-2026` are descriptive only and must not be stored as run
 IDs.
 
+## Stable identity assignments
+
+DB07 assigns project-controlled collection keys independently of replaceable
+source revisions:
+
+- Gate Creek: collection and watershed key `gate-creek`;
+- Mill Creek: collection and watershed key `mill-creek` for both the current
+  and successor run;
+- NASA ROSES: collection key `nasa-roses`; and
+- Victoria: collection key `victoria-ca`.
+
+Batch watershed keys use reviewed member-index mappings. A normalized source
+suffix may propose a key such as `victoria-ca-sooke09`, but suffix, name, HUC,
+utility, or geometry similarity never assigns identity automatically. The full
+naming, replacement, move, split/merge, route-alias, retirement, and field
+authority rules are in the
+[database identity and metadata authority contract](database-identity-metadata-contract.md).
+
 ## RHESSys inventory
 
 RHESSys capability is associated with the external run, not a database column.

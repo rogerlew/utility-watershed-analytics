@@ -115,7 +115,7 @@ from nothing.
 | Build | Materializing a data release into empty watershed tables. |
 | Reconciliation | Converging existing watershed tables to exactly match a data release. |
 | Deployment | Backup, preflight, reconciliation, validation, activation, and reporting. |
-| Collection key | A stable project-controlled identity for one source grouping, such as a batch or standalone source definition. |
+| Collection key | A stable project-controlled identity for one logical source grouping across replaceable batch or standalone source revisions. |
 | Watershed key | A mandatory stable project-controlled identity for exactly one logical watershed, distinct from its collection and replaceable upstream run ID. |
 | Run ID | The current source-specific WEPPcloud identifier and source revision. It is also the existing database primary key and public route identifier. |
 | Capability | A declared optional product family, such as RHESSys dynamic Parquets or precomputed map GeoTIFFs. |
@@ -289,7 +289,7 @@ collections:
       index_uri: https://artifacts.example/.../rhessys-index.json
       index_sha256: "..."
 
-  - collection_key: nasa-roses-202606-psbs
+  - collection_key: nasa-roses
     display_name: NASA ROSES 202606 PSBS
     source:
       kind: batch
@@ -302,7 +302,7 @@ collections:
       path: batch-members.json
       sha256: "..."
     lineage:
-      replaces: nasa-roses-2026-sbs
+      replaces_source_revision: nasa-roses-2026-sbs
       transformation: nasa_wws_enrichment_v1
 ```
 
@@ -508,15 +508,16 @@ are already assumed by the loader:
 - one channel per `(watershed_id, topazid, weppid, order)`.
 
 Constraint introduction requires a duplicate audit and an explicit Django
-migration. DB06 found no preserved command or report supporting an earlier
-design-draft assertion that a 2026-07-16 production query found no duplicate
-`topazid` values within a watershed, so production uniqueness remains
-unverified. Because current Parquet enrichment joins on `topazid`, every release
-must enforce exactly one matching subcatchment and at most one authoritative
-Parquet row per `(watershed, topazid)`. A future artifact that needs a different
-business key requires a new data contract and join implementation rather than
-an implicit fallback. The current ownership, key, join, and compatibility audit
-is maintained in
+migration. DB06's separately authorized aggregate production audit found zero
+duplicate groups and zero child orphans for the proposed version-1 keys across
+126 watersheds, 195,457 subcatchments, and 86,895 channels. That observation is
+accepted migration input, not permanent enforcement. Because current Parquet
+enrichment joins on `topazid`, every release must enforce exactly one matching
+subcatchment and at most one authoritative Parquet row per
+`(watershed, topazid)`. A future artifact that needs a different business key
+requires a new data contract and join implementation rather than an implicit
+fallback. The current ownership, key, join, and compatibility audit is
+maintained in
 [the DB06 domain identity audit](database-domain-identity-audit.md).
 
 ### 9.4 Stable logical identity
@@ -543,6 +544,14 @@ Replacement lineage is represented explicitly between watershed keys and
 source revisions. Split and merge events list all predecessor and successor
 watershed keys and require a reviewed routing and foreign-key migration plan.
 
+DB07 freezes the version-1 decisions in the
+[identity and metadata authority contract](database-identity-metadata-contract.md):
+collection keys remain stable across source revisions; watershed keys remain
+stable across rename, replacement, and collection moves; split and merge
+successors receive new keys; retired keys are never reused; and historical run
+IDs remain compatibility aliases. DB08 schemas must encode those decisions
+rather than derive identity from source names or geometry.
+
 ## 10. Change semantics
 
 | Change | Release representation | Reconciliation behavior |
@@ -564,7 +573,9 @@ watershed keys and require a reviewed routing and foreign-key migration plan.
 Metadata semantics must distinguish an absent property from an explicit null.
 For fields declared authoritative by a release schema, absence is a validation
 error; an explicit null clears the field. This prevents accidental retention of
-stale metadata.
+stale metadata. The DB07 contract defines the field-by-field authority and
+conflict matrix for every current collection; unresolved or unauthorized values
+fail preparation.
 
 ## 11. Supported and anticipated cases
 

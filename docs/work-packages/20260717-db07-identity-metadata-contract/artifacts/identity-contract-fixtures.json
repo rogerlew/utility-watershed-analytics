@@ -1,0 +1,502 @@
+{
+  "contract_version": 1,
+  "collections": [
+    {
+      "collection_key": "gate-creek",
+      "kind": "standalone",
+      "source_revisions": [
+        "aversive-forestry"
+      ],
+      "sample_watershed_keys": [
+        "gate-creek"
+      ],
+      "field_authority": {
+        "pws_id": "explicit_null:required",
+        "srcname": "manifest:required",
+        "pws_name": "explicit_null:required",
+        "county_nam": "explicit_null:required",
+        "state": "explicit_null:required",
+        "huc10_id": "explicit_null:required",
+        "huc10_name": "explicit_null:required",
+        "wws_code": "explicit_null:required",
+        "srctype": "explicit_null:required",
+        "shape_leng": "explicit_null:required",
+        "shape_area": "explicit_null:required",
+        "area_km2": "explicit_null:required",
+        "owner_type": "explicit_null:required",
+        "pop_group": "explicit_null:required",
+        "treat_type": "explicit_null:required",
+        "conn_group": "explicit_null:required",
+        "huc10_pws_names": "explicit_null:required",
+        "huc10_owner_types": "explicit_null:required",
+        "huc10_pop_groups": "explicit_null:required",
+        "huc10_treat_types": "explicit_null:required",
+        "huc10_utility_count": "explicit_null:required",
+        "runid": "member_index:required",
+        "geom": "boundary:required",
+        "simplified_geom": "derived:required"
+      }
+    },
+    {
+      "collection_key": "mill-creek",
+      "kind": "standalone",
+      "source_revisions": [
+        "mdobre-invincible-scarab",
+        "some-oligopoly"
+      ],
+      "sample_watershed_keys": [
+        "mill-creek"
+      ],
+      "field_authority": {
+        "pws_id": "explicit_null:required",
+        "srcname": "manifest:required",
+        "pws_name": "explicit_null:required",
+        "county_nam": "explicit_null:required",
+        "state": "explicit_null:required",
+        "huc10_id": "explicit_null:required",
+        "huc10_name": "explicit_null:required",
+        "wws_code": "explicit_null:required",
+        "srctype": "explicit_null:required",
+        "shape_leng": "explicit_null:required",
+        "shape_area": "explicit_null:required",
+        "area_km2": "explicit_null:required",
+        "owner_type": "explicit_null:required",
+        "pop_group": "explicit_null:required",
+        "treat_type": "explicit_null:required",
+        "conn_group": "explicit_null:required",
+        "huc10_pws_names": "explicit_null:required",
+        "huc10_owner_types": "explicit_null:required",
+        "huc10_pop_groups": "explicit_null:required",
+        "huc10_treat_types": "explicit_null:required",
+        "huc10_utility_count": "explicit_null:required",
+        "runid": "member_index:required",
+        "geom": "boundary:required",
+        "simplified_geom": "derived:required"
+      }
+    },
+    {
+      "collection_key": "nasa-roses",
+      "kind": "batch",
+      "source_revisions": [
+        "batch;;nasa-roses-2026-sbs;;<member>",
+        "batch;;nasa-roses-202606-psbs;;<member>"
+      ],
+      "sample_watershed_keys": [
+        "nasa-roses-or-20"
+      ],
+      "field_authority": {
+        "pws_id": "metadata:nullable",
+        "srcname": "metadata:nullable",
+        "pws_name": "metadata:nullable",
+        "county_nam": "metadata:nullable",
+        "state": "metadata:nullable",
+        "huc10_id": "metadata:nullable",
+        "huc10_name": "metadata:nullable",
+        "wws_code": "metadata:nullable",
+        "srctype": "metadata:nullable",
+        "shape_leng": "metadata:nullable",
+        "shape_area": "metadata:nullable",
+        "area_km2": "explicit_null:required",
+        "owner_type": "metadata:nullable",
+        "pop_group": "metadata:nullable",
+        "treat_type": "metadata:nullable",
+        "conn_group": "metadata:nullable",
+        "huc10_pws_names": "metadata:nullable",
+        "huc10_owner_types": "metadata:nullable",
+        "huc10_pop_groups": "metadata:nullable",
+        "huc10_treat_types": "metadata:nullable",
+        "huc10_utility_count": "metadata:nullable",
+        "runid": "member_index:required",
+        "geom": "boundary:required",
+        "simplified_geom": "derived:required"
+      }
+    },
+    {
+      "collection_key": "victoria-ca",
+      "kind": "batch",
+      "source_revisions": [
+        "batch;;victoria-ca-2026-sbs;;<member>"
+      ],
+      "sample_watershed_keys": [
+        "victoria-ca-sooke09",
+        "victoria-ca-sooke15"
+      ],
+      "field_authority": {
+        "pws_id": "explicit_null:required",
+        "srcname": "boundary:required",
+        "pws_name": "explicit_null:required",
+        "county_nam": "explicit_null:required",
+        "state": "explicit_null:required",
+        "huc10_id": "explicit_null:required",
+        "huc10_name": "explicit_null:required",
+        "wws_code": "explicit_null:required",
+        "srctype": "explicit_null:required",
+        "shape_leng": "explicit_null:required",
+        "shape_area": "explicit_null:required",
+        "area_km2": "boundary:required",
+        "owner_type": "explicit_null:required",
+        "pop_group": "explicit_null:required",
+        "treat_type": "explicit_null:required",
+        "conn_group": "explicit_null:required",
+        "huc10_pws_names": "explicit_null:required",
+        "huc10_owner_types": "explicit_null:required",
+        "huc10_pop_groups": "explicit_null:required",
+        "huc10_treat_types": "explicit_null:required",
+        "huc10_utility_count": "explicit_null:required",
+        "runid": "member_index:required",
+        "geom": "boundary:required",
+        "simplified_geom": "derived:required"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "retain-gate-creek",
+      "kind": "retained",
+      "before": {
+        "watershed_keys": ["gate-creek"],
+        "collection_keys": ["gate-creek"],
+        "runids": ["aversive-forestry"],
+        "display_names": ["Gate Creek"],
+        "metadata_fingerprint": "meta-gate-v1",
+        "geometry_fingerprint": "geom-gate-v1",
+        "child_fingerprint": "child-gate-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["gate-creek"],
+        "collection_keys": ["gate-creek"],
+        "runids": ["aversive-forestry"],
+        "display_names": ["Gate Creek"],
+        "metadata_fingerprint": "meta-gate-v1",
+        "geometry_fingerprint": "geom-gate-v1",
+        "child_fingerprint": "child-gate-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "reviewed_mapping": false,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "retained"}
+    },
+    {
+      "id": "rename-gate-creek",
+      "kind": "renamed",
+      "before": {
+        "watershed_keys": ["gate-creek"],
+        "collection_keys": ["gate-creek"],
+        "runids": ["aversive-forestry"],
+        "display_names": ["Gate Creek"],
+        "metadata_fingerprint": "meta-gate-v1",
+        "geometry_fingerprint": "geom-gate-v1",
+        "child_fingerprint": "child-gate-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["gate-creek"],
+        "collection_keys": ["gate-creek"],
+        "runids": ["aversive-forestry"],
+        "display_names": ["Gate Creek Watershed"],
+        "metadata_fingerprint": "meta-gate-v2",
+        "geometry_fingerprint": "geom-gate-v1",
+        "child_fingerprint": "child-gate-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "reviewed_mapping": false,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "renamed"}
+    },
+    {
+      "id": "replace-mill-creek-source",
+      "kind": "replaced",
+      "before": {
+        "watershed_keys": ["mill-creek"],
+        "collection_keys": ["mill-creek"],
+        "runids": ["mdobre-invincible-scarab"],
+        "display_names": ["Mill Creek"],
+        "metadata_fingerprint": "meta-mill-v1",
+        "geometry_fingerprint": "geom-mill-v1",
+        "child_fingerprint": "child-mill-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["mill-creek"],
+        "collection_keys": ["mill-creek"],
+        "runids": ["some-oligopoly"],
+        "display_names": ["Mill Creek"],
+        "metadata_fingerprint": "meta-mill-v2",
+        "geometry_fingerprint": "geom-mill-v2",
+        "child_fingerprint": "child-mill-v2",
+        "aliases": ["mdobre-invincible-scarab"],
+        "tombstones": []
+      },
+      "reviewed_mapping": true,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "replaced"}
+    },
+    {
+      "id": "move-batch-member",
+      "kind": "moved",
+      "before": {
+        "watershed_keys": ["nasa-roses-or-20"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-2026-sbs;;OR-20"],
+        "display_names": ["OR-20"],
+        "metadata_fingerprint": "meta-or20-v1",
+        "geometry_fingerprint": "geom-or20-v1",
+        "child_fingerprint": "child-or20-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["nasa-roses-or-20"],
+        "collection_keys": ["bremerton"],
+        "runids": ["batch;;bremerton-2026-psbs;;OR-20"],
+        "display_names": ["OR-20"],
+        "metadata_fingerprint": "meta-or20-v1",
+        "geometry_fingerprint": "geom-or20-v1",
+        "child_fingerprint": "child-or20-v1",
+        "aliases": ["batch;;nasa-roses-2026-sbs;;OR-20"],
+        "tombstones": []
+      },
+      "reviewed_mapping": true,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "moved"}
+    },
+    {
+      "id": "split-victoria-member",
+      "kind": "split",
+      "before": {
+        "watershed_keys": ["victoria-ca-sooke-central"],
+        "collection_keys": ["victoria-ca"],
+        "runids": ["batch;;victoria-ca-2026-sbs;;SookeCentral"],
+        "display_names": ["Sooke Central"],
+        "metadata_fingerprint": "meta-sooke-central-v1",
+        "geometry_fingerprint": "geom-sooke-central-v1",
+        "child_fingerprint": "child-sooke-central-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["victoria-ca-sooke-east", "victoria-ca-sooke-west"],
+        "collection_keys": ["victoria-ca"],
+        "runids": ["batch;;victoria-ca-2027-sbs;;SookeEast", "batch;;victoria-ca-2027-sbs;;SookeWest"],
+        "display_names": ["Sooke East", "Sooke West"],
+        "metadata_fingerprint": "meta-sooke-split-v1",
+        "geometry_fingerprint": "geom-sooke-split-v1",
+        "child_fingerprint": "child-sooke-split-v1",
+        "aliases": ["batch;;victoria-ca-2026-sbs;;SookeCentral"],
+        "tombstones": ["victoria-ca-sooke-central"]
+      },
+      "reviewed_mapping": true,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "split"}
+    },
+    {
+      "id": "merge-nasa-members",
+      "kind": "merged",
+      "before": {
+        "watershed_keys": ["nasa-roses-or-hood", "nasa-roses-or-river"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-2026-sbs;;OR-HOOD", "batch;;nasa-roses-2026-sbs;;OR-RIVER"],
+        "display_names": ["OR Hood", "OR River"],
+        "metadata_fingerprint": "meta-hood-river-v1",
+        "geometry_fingerprint": "geom-hood-river-v1",
+        "child_fingerprint": "child-hood-river-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["nasa-roses-or-hood-river"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-202606-psbs;;OR-HOOD-RIVER"],
+        "display_names": ["OR Hood River"],
+        "metadata_fingerprint": "meta-hood-river-v2",
+        "geometry_fingerprint": "geom-hood-river-v2",
+        "child_fingerprint": "child-hood-river-v2",
+        "aliases": ["batch;;nasa-roses-2026-sbs;;OR-HOOD", "batch;;nasa-roses-2026-sbs;;OR-RIVER"],
+        "tombstones": ["nasa-roses-or-hood", "nasa-roses-or-river"]
+      },
+      "reviewed_mapping": true,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "merged"}
+    },
+    {
+      "id": "metadata-only-nasa",
+      "kind": "metadata_only",
+      "before": {
+        "watershed_keys": ["nasa-roses-or-20"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-2026-sbs;;OR-20"],
+        "display_names": ["OR-20"],
+        "metadata_fingerprint": "meta-or20-v1",
+        "geometry_fingerprint": "geom-or20-v1",
+        "child_fingerprint": "child-or20-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["nasa-roses-or-20"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-2026-sbs;;OR-20"],
+        "display_names": ["OR-20"],
+        "metadata_fingerprint": "meta-or20-v2",
+        "geometry_fingerprint": "geom-or20-v1",
+        "child_fingerprint": "child-or20-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "reviewed_mapping": false,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "metadata_only"}
+    },
+    {
+      "id": "geometry-only-victoria",
+      "kind": "geometry_only",
+      "before": {
+        "watershed_keys": ["victoria-ca-sooke09"],
+        "collection_keys": ["victoria-ca"],
+        "runids": ["batch;;victoria-ca-2026-sbs;;Sooke09"],
+        "display_names": ["Sooke09"],
+        "metadata_fingerprint": "meta-sooke09-v1",
+        "geometry_fingerprint": "geom-sooke09-v1",
+        "child_fingerprint": "child-sooke09-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["victoria-ca-sooke09"],
+        "collection_keys": ["victoria-ca"],
+        "runids": ["batch;;victoria-ca-2026-sbs;;Sooke09"],
+        "display_names": ["Sooke09"],
+        "metadata_fingerprint": "meta-sooke09-v1",
+        "geometry_fingerprint": "geom-sooke09-v2",
+        "child_fingerprint": "child-sooke09-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "reviewed_mapping": false,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "geometry_only"}
+    },
+    {
+      "id": "remove-nasa-member",
+      "kind": "removed",
+      "before": {
+        "watershed_keys": ["nasa-roses-or-retired"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-2026-sbs;;OR-RETIRED"],
+        "display_names": ["OR Retired"],
+        "metadata_fingerprint": "meta-retired-v1",
+        "geometry_fingerprint": "geom-retired-v1",
+        "child_fingerprint": "child-retired-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": [],
+        "collection_keys": [],
+        "runids": [],
+        "display_names": [],
+        "metadata_fingerprint": "none",
+        "geometry_fingerprint": "none",
+        "child_fingerprint": "none",
+        "aliases": ["batch;;nasa-roses-2026-sbs;;OR-RETIRED"],
+        "tombstones": ["nasa-roses-or-retired"]
+      },
+      "reviewed_mapping": true,
+      "conflict_code": null,
+      "expected": {"decision": "accept", "code": "removed"}
+    },
+    {
+      "id": "reject-runid-only-match",
+      "kind": "unresolved",
+      "before": {
+        "watershed_keys": ["nasa-roses-or-20"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-2026-sbs;;OR-20"],
+        "display_names": ["OR-20"],
+        "metadata_fingerprint": "meta-or20-v1",
+        "geometry_fingerprint": "geom-or20-v1",
+        "child_fingerprint": "child-or20-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["nasa-roses-or-20"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-202606-psbs;;OR-20"],
+        "display_names": ["OR-20"],
+        "metadata_fingerprint": "meta-or20-v2",
+        "geometry_fingerprint": "geom-or20-v2",
+        "child_fingerprint": "child-or20-v2",
+        "aliases": [],
+        "tombstones": []
+      },
+      "reviewed_mapping": false,
+      "conflict_code": "ambiguous-identity",
+      "expected": {"decision": "reject", "code": "ambiguous-identity"}
+    },
+    {
+      "id": "reject-metadata-conflict",
+      "kind": "unresolved",
+      "before": {
+        "watershed_keys": ["nasa-roses-or-20"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-2026-sbs;;OR-20"],
+        "display_names": ["OR-20"],
+        "metadata_fingerprint": "meta-boundary-value",
+        "geometry_fingerprint": "geom-or20-v1",
+        "child_fingerprint": "child-or20-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "after": {
+        "watershed_keys": ["nasa-roses-or-20"],
+        "collection_keys": ["nasa-roses"],
+        "runids": ["batch;;nasa-roses-2026-sbs;;OR-20"],
+        "display_names": ["OR-20"],
+        "metadata_fingerprint": "meta-enrichment-conflict",
+        "geometry_fingerprint": "geom-or20-v1",
+        "child_fingerprint": "child-or20-v1",
+        "aliases": [],
+        "tombstones": []
+      },
+      "reviewed_mapping": false,
+      "conflict_code": "metadata-authority-conflict",
+      "expected": {"decision": "reject", "code": "metadata-authority-conflict"}
+    },
+    {
+      "id": "reject-tombstoned-key-reuse",
+      "kind": "unresolved",
+      "before": {
+        "watershed_keys": [],
+        "collection_keys": [],
+        "runids": [],
+        "display_names": [],
+        "metadata_fingerprint": "none",
+        "geometry_fingerprint": "none",
+        "child_fingerprint": "none",
+        "aliases": [],
+        "tombstones": ["mill-creek-old"]
+      },
+      "after": {
+        "watershed_keys": ["mill-creek-old"],
+        "collection_keys": ["mill-creek"],
+        "runids": ["new-source-run"],
+        "display_names": ["New Watershed"],
+        "metadata_fingerprint": "meta-new-v1",
+        "geometry_fingerprint": "geom-new-v1",
+        "child_fingerprint": "child-new-v1",
+        "aliases": [],
+        "tombstones": ["mill-creek-old"]
+      },
+      "reviewed_mapping": false,
+      "conflict_code": "tombstoned-key-reuse",
+      "expected": {"decision": "reject", "code": "tombstoned-key-reuse"}
+    }
+  ]
+}

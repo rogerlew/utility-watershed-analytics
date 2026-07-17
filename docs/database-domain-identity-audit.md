@@ -263,9 +263,9 @@ duplicate subcatchment and channel keys and issues no DDL or data-mutation query
 On `wepp3`, the same reviewed implementation passed against non-empty data with
 zero duplicate groups and zero orphans. Child business keys remain unconstrained.
 
-## DB07 inputs and blockers
+## DB07 inputs and resolution
 
-DB07 must resolve these questions using accepted data evidence:
+DB07 was required to resolve these questions using accepted data evidence:
 
 1. assign stable project-controlled watershed and collection keys independently
    of source `runid`;
@@ -281,5 +281,6 @@ DB07 must resolve these questions using accepted data evidence:
 
 The accepted production evidence is preserved in the DB06 work package. It
 supports the current-data observations above, not a promise that future loads
-remain clean. DB07 must still define stable identity and metadata authority;
-later schema work must add constraints only after that contract is accepted.
+remain clean. DB07 resolved the listed decisions in the
+[database identity and metadata authority contract](database-identity-metadata-contract.md).
+DB08 must encode that contract, while DB14 owns later database constraints.
