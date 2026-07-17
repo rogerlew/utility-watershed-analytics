@@ -6,6 +6,8 @@ Last updated: 2026-07-16
 
 Related documents:
 
+- [Forward roadmap](ROADMAP.md)
+- [Work-package governance and catalog](work-packages/README.md)
 - [Production database and data-source inventory](database-inventory.md)
 - [Independent review disposition](database-deployment-architecture-review.md)
 - [Deployment guide](../DEPLOYMENT.md)

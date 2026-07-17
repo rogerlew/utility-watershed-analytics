@@ -8,6 +8,9 @@ migration is not mistaken for the desired configuration.
 The proposed representation and deployment process for this inventory is
 specified in
 [Database Deployment Architecture and Tooling](database-deployment-architecture.md).
+Implementation order and bounded execution records are maintained in the
+[forward roadmap](ROADMAP.md) and
+[work-package catalog](work-packages/README.md).
 
 Last updated: 2026-07-16
 

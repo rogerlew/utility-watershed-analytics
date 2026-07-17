@@ -10,9 +10,13 @@ The key technologies include:
 * **Database**: PostgreSQL with [PostGIS](https://postgis.net/) enabled for spatial data.
 * **Tooling**: [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) for containerized services, with development containers ([devcontainers](https://code.visualstudio.com/docs/devcontainers/containers)) integrated into VS Code.
 
-The application is deployed on a managed virtual machine provided by the [University of Idaho’s Research Computing and Data Services (RCDS)](https://hpc.uidaho.edu/index.html), using Docker Compose and Caddy for secure reverse proxying. 
+The application is deployed on a managed virtual machine provided by the [University of Idaho’s Research Computing and Data Services (RCDS)](https://hpc.uidaho.edu/index.html), using Docker Compose and Caddy for secure reverse proxying.
 
 For more deployment information, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+Forward work is ordered in [docs/ROADMAP.md](./docs/ROADMAP.md), and bounded
+execution records follow the governance in
+[docs/work-packages/README.md](./docs/work-packages/README.md).
 
 The authoritative list of production watershed datasets, run migrations, and
 RHESSys availability is maintained in
