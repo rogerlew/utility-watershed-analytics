@@ -1,6 +1,6 @@
 # DB05 — Named PostgreSQL volume cutover
 
-Status: `EXECUTED-HOLD-PUBLISH`
+Status: `EXECUTED-COMPLETE`
 
 Date: 2026-07-16
 
@@ -14,8 +14,10 @@ production authority and confirmed passwordless sudo. This authorized the
 exact preflight, maintenance, backup, cutover, rollback/reapply, runtime
 convergence, reboot, post-backup/restore, and temporary-privilege removal in
 the authority plan. The user later separately authorized commit/push, producing
-agent-branch commit `2c6f426...`. Fork `main` fast-forward, production clean
-fast-forward, and source-volume deletion remain excluded.
+agent-branch commit `2c6f426...`. On 2026-07-17 the user then explicitly
+authorized the fork `main` fast-forward and completion of the publication
+hold. Fork `main` and the clean production checkout were fast-forwarded under
+that authority. Source-volume deletion remains excluded for DB05A.
 
 ## Objective
 
@@ -78,8 +80,7 @@ Excluded:
 - Starting branch or commit:
   `6f46aaf643374047e2b5251fd5c15167c9843c0e`
 - Working branch: `agent/database-backup-deployment-spec`
-- Push target: agent branch published at `2c6f426...`; fork `main` remains
-  separately authorized
+- Push target: agent branch and fork `main` published; no force push
 - Pull-request target: do not open a PR unless separately authorized
 - Authorized systems: repository, isolated `forest1` rehearsal resources,
   encrypted backup repository, and exact DB05 runtime/database/service/checkout
@@ -103,11 +104,12 @@ Excluded:
 - Post-cutover scheduled backup and isolated restore test.
 - Source stable reference and prune prohibition.
 
-Skipped gate and reason:
+Publication gate:
 
-- Fork `main` and final production fast-forward to the published DB05 commit
-  require separate authority. Production currently runs the exact reviewed
-  local Compose delta fail-closed from fork `main`.
+- Separate authority fast-forwarded fork `main`, preserved the obsolete
+  interim Compose file as protected evidence, cleanly fast-forwarded the
+  canonical production checkout under the exclusive lock, and independently
+  verified unchanged runtime and database identity.
 
 ## Exit criteria
 
@@ -171,6 +173,7 @@ authorizes deletion or an upgrade.
 | Production closeout | `wepp3` / external `forest1` | Ran | Named database is healthy with no 5432 publication; source holder remains stopped/prune-prohibited; 8000 is not published; public routes return 200; disposable resources/plaintext are absent; temporary passwordless sudo was removed. |
 | Final repository/evidence gates | `forest1` / read-only `wepp3` | Ran | Shell syntax, Compose render, lock/runtime tests, links, whitespace, literal-secret scan, local/production Compose SHA equality, ignored-log boundary, final public/identity/resource checks, and development health passed. ShellCheck remained unavailable. |
 | Agent-branch publication | repository / GitHub | Ran | Commit `2c6f426...` was pushed to `origin/agent/database-backup-deployment-spec` under separate authority; the remote ref matched exactly and no PR or workflow dispatch was requested. |
+| Fork and production publication | GitHub / `wepp3` | Ran | Fork `main` fast-forwarded without force to reviewed commit `d52aae4...`; under the exclusive lock, the exact local Compose delta was reconciled, obsolete `compose.db03.yml` was checksummed and preserved mode `0600`, and the checkout cleanly fast-forwarded. Exact named database/container/image/holder identity, unit/timers/runner, closed ports 5432/8000, and four public checks remained accepted without service restart or workflow dispatch. |
 
 ### Findings and deviations
 
@@ -198,17 +201,19 @@ authorizes deletion or an upgrade.
 - The canonical checkout was owned by historical account `brandon`; the first
   remote rename stopped before Git mutation. The checkout was then explicitly
   re-owned by `roger`, moved to fork `main`, and revalidated under the lock.
+- Publication preflight initially used an incorrect assumed database container
+  name and non-contract public domains, then stopped without mutation. Exact
+  Compose labels and the tracked Caddy contract resolved both checks before
+  the checkout fast-forward.
 
 ### Terminal disposition
 
-- Final status: `EXECUTED-HOLD-PUBLISH`
-- Exit criteria disposition: every rehearsal and production operational gate
-  passed and the agent branch is published; fork `main` and clean production
-  fast-forward remain
-- Blocker, if held: authority to fast-forward fork `main`
-- First follow-on action, if held: authorize fork `main` fast-forward, then
-  fast-forward the `wepp3` checkout and remove only obsolete `compose.db03.yml`
-  after exact target verification
+- Final status: `EXECUTED-COMPLETE`
+- Exit criteria disposition: every rehearsal, production, recovery, and
+  publication gate passed; fork `main` and the production checkout are cleanly
+  converged on the reviewed DB05 history
+- Blocker, if held: not applicable
+- First follow-on action, if held: not applicable
 - Successor package, if any: DB05A after rollback window and post-cutover
   restore acceptance
 

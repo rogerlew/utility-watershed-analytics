@@ -53,8 +53,8 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-No production mutation package is currently active. DB05 has completed its
-rehearsal and production operation and is held only for publication:
+No production mutation package is currently active. Wave 0 production-safety
+packages DB01 through DB05 are complete:
 
 - [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is
   `EXECUTED-COMPLETE` after permanent restricted transport, production
@@ -77,11 +77,12 @@ rehearsal and production operation and is held only for publication:
   database query, production Silk is disabled, and all isolated repository and
   production-image gates passed without production access.
 - [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
-  is `EXECUTED-HOLD-PUBLISH`. Its exact-image production anonymous-to-named
+  is `EXECUTED-COMPLETE`. Its exact-image production anonymous-to-named
   cutover, actual rollback/reapply, restart/recreation, reboot, fork checkout,
   encrypted pre/post backups, exact fingerprints, and isolated post-backup
-  restore all passed. Commit `2c6f426...` is published on the agent branch;
-  fork `main` and a clean production fast-forward remain separately authorized.
+  restore all passed. Fork `main` and the canonical production checkout were
+  cleanly fast-forwarded through the reviewed DB05 history; runtime identity
+  and public health remained exact without a service restart.
 - [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
   read-only command, tests, and development gates passed; the development domain

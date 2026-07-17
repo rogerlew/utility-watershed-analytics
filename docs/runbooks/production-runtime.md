@@ -1,10 +1,10 @@
 # Production Runtime Contract
 
-Status: DB05 named-volume runtime installed and reboot-verified; DB03A
-fork-owned deployment runner online and idle; repository publication pending
+Status: DB05 named-volume runtime installed, reboot-verified, and published;
+DB03A fork-owned deployment runner online and idle
 
-This contract defines the target production runtime without claiming it is
-currently installed. `forest1` is development. `wepp3` is production and must
+This contract documents the installed production target. `forest1` is
+development. `wepp3` is production and must
 not be inspected or changed without the operation-specific authority recorded
 in a work package.
 
@@ -12,9 +12,7 @@ in a work package.
 
 - Checkout: `/workdir/utility-watershed-analytics`
 - Compose project: `utility-watershed-analytics`
-- Interim installed Compose file:
-  `/workdir/utility-watershed-analytics/compose.db03.yml`
-- Final repository Compose target:
+- Repository Compose target:
   `/workdir/utility-watershed-analytics/compose.prod.yml`
 - Runtime environment: `/etc/utility-watershed-analytics/runtime.env`, owned by
   root, non-symlink, mode `0600`
@@ -30,9 +28,11 @@ The self-hosted Actions checkout is a build/dispatch workspace, not the
 canonical long-lived runtime. DB05 moved the canonical checkout to
 `rogerlew/utility-watershed-analytics:main`, installed the safe immutable DB05
 runtime bundle/unit, and reboot-verified the named database identity. The
-reviewed DB05 Compose delta is currently local to the checkout until separate
-publication authority; fail-closed identity checks prevent an old Compose file
-from silently replacing the database. Exact sanitized DB03 evidence is in
+reviewed DB05 history is published to fork `main` and the canonical checkout is
+cleanly fast-forwarded to it. The obsolete `compose.db03.yml` is no longer in
+the checkout; a checksummed mode-`0600` copy remains in protected DB05 evidence.
+Fail-closed identity checks prevent an old Compose file from silently replacing
+the database. Exact sanitized DB03 evidence is in
 [`wepp3-convergence-evidence.md`](../work-packages/20260716-db03-production-runtime-convergence/artifacts/wepp3-convergence-evidence.md).
 
 ## Target socket contract

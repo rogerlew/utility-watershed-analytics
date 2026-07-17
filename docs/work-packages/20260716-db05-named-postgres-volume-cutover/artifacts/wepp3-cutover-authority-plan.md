@@ -1,6 +1,6 @@
 # DB05 `wepp3` Production Authority Plan
 
-Status: `EXECUTED-HOLD-PUBLISH`
+Status: `EXECUTED-COMPLETE`
 
 Date: 2026-07-17
 
@@ -104,10 +104,12 @@ public-route failure, missed RTO, loss of the holder reference, or inability to
 reacquire the exact source. Keep maintenance active, preserve both volumes,
 record the state, and request a new decision from `roger`.
 
-## Publication hold
+## Publication closure
 
-Production execution is complete and reviewed commit `2c6f426...` is published
-on the agent branch. The next action requires explicit fork `main`
-fast-forward authority, followed by a clean fast-forward of the fork-owned
-production checkout. No source-volume deletion is authorized; that remains
-DB05A.
+The user separately authorized the fork `main` fast-forward and completion of
+the publication hold. Fork `main` advanced without force to reviewed commit
+`d52aae4...`. The fork-owned production checkout then fast-forwarded cleanly
+under the exclusive operations lock after its exact Compose delta was matched
+and its obsolete interim file was preserved as protected evidence. Independent
+identity, service, socket, and public-route checks passed without a restart.
+No source-volume deletion is authorized; that remains DB05A.

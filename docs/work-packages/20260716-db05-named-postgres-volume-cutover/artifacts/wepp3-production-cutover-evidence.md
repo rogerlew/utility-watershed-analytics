@@ -102,10 +102,17 @@ maximum RTO. The smoke reported 126 watersheds, 195,457 subcatchments, and
 - The database is healthy with zero restarts; exact identity assertion passes.
 - Public root and representative APIs return 200.
 - Temporary passwordless sudo was removed and no longer passes `sudo -n`.
-- At production closeout, commit/push were not authorized or performed.
-  Separate later authority published reviewed commit `2c6f426...` to the agent
-  branch. Production runs the same Compose delta from fork `main`; fork `main`
-  advancement and a clean production fast-forward are the remaining DB05 hold.
+- Separate publication authority first published the reviewed DB05 history to
+  fork `main` at `d52aae4...`, then reconciled the production checkout under
+  the exclusive operations lock without restarting a service.
+- The obsolete untracked `compose.db03.yml` was checksummed as
+  `ee2ef4d0...`, preserved mode `0600` in the protected DB05 evidence
+  directory, and removed only from the checkout. The tracked production
+  Compose SHA remained `78e05749...` across the fast-forward.
+- Independent verification found the checkout clean, exact database container
+  `f315e224...` healthy with zero restarts on the named volume, the anonymous
+  source held and prune-prohibited, unit/timers/runner active, no 5432/8000
+  listeners, and all four canonical root/API checks returning HTTP 200.
 
 Detailed administrative logging is retained outside Git at
 `docs/sys-administration/logs/20260717-1322-db05-wepp3-production-cutover.md`.
