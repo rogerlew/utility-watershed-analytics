@@ -7,7 +7,8 @@ pgadmin-servers.json
 caddy_data/
 
 # Local production systems-administration records
-docs/sys-administration/
+docs/sys-administration/*
+!docs/sys-administration/AGENTS.md
 
 # MacOS
 .DS_Store
