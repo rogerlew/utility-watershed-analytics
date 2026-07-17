@@ -83,10 +83,11 @@ packages DB01 through DB05 are complete:
   restore all passed. Fork `main` and the canonical production checkout were
   cleanly fast-forwarded through the reviewed DB05 history; runtime identity
   and public health remained exact without a service restart.
-- [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
-  `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
-  read-only command, tests, and development gates passed; the development domain
-  is empty and production read-only evidence remains unauthorized.
+- [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is
+  `EXECUTED-COMPLETE`: repository mapping and tests passed, and the separately
+  authorized aggregate-only production audit found 126 watersheds, 195,457
+  subcatchments, and 86,895 channels with zero duplicate groups or child
+  orphans and no production mutation.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -94,9 +95,10 @@ upstream-owned local runner remains disabled. No DB03A workflow was dispatched.
 The safe unit is enabled, server port 8000 is closed, the
 canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
-verified. The exact anonymous-volume database remains unchanged. Temporary
-sudo was removed. DB04 is repository-complete but not deployed to production.
-DB07 remains blocked until DB06 completes.
+verified. Production uses the DB05 named database volume while the exact
+anonymous source remains held and prune-prohibited. Temporary sudo was removed.
+DB04 is repository-complete but not deployed to production. DB07 is unblocked
+and is the next contract package.
 
 ## Execution environments and Wave 0 readiness
 

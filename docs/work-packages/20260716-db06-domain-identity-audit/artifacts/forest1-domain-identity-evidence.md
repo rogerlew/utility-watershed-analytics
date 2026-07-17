@@ -9,7 +9,7 @@ Starting revision:
 
 Evidence mode: Mixed
 
-Production access: none
+Production access during this evidence run: none
 
 ## Environment
 
@@ -117,7 +117,7 @@ Results:
 - production server image: built; and
 - full production-image Ruff check: passed.
 
-## Skipped and held evidence
+## Original skipped and held evidence
 
 - Production aggregate audit: not run; no production read-only authority.
 - Non-empty local source audit: not run; expired development tokens left the
@@ -127,5 +127,8 @@ Results:
 - Production uniqueness claim from the earlier architecture draft: not accepted;
   DB06 found no linked preserved command or report.
 
-DB06 must therefore terminate on `EXECUTED-HOLD-PRODUCTION-EVIDENCE` rather than
-claiming production counts, uniqueness, or dirty-data absence.
+At this stage DB06 correctly terminated on
+`EXECUTED-HOLD-PRODUCTION-EVIDENCE` rather than claiming production counts,
+uniqueness, or dirty-data absence. The later separately authorized aggregate
+production audit resolved that hold; its sanitized result is in
+[`wepp3-production-domain-identity-evidence.md`](wepp3-production-domain-identity-evidence.md).

@@ -1,6 +1,6 @@
 # DB06 — Domain ownership and identity audit
 
-Status: `EXECUTED-HOLD-PRODUCTION-EVIDENCE`
+Status: `EXECUTED-COMPLETE`
 
 Date: 2026-07-16
 
@@ -9,8 +9,10 @@ Roadmap item: `DB06`
 Evidence mode: Mixed
 
 Execution authorization: User-authorized scaffold and execution on 2026-07-16,
-limited to repository mutation and non-production read-only execution on
-`forest1`. Production access and mutation are not authorized.
+initially limited to repository mutation and non-production read-only execution
+on `forest1`. On 2026-07-17 the user separately authorized the aggregate-only
+DB06 audit on `wepp3` and publication of its sanitized results. No production
+mutation was authorized or performed.
 
 ## Objective
 
@@ -32,12 +34,14 @@ Included:
   output and tests for every proposed current business key;
 - execute static review, backend tests, and read-only queries against the
   development database on `forest1`;
+- execute the reviewed aggregate-only audit against the production database
+  under a shared lock and publish only its sanitized summary;
 - document ambiguities and production-data questions as blockers rather than
   selecting DB07 identities early.
 
 Excluded:
 
-- accessing or changing `wepp3`, its database, services, files, or credentials;
+- changing `wepp3`, its database, services, images, files, or credentials;
 - choosing `collection_key`, `watershed_key`, route migration, lineage, or
   metadata precedence decisions owned by DB07;
 - adding database constraints or migrations, changing loader behavior, or
@@ -67,8 +71,8 @@ Excluded:
   read-only query is Ran evidence within its named fixture/database boundary.
 - Empty development tables can prove query behavior and schema visibility but
   cannot prove production uniqueness, counts, or dirty-data absence.
-- Production facts remain unknown unless separately authorized read-only
-  evidence is later added; no SSH or remote database command is allowed here.
+- Production facts require separately authorized read-only evidence and remain
+  observations rather than future identity decisions or constraints.
 - Generated reports must be deterministic, secret-free, bounded, and contain
   counts/violations rather than row payloads.
 
@@ -86,13 +90,14 @@ Excluded:
   `agent/database-backup-deployment-spec` at
   `5931ca1058881a532678e053794f1509e4d40434`
 - Working branch: `agent/database-backup-deployment-spec`
-- Push target: do not push
+- Push target: publish the DB06 closure to the agent branch and fork `main`
 - Pull-request target: do not open a PR
 - Authorized systems: repository working tree, running development containers,
-  and disposable test databases on `forest1`
+  disposable test databases on `forest1`, and aggregate-only read access to the
+  existing `wepp3` database through its running server container
 - Mutation boundary: repository files plus disposable local reports/test data;
-  existing application data, unrelated containers, and host services must not
-  change
+  production application data, containers, images, services, and host state
+  must not change
 - Executor and review assignments: Codex authors and validates; the operator
   owns any later production read-only authorization and DB07 decisions
 
@@ -116,12 +121,10 @@ Applicable:
 - source review of client TypeScript consumers and loader Parquet joins;
 - compare migration constraints with model metadata and audit queries.
 
-Skipped gate and reason:
+Skipped gates and reasons:
 
 - client lint/build/tests: no client behavior is intended to change; client
   source is inspected as a compatibility consumer;
-- production row-count/uniqueness queries: production read-only access is not
-  authorized;
 - data-release gates: DB06 creates no release or data mutation.
 
 ## Exit criteria
@@ -169,8 +172,10 @@ Legitimate hold outcomes:
 
 ## Artifacts
 
-- `artifacts/forest1-domain-identity-evidence.md` — sanitized commands,
-  versions, counts, constraint/consumer review, and gate results.
+- `artifacts/forest1-domain-identity-evidence.md` — sanitized development
+  commands, versions, counts, constraint/consumer review, and gate results.
+- `artifacts/wepp3-production-domain-identity-evidence.md` — sanitized
+  production counts, violations, warnings, execution boundary, and post-check.
 
 Do not store secrets, environment files, database dumps, row payloads, or large
 source data in the package directory.
@@ -190,7 +195,8 @@ Fill this section during execution.
 | Targeted Ruff and `server.watershed.test_identity_audit` | development server container and disposable test database | Ran | Ruff passed; 4 tests passed, including duplicate detection and no DDL/DML assertion. |
 | `manage.py check`, migration drift, complete test suite | development server container and disposable test database | Ran | System check passed, no migration changes, 110 tests passed. |
 | Production image build and Ruff | `utility-watershed-analytics-server:db06` | Ran | Image `sha256:4ef239173320f1a59edc2d37e62f0ceda5821af106377efe0df50a010e294250` built; Ruff passed. |
-| Production row counts and identity audit | `wepp3` | Static | Not run; production read-only access was not authorized. |
+| Production row counts and identity audit | `wepp3` | Ran | Exact reviewed source ran in memory under the shared lock and an explicit read-only transaction. The 126 watersheds, 195,457 subcatchments, and 86,895 channels had zero duplicate business-key groups/rows and zero child orphans; report boundary and secret scans passed. |
+| Production post-check | `wepp3` | Ran | Checkout, exact database/container/volume, server container, zero restart counts, absent streamed files, and four public routes remained accepted without deployment or restart. |
 
 ### Findings and deviations
 
@@ -202,28 +208,23 @@ Fill this section during execution.
 - `runid` is simultaneously source revision, database PK, API/route identity,
   child FK, client route/cache key, and upstream capability path.
 - Subcatchment and channel business keys are not database-enforced. Tests prove
-  the audit detects collisions, but the empty development database cannot prove
-  production uniqueness.
+  the audit detects collisions; the accepted current production data contains
+  zero audited collisions and zero child orphans, but still lacks constraints.
 - Parquet enrichment joins only on `topazid` within `runid`; duplicate Parquet
   rows are not explicitly rejected by the current loader.
-- An earlier architecture sentence claimed a production duplicate audit without
-  linked evidence. DB06 corrected the architecture to leave production
-  uniqueness unverified.
+- The running production image predates the DB06 command. Streaming the exact
+  reviewed audit source into Django over stdin avoided a build, deployment,
+  container filesystem change, or service restart.
 
 ### Terminal disposition
 
-- Final status: `EXECUTED-HOLD-PRODUCTION-EVIDENCE`
-- Exit criteria disposition: ownership, identity, deletion, join, signature, and
-  compatibility mapping is complete; deterministic read-only proof tooling and
-  repository gates pass. Accepted current-dataset row counts, uniqueness, and
-  dirty-data evidence are unmet.
-- Blocker, if held: the authorized development database has zero domain rows and
-  production read-only access was not authorized.
-- First follow-on action, if held: authorize the aggregate-only
-  `audit_domain_identity --fail-on-violations` command against `wepp3` and
-  preserve its secret-free report summary.
-- Successor package, if any: DB07 remains blocked until DB06's accepted
-  non-empty current-data evidence is attached and this package completes.
+- Final status: `EXECUTED-COMPLETE`
+- Exit criteria disposition: ownership, identity, deletion, join, signature,
+  compatibility mapping, deterministic tooling, repository gates, and accepted
+  non-empty production counts/uniqueness/orphan evidence all pass.
+- Blocker, if held: not applicable.
+- First follow-on action, if held: not applicable.
+- Successor package, if any: DB07 is unblocked.
 
 ## Closeout checklist
 

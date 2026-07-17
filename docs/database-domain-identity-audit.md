@@ -1,6 +1,6 @@
 # Database Domain and Identity Audit
 
-Status: DB06 repository audit; production row evidence pending
+Status: DB06 complete with accepted aggregate production evidence
 
 Date: 2026-07-16
 
@@ -18,12 +18,16 @@ The audit combines:
 - Ran tests of the aggregate read-only identity audit against disposable
   PostGIS test databases; and
 - Ran aggregate read-only queries against the development database on
-  `forest1`.
+  `forest1`; and
+- Ran the reviewed aggregate-only audit against `wepp3` under separate
+  read-only authority.
 
-No production host, database, file, service, or credential was accessed. The
-development watershed-domain tables are empty because the configured external
-tokens expired before seeding. Development counts therefore prove the command
-and schema boundary, not production uniqueness or dirty-data absence.
+The development watershed-domain tables are empty because the configured
+external tokens expired before seeding. Development counts therefore prove the
+command and schema boundary only. The later production audit observed 126
+watersheds, 195,457 subcatchments, and 86,895 channels with zero duplicate
+business-key groups/rows and zero child orphans. It selected no row values or
+credentials and made no production change.
 
 ## Table ownership and lifecycle
 
@@ -256,6 +260,8 @@ On `forest1`, the command passed with zero rows and zero duplicate/orphan groups
 while correctly warning that child keys are not database-enforced and empty
 tables cannot establish clean production data. Tests prove the command detects
 duplicate subcatchment and channel keys and issues no DDL or data-mutation query.
+On `wepp3`, the same reviewed implementation passed against non-empty data with
+zero duplicate groups and zero orphans. Child business keys remain unconstrained.
 
 ## DB07 inputs and blockers
 
@@ -273,12 +279,7 @@ DB07 must resolve these questions using accepted data evidence:
    only run-scoped business properties; and
 6. reconcile actual API response schemas with client types.
 
-An earlier architecture draft states that a 2026-07-16 production query found
-no duplicate subcatchment Topaz IDs, but DB06 found no linked, preserved command
-or report supporting that statement. This package did not have production
-authority. The claim remains unverified and is not completion evidence.
-
-The bounded follow-on is to run the aggregate command against `wepp3` under
-explicit read-only authority and preserve only its secret-free JSON/report
-summary. Until then, DB06 must not assert production row counts, uniqueness, or
-dirty-data absence.
+The accepted production evidence is preserved in the DB06 work package. It
+supports the current-data observations above, not a promise that future loads
+remain clean. DB07 must still define stable identity and metadata authority;
+later schema work must add constraints only after that contract is accepted.
