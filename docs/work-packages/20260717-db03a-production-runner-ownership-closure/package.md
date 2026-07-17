@@ -1,6 +1,6 @@
 # DB03A — Production runner ownership closure
 
-Status: `EXECUTED-HOLD-PRIVILEGE`
+Status: `EXECUTED-COMPLETE`
 
 Date: 2026-07-17
 
@@ -170,25 +170,37 @@ Legitimate holds:
 | Closure preflight | `forest1` / GitHub | Ran | Fork admin and Actions enabled; `main` fast-forwards to `3478b6d`; no fork secrets, runners, queued/in-progress runs, or branch protection observed. |
 | Governed scaffold and safe `main` publication | repository / GitHub | Ran | Scaffold commit `485c275...` pushed to the agent branch and fast-forwarded fork `main` from `28095c7...`; exact safe deploy workflow hash matches and all three workflows are active. No run was created or queued. |
 | Runner/repository/production preflight | GitHub / `wepp3` | Ran, read-only | Official runner v2.335.1 asset advertises SHA-256 `4ef2f252...`; fork still has zero secrets/runners/runs. Old runner is disabled/inactive, new path absent, safe runtime/timers/health and exact database identity match. `sudo -n` is unavailable, so execution stopped before secret or runner mutation. |
+| Privilege resume and protected secret delivery | GitHub / `wepp3` | Ran | Temporary validated sudo restored; fresh no-run and production invariants passed. The protected runtime was piped directly to the fork's `PRODUCTION_ENV` secret; only the secret name was observed. |
+| Verified runner install and registration | GitHub / `wepp3` | Ran | Runner v2.335.1 archive matched official SHA-256 `4ef2f252...`, then registered only to the fork as `wepp3` with `deploy`. No service was started until a second no-runs gate passed. |
+| Service and GitHub closure | GitHub / `wepp3` | Ran | New service is enabled/active as `gha`, inherited `uwa-operators`, and GitHub reports online/idle with exact labels. Old upstream service remains disabled/inactive; no job was dispatched. |
+| Final runtime and privilege closeout | `wepp3` | Ran, read-only except privilege removal | Exact database container/image/volume and healthy state match DB03; runtime unit/timers are active, port 8000 is closed, and root/API/admin smoke return 200. Temporary passwordless sudo was removed and sudoers revalidated. |
 
 ### Findings and deviations
 
 - GitHub did not list workflows immediately after the first `main` publication
   read, then listed all three active workflows after repository processing;
   no push-triggered run was created.
-- Required temporary noninteractive privilege is absent. No fork secret,
-  runner registration, production file, or service was changed.
+- The initial runner preflight lacked required temporary noninteractive
+  privilege. That attempt changed no fork secret, runner registration,
+  production file, or service.
+- The operator restored temporary validated privilege and the package resumed
+  from fresh invariants. The earlier hold caused no partial remote resource.
+- The first checksum read ran as `roger` and was denied by the protected runner
+  directory. Repeating the checksum as directory owner `gha` passed without
+  changing permissions.
+- The fork runner was registered and started without a checkout or workflow
+  dispatch. Exact GitHub, service, and production evidence is sanitized in
+  `artifacts/wepp3-fork-runner-closure-evidence.md`.
 
 ### Terminal disposition
 
-- Final status: `EXECUTED-HOLD-PRIVILEGE`
-- Exit criteria disposition: safe fork `main` publication passed; protected
-  secret delivery and runner installation/registration remain unexecuted
-- Blocker, if held: `roger` lacks noninteractive sudo required to read the
-  protected runtime through a non-logging pipe and install the new runner/service
-- First follow-on action, if held: temporarily restore validated passwordless
-  sudo for `roger`, then resume from a fresh no-runs/runtime invariant check
-- Successor package, if any: DB04/DB05 after DB03A completes
+- Final status: `EXECUTED-COMPLETE`
+- Exit criteria disposition: all repository, secret-name, release digest,
+  runner, service, label, no-dispatch, unchanged-runtime, and privilege-removal
+  gates passed
+- Blocker, if held: none
+- First follow-on action, if held: not applicable
+- Successor package, if any: DB04; DB05 follows DB04
 
 ## Closeout checklist
 

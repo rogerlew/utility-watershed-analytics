@@ -8,7 +8,8 @@ Roadmap item: `DB05`
 
 Evidence mode: Mixed
 
-Execution authorization: Not authorized. DB01, DB03, and DB04 are incomplete.
+Execution authorization: Not authorized. DB01 and DB03/DB03A are complete;
+DB04, rehearsal, and production cutover authority remain outstanding.
 
 ## Objective
 
@@ -40,7 +41,8 @@ Excluded:
 
 ## Authority and inputs
 
-- Dependencies: DB01, DB03, and DB04 `EXECUTED-COMPLETE`.
+- Dependencies: DB01, DB03 host convergence plus DB03A closure, and DB04
+  `EXECUTED-COMPLETE`.
 - Governing files: Wave 0 DB05, architecture sections 19.1/19.4, database
   backup/restore runbook, production runtime runbook, and DB03 identity record.
 - Frozen inputs: exact source identities, fresh snapshot ID/hash/age, accepted
@@ -134,7 +136,7 @@ authorizes deletion or an upgrade.
 
 | Command or review | Environment | Evidence | Result |
 | --- | --- | --- | --- |
-| Scaffold review | repository only | Static | Blocked on DB01, DB03, DB04, and authority. |
+| Scaffold review | repository only | Static | DB01 and DB03/DB03A complete; blocked on DB04, rehearsal, and authority. |
 
 ### Findings and deviations
 
@@ -144,7 +146,7 @@ authorizes deletion or an upgrade.
 
 - Final status: pending dependencies and authorization
 - Exit criteria disposition: not executed
-- Blocker, if held: DB01/DB03/DB04 incomplete; no rehearsal or production authority
+- Blocker, if held: DB04 incomplete; no rehearsal or production authority
 - First follow-on action, if held: complete dependencies and authorize a
   production-shaped cutover/rollback rehearsal
 - Successor package, if any: DB05A after rollback window and post-cutover

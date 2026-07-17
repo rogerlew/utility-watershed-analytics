@@ -1,7 +1,7 @@
 # Production Runtime Contract
 
-Status: DB03 interim runtime installed; self-hosted deployment runner paused
-until the safe workflow is committed and pushed
+Status: DB03 interim runtime installed; DB03A fork-owned deployment runner
+online and idle
 
 This contract defines the target production runtime without claiming it is
 currently installed. `forest1` is development. `wepp3` is production and must
@@ -174,11 +174,15 @@ when the migration plan requires it, reviewed migration compatibility, current
 base identity, and package-specific authority. The server entrypoint may keep
 `migrate` as a safety check, but it is not the deployment's migration evidence.
 
-The production runner is intentionally disabled because its current `main`
-checkout still contains the old workflow that bypasses this lock and can
-re-expose port 8000. Do not reenable it until the safe workflow and runtime
-helpers are committed and pushed to the intended branch, the runner checkout
-is verified, and a bounded enable/start check is authorized.
+DB03A published the safe workflow to
+`rogerlew/utility-watershed-analytics:main` and registered the separate
+`/workdir/actions-runner-rogerlew` installation to that fork. Service
+`actions.runner.rogerlew-utility-watershed-analytics.wepp3.service` is enabled
+and active as `gha` with label `deploy`; GitHub reported it online and idle at
+closure. The old `brandonxu360`-owned local runner service remains disabled and
+inactive. Do not start or repoint the old installation. Ordinary runner
+availability does not authorize a production deployment; each dispatch still
+requires its own reviewed package and production authority.
 
 ## Interim adoption and rollback
 

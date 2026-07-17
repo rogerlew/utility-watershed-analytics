@@ -53,7 +53,8 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-DB03A is the active closure package for DB03's publication hold:
+No production package is currently active. DB04 is the next bounded repository
+wave and remains scaffolded, not authorized:
 
 - [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is
   `EXECUTED-COMPLETE` after permanent restricted transport, production
@@ -64,36 +65,30 @@ DB03A is the active closure package for DB03's publication hold:
   `EXECUTED-COMPLETE` after the fail-closed target runtime, isolated gates,
   exact production identity freeze, current reachability matrix, and DB03
   adoption boundary passed without production mutation.
-- [DB03](work-packages/20260716-db03-production-runtime-convergence/package.md),
-  [DB04](work-packages/20260716-db04-legacy-loader-guardrails/package.md), and
-  [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
-  remain forward work. DB03's host runtime is converged but its runner is
-  intentionally disabled pending safe publication; DB04/DB05 are scaffolded
-  and not authorized. DB04's dependency is met; DB05 still depends on completed
-  DB03 and DB04.
+- [DB03](work-packages/20260716-db03-production-runtime-convergence/package.md)
+  completed host convergence; its historical publication hold is resolved by
+  DB03A. [DB04](work-packages/20260716-db04-legacy-loader-guardrails/package.md)
+  and [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
+  remain scaffolded and not authorized. DB04's dependency is met; DB05 still
+  depends on completed DB04 and separate cutover authority.
 - [DB03A](work-packages/20260717-db03a-production-runner-ownership-closure/package.md)
-  is `EXECUTED-HOLD-PRIVILEGE`: the fork's safe `main` publication passed with
-  no queued run, but protected secret delivery and new runner installation
-  stopped before mutation because `roger` lacks noninteractive sudo.
+  is `EXECUTED-COMPLETE`: fork `main`, protected secret delivery, verified
+  runner installation, online/idle state, old-runner disablement, unchanged
+  production, and temporary-privilege removal passed without job dispatch.
 - [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
   read-only command, tests, and development gates passed; the development domain
   is empty and production read-only evidence remains unauthorized.
 
-The reviewed DB02/DB03 changes are published on
-`origin/agent/database-backup-deployment-spec`. DB03A owns the authorized
-fast-forward into the fork's `main`, exact workflow/secret/runner verification,
-and bounded fork-owned runner enablement. Its next action is to temporarily
-restore validated passwordless sudo and resume from fresh invariants. The safe
-unit is enabled, server port 8000 is closed, the
+The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
+fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
+upstream-owned local runner remains disabled. No DB03A workflow was dispatched.
+The safe unit is enabled, server port 8000 is closed, the
 canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
-verified. The exact anonymous-volume database remains unchanged. The old
-remote `main` workflow bypasses the lock, so the idle runner is disabled; do
-not reenable it until the safe workflow is published and verified. Temporary
-sudo was removed. DB04 may run repository implementation independently, but
-production deployment follows completed DB03. DB07 remains blocked until DB06
-completes.
+verified. The exact anonymous-volume database remains unchanged. Temporary
+sudo was removed. DB04 may proceed under separate repository execution
+authority. DB07 remains blocked until DB06 completes.
 
 ## Execution environments and Wave 0 readiness
 
@@ -250,7 +245,7 @@ Suggested slug: `db03a-production-runner-ownership-closure`
 
 Suggested slug: `db04-legacy-loader-guardrails`
 
-- **Depends on:** DB02; production deployment follows DB03.
+- **Depends on:** DB02; production deployment follows completed DB03/DB03A.
 - **Deliver:** prohibit destructive legacy loader modes in production,
   especially `load_watershed_data --force` and `--force --runids`; make unsafe
   combinations fail closed; establish Silk retention or disable unnecessary
@@ -264,7 +259,7 @@ Suggested slug: `db04-legacy-loader-guardrails`
 
 Suggested slug: `db05-named-postgres-volume-cutover`
 
-- **Depends on:** DB01, DB03, DB04.
+- **Depends on:** DB01, completed DB03/DB03A, and DB04.
 - **Deliver:** enter maintenance mode and prove write quiescence; record exact
   container, image, and source-volume IDs; create and verify a fresh encrypted
   off-host backup; migrate the anonymous production volume to the named volume

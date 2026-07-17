@@ -215,6 +215,13 @@ Legitimate holds:
 - Successor package: DB03A production runner ownership closure; DB05 follows
   DB04 after DB03A completes
 
+## Successor closure
+
+DB03A reached `EXECUTED-COMPLETE` on 2026-07-17. The safe workflow is on the
+fork's `main`, the new fork-owned `wepp3` runner is online and idle, and the old
+upstream-owned local runner remains disabled. This resolves DB03's historical
+publication hold without rewriting its terminal execution record.
+
 ## Closeout checklist
 
 - [x] Package status and evidence mode are accurate.
