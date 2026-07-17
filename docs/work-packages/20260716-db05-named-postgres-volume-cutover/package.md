@@ -1,6 +1,6 @@
 # DB05 — Named PostgreSQL volume cutover
 
-Status: `SCAFFOLDED`
+Status: `EXECUTED-HOLD-PUBLISH`
 
 Date: 2026-07-16
 
@@ -8,8 +8,12 @@ Roadmap item: `DB05`
 
 Evidence mode: Mixed
 
-Execution authorization: Not authorized. DB01 through DB04 dependencies are
-complete; rehearsal and production cutover authority remain outstanding.
+Execution authorization: The user first authorized the bounded `forest1`
+rehearsal, then on 2026-07-17 explicitly granted the reviewed `wepp3`
+production authority and confirmed passwordless sudo. This authorized the
+exact preflight, maintenance, backup, cutover, rollback/reapply, runtime
+convergence, reboot, post-backup/restore, and temporary-privilege removal in
+the authority plan. Commit, push, and source-volume deletion remain excluded.
 
 ## Objective
 
@@ -48,7 +52,7 @@ Excluded:
 - Frozen inputs: exact source identities, fresh snapshot ID/hash/age, accepted
   target name, pinned image, maintenance route, RTO, capacity/WAL margin,
   rollback window, operator/approver, and commands.
-- Starting revision: freeze at authorization review.
+- Starting revision: `6f46aaf643374047e2b5251fd5c15167c9843c0e`.
 
 ## Assumptions and decisions
 
@@ -69,15 +73,19 @@ Excluded:
 ## Execution and dispatch
 
 - Repository: `/workdir/utility-watershed-analytics`
-- Starting branch or commit: freeze after dependencies complete
-- Working branch: assign at authorization review
+- Starting branch or commit:
+  `6f46aaf643374047e2b5251fd5c15167c9843c0e`
+- Working branch: `agent/database-backup-deployment-spec`
 - Push target: do not push unless separately authorized
 - Pull-request target: do not open a PR unless separately authorized
-- Authorized systems: none until separate rehearsal and production approvals
-- Mutation boundary: exact named target and reviewed application/unit switch;
-  source volume is read/hold/rollback only and may not be deleted
-- Executor and review assignments: named operator, independent approver,
-  rollback operator, and recovery owner required
+- Authorized systems: repository, isolated `forest1` rehearsal resources,
+  encrypted backup repository, and exact DB05 runtime/database/service/checkout
+  boundaries on `wepp3`
+- Mutation boundary: reviewed maintenance route, fresh backups, exact source
+  holder, named target, canonical Compose/unit/identity, reboot, and fork-owned
+  checkout convergence; no source deletion, pruning, data reload, or upgrade
+- Executor/reviewer/rollback owner: Codex executes and records; `roger` owns
+  the single-operator authorization and recovery decision
 
 ## Gates
 
@@ -94,7 +102,9 @@ Excluded:
 
 Skipped gate and reason:
 
-- All execution: dependencies and authority are absent.
+- Commit/push and final production fast-forward to the resulting DB05 commit
+  require separate publication authority. Production currently runs the exact
+  reviewed local Compose delta fail-closed from fork `main`.
 
 ## Exit criteria
 
@@ -109,6 +119,11 @@ Legitimate holds:
 - `EXECUTED-HOLD-RTO-MISSED`: drill/cutover exceeds accepted RTO.
 - `EXECUTED-HOLD-IDENTITY`: source or target identity differs.
 - `EXECUTED-HOLD-ROLLBACK`: rollback cannot be exercised exactly.
+- `EXECUTED-HOLD-PRODUCTION-AUTHORITY`: the rehearsal passed but production
+  access and mutation are not authorized.
+- `EXECUTED-HOLD-PUBLISH`: production gates passed but the reviewed repository
+  delta is not yet committed/pushed and the production checkout cannot be
+  cleanly fast-forwarded to it.
 
 Each hold preserves both volumes and records one concrete next action. No hold
 authorizes deletion or an upgrade.
@@ -136,19 +151,59 @@ authorizes deletion or an upgrade.
 
 | Command or review | Environment | Evidence | Result |
 | --- | --- | --- | --- |
-| Scaffold review | repository only | Static | DB01 through DB04 dependencies complete; blocked on rehearsal and authority. |
+| Authority and boundary freeze | repository / `forest1` | Static | Starting commit, exact source snapshot/image, 24-hour maximum RTO, protected rehearsal root, task resource prefix, and no-production boundary recorded. |
+| Production-shaped source restore | isolated `forest1` | Ran | Snapshot `4361efe3...` restored into an anonymous volume with exact PostgreSQL 17.5/PostGIS 3.5.2 schema, inventories, and table fingerprints in 338 seconds. |
+| Maintenance and quiescence | isolated `forest1` | Ran | Internal-only Caddy returned HTTP 503; a bounded observation interval proved zero writers and unchanged inventory. |
+| Named-volume cutover and rollback | isolated `forest1` | Ran | Fresh encrypted pre-backup `709abac7...`; named target restore in 358 seconds; cutover 370 seconds, actual source rollback 5 seconds, and target reapply 4 seconds. |
+| Persistence and data equality | isolated `forest1` | Ran | Restart and container recreation preserved the named target; pre/post table fingerprints were exact. |
+| Post-cutover recovery | isolated `forest1` | Ran | Encrypted post-backup `d90d213e...` restored into a second isolated target in 385 seconds; exact comparisons and production-mode Django/API smoke passed. |
+| Cleanup and production hold | `forest1` / repository | Ran / Static | Disposable containers, networks, volumes, and plaintext were removed; development remained healthy; `wepp3`, reboot, GitHub, commit, and push were not accessed or executed. |
+| Repository closeout gates | `forest1` | Ran | Shell syntax, production Compose render, lock/runtime tests, relative Markdown links, diff whitespace, literal-secret scan, executable modes, ignored-log boundary, and independent Docker cleanup checks passed. ShellCheck was unavailable. |
+| Production identity/capacity preflight | `wepp3` | Ran, read-only | Historical container `d2f0c406...`, image `612b68f8...`, anonymous volume `be7d3b8f...`, versions, health, zero restarts/writers, 580 GiB free, timers, public API, runner, sudo, and exclusive lock matched. |
+| Maintenance, quiescence, and pre-backup | `wepp3` / external `forest1` | Ran | Both public domains and representative API returned HTTPS 503; Django stopped; bounded inventory remained exact; 1,212,820,636-byte backup `47e0f0b...` published as encrypted snapshot `cc7236b3...`. |
+| Production named-target restore | isolated `wepp3` | Ran | Exact-image restore completed in 388 seconds with verified roles subset, extensions, migrations, sequences, schema, and every table fingerprint. Rehearsal-tested smoke image passed production-mode API checks. |
+| Production cutover/rollback/reapply | `wepp3` | Ran | Named cutover 4 seconds, actual anonymous-source rollback 6 seconds, and target reapply 5 seconds passed. Restart, Compose recreation, exact final inventory, and public recovery passed. |
+| Runtime/checkout/reboot convergence | `wepp3` | Ran | Safe immutable DB05 bundle/unit and protected named identity installed; checkout ownership moved to `roger`, origin to the fork, branch to `main`; reboot changed boot ID and preserved exact database/container/volume, source holder, services, timers, runner, sockets, and lock. |
+| Post-cutover recovery | `wepp3` / isolated `forest1` | Ran | 1,212,259,187-byte backup `da89c44f...` published as snapshot `cb9284c0...`; global-newest restore, exact comparisons, and production-mode smoke passed in 386 seconds. |
+| Production closeout | `wepp3` / external `forest1` | Ran | Named database is healthy with no 5432 publication; source holder remains stopped/prune-prohibited; 8000 is not published; public routes return 200; disposable resources/plaintext are absent; temporary passwordless sudo was removed. |
+| Final repository/evidence gates | `forest1` / read-only `wepp3` | Ran | Shell syntax, Compose render, lock/runtime tests, links, whitespace, literal-secret scan, local/production Compose SHA equality, ignored-log boundary, final public/identity/resource checks, and development health passed. ShellCheck remained unavailable. |
 
 ### Findings and deviations
 
-- None; execution has not started.
+- Four fail-closed attempts exposed and corrected an empty Docker port-binding
+  representation, the two-line `restore_smoke` output contract, restored-target
+  database selection, and test-mode Silk self-writes. Every failed attempt
+  removed its disposable resources before the next attempt.
+- The reusable restore smoke now uses the production environment contract and
+  validates its final JSON report. Backup defaults remain unchanged, while
+  explicit database/user overrides support an isolated restored target.
+- The successful run retained only its mode-`0700` encrypted repository and
+  sanitized evidence. No production observation was refreshed, so prior DB03
+  identities are historical inputs and must match a fresh production freeze.
+- Production preflight found two stale rehearsal-time restic locks. Their
+  recorded process was absent; `restic unlock` removed only the locks and the
+  repository subset check then passed without snapshot/data pruning.
+- The historical serving image predates `restore_smoke`. The production
+  harness stopped after the target's exact database comparison and before
+  source/checkout mutation; the exact rehearsal-tested smoke-only image was
+  streamed to `wepp3`, verified by image ID, and the harness resumed from the
+  retained target.
+- The enabled unit acquired the operations lock late in boot after Docker and
+  initially appeared inactive; it completed successfully at 14:14:20. A
+  transient 502 during Gunicorn startup also cleared inside bounded readiness.
+- The canonical checkout was owned by historical account `brandon`; the first
+  remote rename stopped before Git mutation. The checkout was then explicitly
+  re-owned by `roger`, moved to fork `main`, and revalidated under the lock.
 
 ### Terminal disposition
 
-- Final status: pending dependencies and authorization
-- Exit criteria disposition: not executed
-- Blocker, if held: no accepted rehearsal or production authority
-- First follow-on action, if held: complete dependencies and authorize a
-  production-shaped cutover/rollback rehearsal
+- Final status: `EXECUTED-HOLD-PUBLISH`
+- Exit criteria disposition: every rehearsal and production operational gate
+  passed; repository publication and clean production fast-forward remain
+- Blocker, if held: commit/push authority for the reviewed DB05 delta
+- First follow-on action, if held: commit and push this branch, fast-forward
+  fork `main`, then fast-forward the `wepp3` checkout and remove only obsolete
+  `compose.db03.yml` after exact target verification
 - Successor package, if any: DB05A after rollback window and post-cutover
   restore acceptance
 
@@ -157,7 +212,7 @@ authorizes deletion or an upgrade.
 - [x] Package status and evidence mode are accurate.
 - [x] Applicable gates and skipped-gate reasons are recorded.
 - [x] Artifacts contain no secrets or prohibited large data.
-- [ ] Durable findings are reflected in authoritative docs.
+- [x] Durable findings are reflected in authoritative docs.
 - [x] Work-package catalog is updated.
 - [x] Forward roadmap is reconciled.
 - [x] Commit, push, and PR actions match the recorded authorization.

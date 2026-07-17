@@ -53,9 +53,8 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-No production package is currently active. DB04 repository execution is
-complete. DB05 is the next Wave 0 package, but remains scaffolded and requires
-a production-shaped rehearsal plus explicit production authority:
+No production mutation package is currently active. DB05 has completed its
+rehearsal and production operation and is held only for publication:
 
 - [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is
   `EXECUTED-COMPLETE` after permanent restricted transport, production
@@ -78,8 +77,11 @@ a production-shaped rehearsal plus explicit production authority:
   database query, production Silk is disabled, and all isolated repository and
   production-image gates passed without production access.
 - [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
-  remains scaffolded and unauthorized. Its package dependencies are complete;
-  rehearsal, exact cutover inputs, and production authority remain outstanding.
+  is `EXECUTED-HOLD-PUBLISH`. Its exact-image production anonymous-to-named
+  cutover, actual rollback/reapply, restart/recreation, reboot, fork checkout,
+  encrypted pre/post backups, exact fingerprints, and isolated post-backup
+  restore all passed. The reviewed running Compose delta still needs separate
+  commit/push authority and a clean production fast-forward.
 - [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
   read-only command, tests, and development gates passed; the development domain

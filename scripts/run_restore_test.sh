@@ -69,7 +69,7 @@ fi
 [[ "$result_file" != *$'\n'* ]] || die "Restore-test result path must not contain a newline"
 
 for command in awk basename chmod date dirname docker grep install mktemp mv \
-    openssl python3 rm sed seq shred sleep tr; do
+    openssl python3 rm sed seq shred sleep tail tr; do
     command -v "$command" >/dev/null 2>&1 || die "Required command not found: $command"
 done
 [[ -x "$restic_bin" ]] || die "Restic executable is unavailable: $restic_bin"
@@ -88,6 +88,7 @@ snapshot_file="$runtime_dir/snapshot.json"
 postgres_env="$runtime_dir/postgres.env"
 application_env="$runtime_dir/application.env"
 database_result="$runtime_dir/database-result"
+application_raw="$runtime_dir/application-raw"
 application_result="$runtime_dir/application-result.json"
 target_suffix="$(date -u +'%Y%m%d%H%M%S')-$$"
 target_container="uwa-restore-$target_suffix"
@@ -190,7 +191,7 @@ restore_bootstrap_database="${restore_user}_bootstrap"
     printf 'POSTGRES_DB=%s\n' "$source_database"
     printf 'DJANGO_SECRET_KEY=%s\n' "$(openssl rand -base64 48 | tr -d '\n')"
     printf 'DEBUG=False\n'
-    printf 'APP_ENVIRONMENT=restore-test\n'
+    printf 'APP_ENVIRONMENT=production\n'
 } >"$application_env"
 chmod 600 "$postgres_env" "$application_env"
 
@@ -239,8 +240,21 @@ if [[ "$allow_empty" == "true" ]]; then
 fi
 
 log INFO "Running restored Django database and API smoke checks"
-docker "${server_arguments[@]}" >"$application_result" \
+docker "${server_arguments[@]}" >"$application_raw" \
     || die "Restored Django smoke checks failed"
+tail -n 1 "$application_raw" >"$application_result"
+python3 - "$application_result" <<'PY' \
+    || die "Restored Django smoke report is invalid"
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as report_stream:
+    report = json.load(report_stream)
+if report.get("database_connectivity") != "passed":
+    raise SystemExit("database connectivity did not pass")
+if report.get("watershed_count", 0) <= 0:
+    raise SystemExit("restored database is not production-shaped")
+PY
 
 restore_duration_seconds=$((SECONDS - restore_started_seconds))
 if ((restore_duration_seconds > maximum_rto_seconds)); then

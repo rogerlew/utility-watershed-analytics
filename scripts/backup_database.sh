@@ -15,6 +15,8 @@ output_dir="${BACKUP_OUTPUT_DIR:-$DEFAULT_OUTPUT_DIR}"
 space_margin_bytes="${BACKUP_SPACE_MARGIN_BYTES:-$DEFAULT_SPACE_MARGIN_BYTES}"
 lock_wait_timeout="${BACKUP_LOCK_WAIT_TIMEOUT:-$DEFAULT_LOCK_WAIT_TIMEOUT}"
 result_file="${BACKUP_RESULT_FILE:-}"
+database_name_override="${BACKUP_DATABASE_NAME:-}"
+database_user_override="${BACKUP_DATABASE_USER:-}"
 
 usage() {
     cat <<EOF
@@ -36,6 +38,8 @@ Environment overrides:
   BACKUP_LOCK_WAIT_TIMEOUT    Maximum wait for a pg_dump table lock (default: 60s)
   BACKUP_LOCK_FILE            Single-backup advisory lock file
   BACKUP_RESULT_FILE          Optional mode-0600 result file written atomically
+  BACKUP_DATABASE_NAME        Explicit database for restored-target backups
+  BACKUP_DATABASE_USER        Explicit local-socket user for restored-target backups
 
 The script never deletes previous backup sets. A completed set contains the
 archive, globals, schema, secret-free comparison inventories, checksums,
@@ -109,14 +113,25 @@ docker exec "$container" sh -ceu '
     pg_isready -q --username "${POSTGRES_USER:?}" --dbname "${POSTGRES_DB:?}"
 ' || die "PostgreSQL backup tools or database readiness check failed"
 
-database_name="$(
-    docker exec "$container" sh -ceu 'printf "%s" "${POSTGRES_DB:?}"'
-)"
-database_user="$(
-    docker exec "$container" sh -ceu 'printf "%s" "${POSTGRES_USER:?}"'
-)"
+database_name="$database_name_override"
+if [[ -z "$database_name" ]]; then
+    database_name="$(
+        docker exec "$container" sh -ceu 'printf "%s" "${POSTGRES_DB:?}"'
+    )"
+fi
+database_user="$database_user_override"
+if [[ -z "$database_user" ]]; then
+    database_user="$(
+        docker exec "$container" sh -ceu 'printf "%s" "${POSTGRES_USER:?}"'
+    )"
+fi
 [[ -n "$database_name" ]] || die "POSTGRES_DB is empty in container $container"
 [[ -n "$database_user" ]] || die "POSTGRES_USER is empty in container $container"
+[[ "$database_name" != *$'\n'* && "$database_user" != *$'\n'* ]] \
+    || die "Backup database name and user must not contain newlines"
+docker exec "$container" pg_isready --quiet \
+    --username "$database_user" --dbname "$database_name" \
+    || die "Selected backup database is not ready"
 
 if [[ ! -d "$output_dir" ]]; then
     install -d -m 700 -- "$output_dir"
@@ -161,11 +176,14 @@ trap on_exit EXIT
 
 read_only_psql() {
     local sql="$1"
-    docker exec "$container" sh -ceu '
+    docker exec \
+        -e UWA_BACKUP_DATABASE="$database_name" \
+        -e UWA_BACKUP_USER="$database_user" \
+        "$container" sh -ceu '
         export PGOPTIONS="-c default_transaction_read_only=on -c statement_timeout=15000"
         exec psql -X -qAt --no-password -v ON_ERROR_STOP=1 \
-            --username "${POSTGRES_USER:?}" \
-            --dbname "${POSTGRES_DB:?}" \
+            --username "${UWA_BACKUP_USER:?}" \
+            --dbname "${UWA_BACKUP_DATABASE:?}" \
             --command "$1"
     ' sh "$sql"
 }
@@ -197,12 +215,16 @@ log INFO "Database size: $database_size_bytes bytes"
 log INFO "Available staging space: $available_bytes bytes"
 
 dump_started_seconds=$SECONDS
-if ! docker exec -e BACKUP_LOCK_WAIT_TIMEOUT="$lock_wait_timeout" "$container" sh -ceu '
+if ! docker exec \
+    -e BACKUP_LOCK_WAIT_TIMEOUT="$lock_wait_timeout" \
+    -e UWA_BACKUP_DATABASE="$database_name" \
+    -e UWA_BACKUP_USER="$database_user" \
+    "$container" sh -ceu '
     export PGOPTIONS="-c default_transaction_read_only=on"
     exec pg_dump \
         --host /var/run/postgresql \
-        --username "${POSTGRES_USER:?}" \
-        --dbname "${POSTGRES_DB:?}" \
+        --username "${UWA_BACKUP_USER:?}" \
+        --dbname "${UWA_BACKUP_DATABASE:?}" \
         --format custom \
         --compress 6 \
         --lock-wait-timeout "$BACKUP_LOCK_WAIT_TIMEOUT" \
@@ -215,12 +237,15 @@ dump_duration_seconds=$((SECONDS - dump_started_seconds))
 [[ -s "$archive_partial" ]] || die "pg_dump produced an empty archive"
 
 log INFO "Capturing cluster-global roles, memberships, grants, and tablespaces"
-if ! docker exec "$container" sh -ceu '
+if ! docker exec \
+    -e UWA_BACKUP_DATABASE="$database_name" \
+    -e UWA_BACKUP_USER="$database_user" \
+    "$container" sh -ceu '
     export PGOPTIONS="-c default_transaction_read_only=on"
     exec pg_dumpall \
         --host /var/run/postgresql \
-        --username "${POSTGRES_USER:?}" \
-        --database "${POSTGRES_DB:?}" \
+        --username "${UWA_BACKUP_USER:?}" \
+        --database "${UWA_BACKUP_DATABASE:?}" \
         --globals-only \
         --no-password
 ' >"$globals_partial"; then
@@ -229,12 +254,15 @@ fi
 [[ -s "$globals_partial" ]] || die "pg_dumpall produced an empty globals file"
 
 log INFO "Capturing schema definition"
-if ! docker exec "$container" sh -ceu '
+if ! docker exec \
+    -e UWA_BACKUP_DATABASE="$database_name" \
+    -e UWA_BACKUP_USER="$database_user" \
+    "$container" sh -ceu '
     export PGOPTIONS="-c default_transaction_read_only=on"
     exec pg_dump \
         --host /var/run/postgresql \
-        --username "${POSTGRES_USER:?}" \
-        --dbname "${POSTGRES_DB:?}" \
+        --username "${UWA_BACKUP_USER:?}" \
+        --dbname "${UWA_BACKUP_DATABASE:?}" \
         --schema-only \
         --no-password
 ' >"$schema_partial"; then

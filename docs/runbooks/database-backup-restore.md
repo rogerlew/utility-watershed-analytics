@@ -376,6 +376,13 @@ database, checksum drift, incompatible versions, or comparison drift.
 Production restore tests must leave it false and require representative API
 reads from restored watershed data.
 
+The smoke container uses `APP_ENVIRONMENT=production` so production-disabled
+observability middleware cannot write telemetry and invalidate an otherwise
+read-only table-fingerprint comparison. When backing up a restored target whose
+bootstrap container environment names a different database, set both
+`BACKUP_DATABASE_NAME` and `BACKUP_DATABASE_USER`; ordinary production backups
+continue to use the container's `POSTGRES_DB` and `POSTGRES_USER` defaults.
+
 ## Maintenance and full disaster restore
 
 Full restore rolls back all database state, including authentication, admin,

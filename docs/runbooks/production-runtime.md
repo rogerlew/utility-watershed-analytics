@@ -1,7 +1,7 @@
 # Production Runtime Contract
 
-Status: DB03 interim runtime installed; DB03A fork-owned deployment runner
-online and idle
+Status: DB05 named-volume runtime installed and reboot-verified; DB03A
+fork-owned deployment runner online and idle; repository publication pending
 
 This contract defines the target production runtime without claiming it is
 currently installed. `forest1` is development. `wepp3` is production and must
@@ -27,11 +27,12 @@ in a work package.
   `root:uwa-operators`, mode `0660`
 
 The self-hosted Actions checkout is a build/dispatch workspace, not the
-canonical long-lived runtime. DB03 moved server/Caddy labels to the canonical
-checkout under the existing project without changing the database identity.
-The unsafe unit source remains in the checkout as evidence and is not
-installed. The safe `/etc` unit is enabled and active. Exact sanitized DB03
-evidence is in
+canonical long-lived runtime. DB05 moved the canonical checkout to
+`rogerlew/utility-watershed-analytics:main`, installed the safe immutable DB05
+runtime bundle/unit, and reboot-verified the named database identity. The
+reviewed DB05 Compose delta is currently local to the checkout until separate
+publication authority; fail-closed identity checks prevent an old Compose file
+from silently replacing the database. Exact sanitized DB03 evidence is in
 [`wepp3-convergence-evidence.md`](../work-packages/20260716-db03-production-runtime-convergence/artifacts/wepp3-convergence-evidence.md).
 
 ## Target socket contract
@@ -45,11 +46,15 @@ evidence is in
 
 DB03 must test this matrix from a Compose peer, localhost, the `wepp3`
 Tailscale address, and the public interface and record firewall assumptions.
-Unexpected application host publication is a hold. The DB03 interim preserves
-the exact anonymous-volume database, so its old host publication remains open
-on localhost and the operator Tailscale while public access is blocked. DB05
-must remove that residual during the separately backed-up named-volume cutover;
-do not harden it now by recreating the database container.
+Unexpected application host publication is a hold. DB05 removed the historical
+PostgreSQL publication during the named-volume cutover. PostgreSQL and Django
+now have no host listeners; only Caddy publishes 80/443.
+
+The repository `compose.prod.yml` declares the final Compose-managed
+`postgres_data` mount. Its canonical production name is
+`utility-watershed-analytics_postgres_data`. Production adopted and
+reboot-verified this volume in DB05. The anonymous source remains referenced by
+stopped container `uwa-db05-source-holder` with prune prohibition until DB05A.
 
 ## Exact database image
 
@@ -146,12 +151,13 @@ The tracked unit:
 
 There is no `docker compose down` path and no systemd stop action for the
 database. Host shutdown ultimately stops Docker, but ordinary unit stop/reload
-preserves the database container and anonymous-volume reference.
+preserves the named database container. The separate stopped source-holder
+container preserves the anonymous rollback volume.
 
-DB03 installed the reviewed interim unit directly in `/etc` without installing
-or invoking the unsafe checkout source. Start, reload, application-only stop,
-and start passed with unchanged PostgreSQL identity. Never replace it with the
-unsafe source.
+DB03 installed the reviewed interim unit directly in `/etc`; DB05 replaced it
+with the safe immutable DB05 bundle/unit after exact cutover and rollback. Unit
+restart and host reboot preserved the named identity. Never replace it with the
+unsafe historical source.
 
 ## Application deployment
 
@@ -184,7 +190,7 @@ inactive. Do not start or repoint the old installation. Ordinary runner
 availability does not authorize a production deployment; each dispatch still
 requires its own reviewed package and production authority.
 
-## Interim adoption and rollback
+## Historical interim adoption and rollback
 
 DB03 executed the interim command set against refreshed observed identities:
 
@@ -199,12 +205,11 @@ DB03 executed the interim command set against refreshed observed identities:
 6. prove database identity and application smoke before/after; and
 7. run a successful scheduled off-host backup under the adopted lock.
 
-The target, exercised application-only rollback, target reapplication, safe
-unit cycle, and canonical locked backup all passed with unchanged database
-identity. If any future identity differs, stop the proposal and restore only
-the application path under the lock. Do not invoke `down`, attach a new volume,
-or attempt final database Compose convergence. That convergence belongs to
-DB05's separately backed-up and exercised cutover.
+The interim target, exercised application-only rollback, target reapplication,
+safe unit cycle, and canonical locked backup all passed with unchanged database
+identity. DB05 subsequently completed the separately backed-up named-volume
+convergence and retained its anonymous source. If any future identity differs,
+stop the proposal under the lock; never invoke `down` or attach an empty volume.
 
 ## Verification matrix
 
