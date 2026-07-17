@@ -212,7 +212,8 @@ Legitimate holds:
   into `main` under separate authority, verify the runner checkout uses
   `scripts/deploy_application.sh`, then temporarily restore sudo only long
   enough to enable/start and verify the runner. Do not reenable the old path.
-- Successor package, if any: DB05 after DB04
+- Successor package: DB03A production runner ownership closure; DB05 follows
+  DB04 after DB03A completes
 
 ## Closeout checklist
 

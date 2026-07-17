@@ -53,8 +53,7 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-DB03 is on `EXECUTED-HOLD-PUBLISH` after its authorized host convergence passed
-but the safe deployment workflow could not be committed or pushed:
+DB03A is the active closure package for DB03's publication hold:
 
 - [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is
   `EXECUTED-COMPLETE` after permanent restricted transport, production
@@ -72,16 +71,20 @@ but the safe deployment workflow could not be committed or pushed:
   intentionally disabled pending safe publication; DB04/DB05 are scaffolded
   and not authorized. DB04's dependency is met; DB05 still depends on completed
   DB03 and DB04.
+- [DB03A](work-packages/20260717-db03a-production-runner-ownership-closure/package.md)
+  is `SCAFFOLDED` and authorized to fast-forward the fork's `main`, register a
+  new fork-owned `wepp3` runner, and verify the accepted runtime remains
+  unchanged without dispatching a workflow.
 - [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
   read-only command, tests, and development gates passed; the development domain
   is empty and production read-only evidence remains unauthorized.
 
 The reviewed DB02/DB03 changes are published on
-`origin/agent/database-backup-deployment-spec`. The next Wave 0 action is an
-authorized review/merge into `main`, followed by exact runner-checkout
-verification and bounded runner reenable. The safe unit is enabled, server
-port 8000 is closed, the
+`origin/agent/database-backup-deployment-spec`. DB03A owns the authorized
+fast-forward into the fork's `main`, exact workflow/secret/runner verification,
+and bounded fork-owned runner enablement. The safe unit is enabled, server port
+8000 is closed, the
 canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. The exact anonymous-volume database remains unchanged. The old
@@ -226,6 +229,21 @@ Suggested slug: `db03-production-runtime-convergence`
   cycle under the adopted lock afterward.
 - **Authority:** production mutation must be explicit in the scaffolded
   package; repository implementation approval is insufficient.
+
+#### DB03A — Production runner ownership closure
+
+Suggested slug: `db03a-production-runner-ownership-closure`
+
+- **Depends on:** DB03 host convergence and the reviewed safe branch.
+- **Deliver:** fast-forward the fork's `main`; configure the existing protected
+  production runtime as the fork's Actions secret without exposing values;
+  register a new `rogerlew`-owned `wepp3` runner in a separate installation;
+  keep the old upstream runner disabled.
+- **Prove:** exact workflow content, no queued/in-progress jobs, verified runner
+  release digest, expected service user/group/labels, GitHub online/idle state,
+  old runner disabled state, and unchanged DB03 runtime/database invariants.
+- **Boundary:** do not dispatch a workflow or change the production runtime,
+  application, database, backup, firewall, or data.
 
 #### DB04 — Legacy loader and observability guardrails
 
