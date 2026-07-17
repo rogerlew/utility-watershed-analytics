@@ -1,6 +1,6 @@
 # DB03A — Production runner ownership closure
 
-Status: `SCAFFOLDED`
+Status: `EXECUTED-HOLD-PRIVILEGE`
 
 Date: 2026-07-17
 
@@ -168,25 +168,34 @@ Legitimate holds:
 | Command or review | Environment | Evidence | Result |
 | --- | --- | --- | --- |
 | Closure preflight | `forest1` / GitHub | Ran | Fork admin and Actions enabled; `main` fast-forwards to `3478b6d`; no fork secrets, runners, queued/in-progress runs, or branch protection observed. |
+| Governed scaffold and safe `main` publication | repository / GitHub | Ran | Scaffold commit `485c275...` pushed to the agent branch and fast-forwarded fork `main` from `28095c7...`; exact safe deploy workflow hash matches and all three workflows are active. No run was created or queued. |
+| Runner/repository/production preflight | GitHub / `wepp3` | Ran, read-only | Official runner v2.335.1 asset advertises SHA-256 `4ef2f252...`; fork still has zero secrets/runners/runs. Old runner is disabled/inactive, new path absent, safe runtime/timers/health and exact database identity match. `sudo -n` is unavailable, so execution stopped before secret or runner mutation. |
 
 ### Findings and deviations
 
-- None at scaffold time.
+- GitHub did not list workflows immediately after the first `main` publication
+  read, then listed all three active workflows after repository processing;
+  no push-triggered run was created.
+- Required temporary noninteractive privilege is absent. No fork secret,
+  runner registration, production file, or service was changed.
 
 ### Terminal disposition
 
-- Final status: pending execution
-- Exit criteria disposition: pending
-- Blocker, if held: none at scaffold time
-- First follow-on action, if held: execute the first applicable hold action
+- Final status: `EXECUTED-HOLD-PRIVILEGE`
+- Exit criteria disposition: safe fork `main` publication passed; protected
+  secret delivery and runner installation/registration remain unexecuted
+- Blocker, if held: `roger` lacks noninteractive sudo required to read the
+  protected runtime through a non-logging pipe and install the new runner/service
+- First follow-on action, if held: temporarily restore validated passwordless
+  sudo for `roger`, then resume from a fresh no-runs/runtime invariant check
 - Successor package, if any: DB04/DB05 after DB03A completes
 
 ## Closeout checklist
 
-- [ ] Package status/evidence mode are accurate.
-- [ ] Applicable gates and skipped-gate reasons are recorded.
-- [ ] Artifacts contain no secrets or prohibited data.
-- [ ] Durable findings are reflected in authoritative docs.
-- [ ] Work-package catalog is updated.
-- [ ] Forward roadmap is reconciled.
-- [ ] Commit/push actions match recorded authorization.
+- [x] Package status/evidence mode are accurate.
+- [x] Applicable gates and skipped-gate reasons are recorded.
+- [x] Artifacts contain no secrets or prohibited data.
+- [x] Durable findings are reflected in authoritative docs.
+- [x] Work-package catalog is updated.
+- [x] Forward roadmap is reconciled.
+- [x] Commit/push actions match recorded authorization.

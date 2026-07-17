@@ -72,9 +72,9 @@ DB03A is the active closure package for DB03's publication hold:
   and not authorized. DB04's dependency is met; DB05 still depends on completed
   DB03 and DB04.
 - [DB03A](work-packages/20260717-db03a-production-runner-ownership-closure/package.md)
-  is `SCAFFOLDED` and authorized to fast-forward the fork's `main`, register a
-  new fork-owned `wepp3` runner, and verify the accepted runtime remains
-  unchanged without dispatching a workflow.
+  is `EXECUTED-HOLD-PRIVILEGE`: the fork's safe `main` publication passed with
+  no queued run, but protected secret delivery and new runner installation
+  stopped before mutation because `roger` lacks noninteractive sudo.
 - [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
   read-only command, tests, and development gates passed; the development domain
@@ -83,8 +83,9 @@ DB03A is the active closure package for DB03's publication hold:
 The reviewed DB02/DB03 changes are published on
 `origin/agent/database-backup-deployment-spec`. DB03A owns the authorized
 fast-forward into the fork's `main`, exact workflow/secret/runner verification,
-and bounded fork-owned runner enablement. The safe unit is enabled, server port
-8000 is closed, the
+and bounded fork-owned runner enablement. Its next action is to temporarily
+restore validated passwordless sudo and resume from fresh invariants. The safe
+unit is enabled, server port 8000 is closed, the
 canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. The exact anonymous-volume database remains unchanged. The old
