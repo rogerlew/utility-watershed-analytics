@@ -1,6 +1,6 @@
 # DB02 — Canonical production runtime bundle
 
-Status: `EXECUTED-HOLD-PRODUCTION-IDENTITY`
+Status: `EXECUTED-COMPLETE`
 
 Date: 2026-07-16
 
@@ -9,8 +9,14 @@ Roadmap item: `DB02`
 Evidence mode: Mixed
 
 Execution authorization: User-authorized Wave 0 orchestration on 2026-07-16,
-limited to repository mutation and isolated non-production execution on
-`forest1`. Production inspection and mutation are not authorized.
+initially limited to repository mutation and isolated non-production execution
+on `forest1`; the 2026-07-17 request to execute DB02 authorized its named
+bounded read-only `wepp3` identity/reachability follow-on. Production mutation
+was not authorized and did not occur. The user's 2026-07-17 “commit and push”
+request separately authorizes committing this package with the coherent
+DB02/DB03 change set and pushing the current
+`agent/database-backup-deployment-spec` branch to `origin`; it does not
+authorize a PR, merge, or direct push to `main`.
 
 ## Objective
 
@@ -35,12 +41,13 @@ Included:
   contract, boot-time ownership, and contention/cancellation tests;
 - serialize application deployment, run migrations explicitly, and verify the
   database container/image/volume identity before and after proposed actions;
-- render and exercise the contract only in isolated `forest1` fixtures.
+- render and exercise the contract in isolated `forest1` fixtures;
+- freeze exact production runtime, principal, listener, observed firewall,
+  checkout, image, container, network, and volume identities read-only; and
+- derive an exact fail-closed DB03 adoption boundary from those identities.
 
 Excluded:
 
-- inspecting the currently running `wepp3` image, project, container, volume,
-  systemd unit, principals, listeners, firewall, or Compose labels;
 - installing or activating the target unit or Compose file on `wepp3`;
 - changing production services, sockets, environment modes, or lock ownership;
 - neutralizing the loaded legacy production unit or adopting the target
@@ -58,8 +65,8 @@ Excluded:
   `30a9077d432a5c8582759b614e0ea7224713b685` plus preserved local Wave 0 and DB01
   authoring changes.
 - Observed development state: `docs/wave-0-readiness.md`.
-- Production observed state: unavailable under this package's authority. Any
-  earlier inventory prose is not a substitute for a fresh identity freeze.
+- Production observed state: frozen read-only on 2026-07-17 in
+  `artifacts/wepp3-production-identity-evidence.md`.
 
 ## Assumptions and decisions
 
@@ -67,9 +74,16 @@ Excluded:
 - Canonical Compose file: `compose.prod.yml`.
 - Canonical final project target: `utility-watershed-analytics`. DB03 must
   reconcile this with the observed running project without database recreate.
-- Exact PostGIS image: supplied through required `POSTGIS_IMAGE` only after an
-  authorized read records the running repository digest and version. No
-  fallback tag is allowed in production Compose.
+- Exact PostGIS image:
+  `postgis/postgis@sha256:8896823da46b01b1ab5d3eaa9f29712e6bd8d00a7be965f5747fedbfd28d00c9`,
+  frozen from the running image without pulling or upgrading it. No fallback
+  tag is allowed in production Compose.
+- Frozen current project is `utility-watershed-analytics`; `postgis` labels
+  point to the canonical checkout while server/Caddy labels point to the
+  Actions checkout. DB03 must reconcile only application services.
+- Frozen database container ID begins `d2f0c406`, image ID begins `612b68f8`,
+  and anonymous-volume ID begins `be7d3b8f`. DB03 must refresh and match the
+  complete recorded identities immediately before any action.
 - Canonical lock: `/run/lock/utility-watershed-analytics/operations.lock`,
   owned by `root:uwa-operators`, mode `0660`, with parent mode `0770`.
 - Application deploy, migration, data activation, scheduled/on-demand backup,
@@ -84,8 +98,8 @@ Excluded:
 
 1. Implement lock, identity preflight, and isolated contention fixtures.
 2. Harden Compose, systemd, runtime environment, and deployment workflow.
-3. Render and exercise no-recreate, socket, unit, cancellation, and reboot-static gates.
-4. Record unresolved production identities and terminalize honestly.
+3. Render and exercise no-recreate, socket, unit, and cancellation gates.
+4. Freeze production identities and reconcile DB03 adoption.
 
 ## Execution and dispatch
 
@@ -93,16 +107,17 @@ Excluded:
 - Starting branch or commit: `agent/database-backup-deployment-spec` at
   `30a9077d432a5c8582759b614e0ea7224713b685`
 - Working branch: `agent/database-backup-deployment-spec`
-- Push target: do not push
+- Push target: `origin/agent/database-backup-deployment-spec`, authorized by
+  the user on 2026-07-17
 - Pull-request target: do not open a PR
 - Authorized systems: repository working tree and disposable non-production
-  processes, files, networks, and containers on `forest1`
+  processes, files, networks, and containers on `forest1`; bounded read-only
+  inspection and reachability probes against `wepp3`
 - Mutation boundary: repository files and disposable DB02 fixtures; running
   development database/API services and unrelated shared workloads must not be
-  stopped or reconfigured
-- Executor and review assignments: Codex authors and validates; operator owns
-  production identity freeze, principal mapping, firewall review, and DB03
-  authorization
+  stopped or reconfigured; `wepp3` is read-only
+- Executor and review assignments: Codex authors, validates, and performs the
+  bounded production read; operator retains DB03 mutation authority
 
 ## Gates
 
@@ -115,35 +130,44 @@ Applicable checks:
 
 - ShellCheck, syntax, safe lock fixtures, nested invocation, contention,
   cancellation, and stale descriptor rejection;
-- Compose production render with an explicit non-production image digest;
+- Compose production render with the exact frozen production image digest;
 - static socket inventory proving only Caddy publishes production host ports;
 - no-recreate identity preflight against an isolated labeled fixture;
 - `systemd-analyze verify`, start/stop/reload fixture behavior, and explicit
   proof no command contains `down` or database stop/remove;
 - workflow/YAML and minimized environment handling review;
-- host lock boot recreation through tmpfiles static verification.
+- host lock boot recreation through tmpfiles static verification;
+- read-only exact production identity, principal, listener, checkout, network,
+  mount, health, and observed firewall/reachability freeze.
 
-Skipped gate and reason:
+Deferred DB03 mutation gates:
 
-- actual production image/project/container/volume/listener/firewall identity:
-  production read-only access is not authorized;
-- actual operator/systemd/CI runner group contention: production identities are
-  not observed or provisioned on `forest1`;
-- production unit activation, reboot, socket reachability, and rollback:
-  production mutation is not authorized and belongs to DB03.
+- actual operator/systemd/CI runner group provisioning and contention;
+- canonical lock boot recreation on `wepp3`;
+- production unit activation, start/stop/reload, cancellation, reboot, and
+  application-only rollback; and
+- post-adoption reachability and before/after database identity preservation.
+
+These are not DB02 completion gates because the roadmap boundary assigns
+repository contract creation to DB02 and production adoption to DB03. The
+original scaffold's broader wording is clarified here after the production
+freeze exposed the exact adoption mutations required.
 
 ## Exit criteria
 
 `EXECUTED-COMPLETE` requires:
 
 - current production PostGIS image is frozen exactly without upgrade;
-- canonical/interim/final identities and no-recreate adoption are proven;
-- every internal published socket is removed or loopback-bound and reachability
-  is tested from Compose, localhost, Tailscale, and public interfaces;
-- the shared/exclusive/inherited lock passes actual cross-principal, nested,
-  cancellation, reboot, and contention tests;
-- unit start/stop/reload and rollback preserve the exact database container,
-  image, and source volume;
+- current checkout/project/container/image/network/volume/unit/principal and
+  listener identities are frozen without mutation;
+- current reachability is tested from Compose, localhost, Tailscale, and public
+  interfaces and host-firewall behavior is recorded;
+- target rendering removes internal host publications and a safe interim DB03
+  adoption/rollback boundary is derived from frozen identities;
+- the shared/exclusive/inherited lock contract passes isolated nested,
+  cancellation, stale-descriptor, and contention tests;
+- unit and deployment commands fail closed on database creation/replacement,
+  use no build/pull/recreate path, and never contain `down` or database stop;
 - runtime environment mode/content and cleanup pass;
 - authoritative docs, roadmap, and catalog are reconciled.
 
@@ -194,32 +218,45 @@ Legitimate hold outcomes:
 | Production Compose render and app-only dry-run | `forest1`, explicit development fixture digest | Ran | Only Caddy publishes 80/443; server/db are internal; app-only plan proposed no database action. |
 | Database identity capture/assert and tamper fixture | running development database, read-only | Ran | Unchanged identity passed and altered expected ID failed. No production inference. |
 | ShellCheck, Actionlint, systemd verify, Ruff, Django tests, production image build | `forest1` and pinned tool containers | Ran | Passed; 106 Django tests and production image build passed. See `artifacts/forest1-runtime-evidence.md`. |
-| Production identity, principal, reachability, unit, reboot, and rollback gates | `wepp3` | Static | Not run; production read and mutation were not authorized. |
+| Exact production identity and principal freeze | `wepp3`, 2026-07-17 | Ran, read-only | Frozen database/container/image/digest/version/project/config/network/anonymous-volume, split checkout labels, unit absence/source, operator/runner identities, environment metadata, and serving health. |
+| Localhost, Tailscale, public, and Compose-peer reachability | `wepp3` and `forest1`, 2026-07-17 | Ran, read-only | Current 80/443/5432/8000 host publication confirmed; public blocks 5432/8000, Tailscale reaches them, and both Compose peer paths passed. Exact UFW text was root-only; enabled/active state and externally observed behavior are recorded. |
+| `scripts/tests/test_start_runtime.sh` and exact-digest target render | disposable `forest1` files/processes | Ran | Existing database path passed; missing database and proposed `postgis` creation failed closed; target publishes only Caddy and forbids build/pull/recreate. |
+| Production unit activation, lock provisioning, reboot, and rollback | `wepp3` | Not run | Production mutation was not authorized and belongs to DB03, not the DB02 contract boundary. |
 
 ### Findings and deviations
 
-- Exact production runtime identities remain intentionally unknown and must not
-  be inferred from the development image or old prose.
+- Production is one Compose project with split configuration origins: database
+  labels point to the canonical checkout, while server/Caddy labels point to
+  the Actions runner checkout. DB03 must reconcile application services only.
+- The production database still has an anonymous volume. Removing its 5432
+  host publication by database recreation is prohibited until DB05; DB03 must
+  preserve the observed firewall denial outside approved paths.
+- The registered legacy unit is `not-found`, but its unsafe source remains in
+  the checkout and contains `compose down`. DB03 must install only the tracked
+  safe unit and must not reboot beforehand.
+- `--no-recreate` alone permits creation when `postgis` is missing. The new
+  runtime-start wrapper asserts identity before action and rejects a dry-run
+  database create/replacement before invoking Compose.
 - `systemd-analyze verify` rejected the initially proposed
   `ConditionPathIsRegular`. It was replaced with a valid `ConditionPathExists`
   plus an executable owner/mode/symlink/key/digest runtime check.
 - A tmpfiles create rehearsal could not apply root/group ownership as the
   development user and was retained as Static syntax/contract evidence only.
+- Exact UFW rule text required root and was not read; enabled/active state plus
+  the four-source observed reachability matrix is the recorded DB02 evidence.
 
 ### Terminal disposition
 
-- Final status: `EXECUTED-HOLD-PRODUCTION-IDENTITY`
+- Final status: `EXECUTED-COMPLETE`
 - Exit criteria disposition: repository target, lock, environment, Compose,
-  systemd, workflow, identity guard, socket render, app-only dry-run, backend,
-  and image-build gates passed; all actual production identities and runtime
-  behavior remain unmet.
-- Blocker, if held: production read-only identity freeze is unauthorized, DB01
-  remains on external decisions, and production mutation is unauthorized.
-- First follow-on action, if held: authorize a read-only `wepp3` identity and
-  reachability freeze, then reconcile the exact interim no-recreate actions and
-  cross-principal lock ownership before considering DB03.
-- Successor package, if any: DB03 only after DB01 and DB02 complete plus
-  explicit production mutation authority; DB04 remains dependency-blocked.
+  systemd, workflow, identity guard, socket render, app-only dry-run, exact
+  production identity, current reachability, and fail-closed DB03 adoption
+  boundary passed without production mutation.
+- Successor package: DB03 requires explicit production mutation authority. It
+  must provision the canonical lock/runtime/unit, reconcile only application
+  services, preserve the exact anonymous-volume database, prove actual
+  cross-principal behavior, and run the post-adoption backup cycle. DB04 is now
+  unblocked for repository implementation; production deployment follows DB03.
 
 ## Closeout checklist
 

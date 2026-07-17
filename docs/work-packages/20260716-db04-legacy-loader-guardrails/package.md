@@ -8,7 +8,9 @@ Roadmap item: `DB04`
 
 Evidence mode: Mixed
 
-Execution authorization: Not authorized. DB02 is not complete.
+Execution authorization: Not authorized. DB02 is complete, so repository
+implementation is dependency-unblocked; production deployment still follows
+DB03 and requires separate authority.
 
 ## Objective
 
@@ -82,7 +84,7 @@ Excluded:
 
 Skipped gate and reason:
 
-- Execution: DB02 is incomplete and no package execution authority is recorded.
+- Execution: no package execution authority is recorded.
 - Production deployment: requires DB03 and separate mutation authority.
 
 ## Exit criteria
@@ -92,7 +94,9 @@ production-image proof, corrected docs, and dependency reconciliation.
 
 Legitimate holds:
 
-- `EXECUTED-HOLD-DEPENDENCY`: DB02 incomplete. First action: close DB02.
+- `EXECUTED-HOLD-DEPENDENCY`: a future prerequisite regresses or becomes
+  invalid. First action: restore the exact prerequisite without weakening the
+  guardrails.
 - `EXECUTED-HOLD-UNSAFE-FLAG`: any combination can delete before rejection.
   First action: preserve the failing test and move the guard earlier.
 
@@ -117,7 +121,7 @@ Legitimate holds:
 
 | Command or review | Environment | Evidence | Result |
 | --- | --- | --- | --- |
-| Scaffold review | repository only | Static | Blocked on DB02 completion. |
+| Scaffold reconciliation | repository and DB02 evidence | Static | DB02 is complete; repository execution remains unauthorized. |
 
 ### Findings and deviations
 
@@ -125,10 +129,10 @@ Legitimate holds:
 
 ### Terminal disposition
 
-- Final status: pending dependency and authorization
+- Final status: pending authorization
 - Exit criteria disposition: not executed
-- Blocker, if held: DB02 incomplete
-- First follow-on action, if held: complete DB02 production identity and proof
+- Blocker, if held: repository execution is unauthorized
+- First follow-on action, if held: authorize bounded repository implementation
 - Successor package, if any: production deploy after DB03; DB05 depends on DB04
 
 ## Closeout checklist

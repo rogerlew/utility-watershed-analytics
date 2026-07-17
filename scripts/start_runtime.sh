@@ -9,21 +9,20 @@ repo_root="$(cd -- "$script_dir/.." && pwd)"
 compose_file="${UWA_COMPOSE_FILE:-$repo_root/compose.prod.yml}"
 project_name="${UWA_COMPOSE_PROJECT:-utility-watershed-analytics}"
 environment_file="${UWA_RUNTIME_ENV_FILE:-/etc/utility-watershed-analytics/runtime.env}"
-healthcheck_url="${DEPLOY_HEALTHCHECK_URL:-}"
+identity_file="${UWA_DATABASE_IDENTITY_FILE:-/etc/utility-watershed-analytics/database-identity}"
 
 usage() {
     cat <<EOF
 Usage: $(basename "$0") [options]
 
-Build and deploy application services while preserving the exact PostgreSQL
-container, image, project labels, and data volume. The command self-acquires
-the exclusive host-wide operations lock when it is not already inherited.
+Start the canonical production runtime while preserving the exact existing
+PostgreSQL container, image, project labels, and data volume.
 
 Options:
   --compose-file PATH
   --project-name NAME
   --env-file PATH
-  --healthcheck-url HTTPS_URL
+  --identity-file PATH
   -h, --help
 EOF
 }
@@ -51,9 +50,9 @@ while (($# > 0)); do
             environment_file="$2"
             shift 2
             ;;
-        --healthcheck-url)
-            (($# >= 2)) || die "--healthcheck-url requires a value"
-            healthcheck_url="$2"
+        --identity-file)
+            (($# >= 2)) || die "--identity-file requires a value"
+            identity_file="$2"
             shift 2
             ;;
         -h|--help)
@@ -71,34 +70,34 @@ if [[ -z "${UWA_OPERATION_LOCK_FD:-}" ]]; then
         "$0" "${original_arguments[@]}"
 fi
 [[ "${UWA_OPERATION_LOCK_MODE:-}" == "exclusive" ]] \
-    || die "Application deployment requires an exclusive operations lock"
+    || die "Runtime start requires an exclusive operations lock"
 
-for required_command in awk basename curl dirname docker grep id mktemp python3 rm stat; do
+for required_command in awk docker grep id mktemp python3 rm stat; do
     command -v "$required_command" >/dev/null 2>&1 \
         || die "Required command not found: $required_command"
 done
-[[ -x "$script_dir/database_identity.sh" ]] \
-    || die "Database identity helper is unavailable"
 [[ -x "$script_dir/check_runtime_environment.sh" ]] \
     || die "Runtime environment checker is unavailable"
+[[ -x "$script_dir/database_identity.sh" ]] \
+    || die "Database identity helper is unavailable"
 [[ -f "$compose_file" && -r "$compose_file" ]] \
     || die "Compose file is unavailable: $compose_file"
-[[ -f "$environment_file" && -r "$environment_file" ]] \
-    || die "Runtime environment file is unavailable: $environment_file"
+[[ -f "$identity_file" && ! -L "$identity_file" ]] \
+    || die "Database identity must be a regular non-symlink file"
+[[ "$(stat --format '%a' "$identity_file")" == "600" ]] \
+    || die "Database identity file must have mode 0600"
+[[ "$(stat --format '%u' "$identity_file")" == "$(id -u)" ]] \
+    || die "Database identity file has the wrong owner"
+
 "$script_dir/check_runtime_environment.sh" \
     --env-file "$environment_file" \
     --expected-uid "$(id -u)"
-if [[ -n "$healthcheck_url" ]]; then
-    [[ "$healthcheck_url" == https://* ]] \
-        || die "Deployment health check must use HTTPS"
-fi
 
-runtime_dir="$(mktemp -d /tmp/uwa-application-deploy.XXXXXX)"
+runtime_dir="$(mktemp -d /tmp/uwa-runtime-start.XXXXXX)"
 cleanup() {
     rm -rf -- "$runtime_dir"
 }
 trap cleanup EXIT
-identity_file="$runtime_dir/database-identity"
 rendered_config="$runtime_dir/compose.json"
 dry_run_report="$runtime_dir/dry-run.txt"
 
@@ -109,9 +108,9 @@ compose=(
     --file "$compose_file"
 )
 
-"$script_dir/database_identity.sh" capture \
+"$script_dir/database_identity.sh" assert \
     --container postgis \
-    --output "$identity_file"
+    --expected "$identity_file"
 
 "${compose[@]}" config --format json >"$rendered_config"
 planned_database_image="$(python3 - "$rendered_config" <<'PY'
@@ -131,35 +130,20 @@ expected_database_image_id="$(awk -F= '$1 == "image_id" {print substr($0, index(
 [[ "$planned_database_image_id" == "$expected_database_image_id" ]] \
     || die "Pinned Compose image does not match the running database image"
 
-"${compose[@]}" --dry-run up --detach --no-deps --pull never server caddy \
-    >"$dry_run_report" 2>&1 \
-    || die "Compose dry-run failed"
-if grep -Eiq '(postgis|(^|[[:space:]])db([[:space:]]|$)).*(create|recreate|remove|stop|replace)' \
-    "$dry_run_report"; then
-    die "Compose dry-run proposes a database action"
+"${compose[@]}" --dry-run up --detach --no-build --no-recreate --pull never \
+    db server caddy >"$dry_run_report" 2>&1 \
+    || die "Compose runtime dry-run failed"
+if grep -Eiq 'postgis.*(creat|recreat|remov|replac|pull|build|stop)' "$dry_run_report"; then
+    die "Compose runtime dry-run proposes a database create or replacement action"
 fi
 
-"${compose[@]}" build server frontend-build
-"${compose[@]}" run --rm --no-deps \
-    --entrypoint python server manage.py migrate --noinput
-"${compose[@]}" run --rm --no-deps frontend-build
-"${compose[@]}" up --detach --no-deps --pull never server caddy
+"${compose[@]}" up --detach --no-build --no-recreate --pull never \
+    db server caddy
 
 "$script_dir/database_identity.sh" assert \
     --container postgis \
     --expected "$identity_file"
-"${compose[@]}" ps server caddy
-
-if [[ -n "$healthcheck_url" ]]; then
-    curl --fail --silent --show-error \
-        --retry 10 \
-        --retry-all-errors \
-        --retry-delay 3 \
-        --max-time 20 \
-        --output /dev/null \
-        "$healthcheck_url"
-fi
 
 trap - EXIT
 cleanup
-printf 'Application deployment passed with unchanged database identity\n'
+printf 'Canonical runtime start passed with unchanged database identity\n'

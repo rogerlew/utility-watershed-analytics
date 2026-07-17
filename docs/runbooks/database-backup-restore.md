@@ -115,6 +115,17 @@ The operator's 2026-07-17 reboot also proved both timers, post-reboot freshness,
 and encrypted snapshot visibility. See the
 [post-reboot evidence](../work-packages/20260716-db01-backup-restore-baseline/artifacts/wepp3-post-reboot-evidence.md).
 
+DB03 subsequently installed the canonical host-wide operations lock and found
+that the protected backup environment still overrode the wrapper default with
+its historical user-local lock. After removing only that override, a live
+backup descriptor proved the canonical shared lock and an actual `gha`
+exclusive contender timed out. Encrypted snapshot
+`4361efe3befe74d24922cbd0b950790c0e87cc036c9be482f76177a0f60893a8`
+published successfully, freshness passed, and `forest1` independently listed
+the exact `wepp3` scheduled snapshot. Keep
+`UWA_OPERATION_LOCK_FILE` absent from the protected backup environment so the
+installed wrapper's canonical default remains authoritative.
+
 ### Current `forest1` operator profile
 
 The accepted repository is initialized. The development backup timer is now

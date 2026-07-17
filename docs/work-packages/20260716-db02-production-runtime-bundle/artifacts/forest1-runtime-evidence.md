@@ -2,14 +2,14 @@
 
 Evidence mode: Ran unless marked Static
 
-Environment: `forest1`, 2026-07-16 America/Los_Angeles
+Environment: `forest1`, 2026-07-16 and 2026-07-17 America/Los_Angeles
 
 Starting revision:
 `30a9077d432a5c8582759b614e0ea7224713b685` plus preserved Wave 0 and DB01
 working-tree changes
 
-No `wepp3` host, production runtime, firewall, container, image, volume, unit,
-principal, or socket state was inspected or changed for these checks.
+These checks did not change `wepp3`. The separately authorized read-only
+production freeze is recorded in `wepp3-production-identity-evidence.md`.
 
 ## Host lock
 
@@ -62,12 +62,19 @@ identity.
 
 The tracked systemd unit has:
 
-- a runtime environment precheck;
+- runtime environment and protected database-identity prechecks;
 - canonical checkout, project, environment, and Compose file coordinates;
-- exclusive lock wrapping start/reload/stop;
-- `--no-build --no-recreate` start;
-- application-only `--no-deps` reload; and
+- one exclusive lock across start with before/after identity assertions;
+- a pinned-image-to-running-image check;
+- a dry-run that rejects database create/replacement;
+- `--no-build --no-recreate --pull never` start;
+- application-only `--no-deps --pull never` reload; and
 - application-only stop of `server` and `caddy`.
+
+`scripts/tests/test_start_runtime.sh` uses a disposable fake-Docker fixture.
+The unchanged database path passed; a dry run reporting `postgis` creation and
+a missing running database both failed closed. The fixture verifies the
+no-build, no-recreate, and no-pull flags.
 
 A source scan found no `compose down`, database stop, or database remove path
 in the unit, deployment workflow, or application deployment orchestrator.
@@ -75,7 +82,8 @@ in the unit, deployment workflow, or application deployment orchestrator.
 ## Gates
 
 - `bash -n` for all shell scripts: passed.
-- ShellCheck v0.10.0 for all shell scripts and lock tests: passed.
+- ShellCheck v0.10.0 for all shell scripts, lock tests, and runtime-start
+  fixtures: passed.
 - Actionlint v1.7.7: passed while ignoring only the repository's intentional
   custom self-hosted runner label `deploy`.
 - `systemd-analyze verify` for the application unit and all backup units/timers:
@@ -89,14 +97,19 @@ in the unit, deployment workflow, or application deployment orchestrator.
   `sha256:4724859b05f6013171335dc804d4e239590d5a4717480ac397d26b696f8a042f`.
 - `git diff --check`: recorded in final orchestration gates.
 
-## Unmet DB02 completion evidence
+## DB02 boundary and DB03 follow-on
 
-- exact currently running production PostGIS repository digest and versions;
-- production checkout, Compose project/config hash, containers, networks,
-  image IDs, anonymous-volume name/source/destination, and loaded unit;
-- safe interim actions derived from those identities;
-- real operator, systemd, and CI runner group ownership/contention;
-- unit start/stop/reload, signal, cancellation, reboot, and rollback on `wepp3`;
-- Compose-peer, localhost, Tailscale, public, and firewall reachability matrix;
-- before/after production identity preservation; and
-- DB01 completion and successful scheduled off-host backup after adoption.
+DB02's read-only freeze now supplies the exact production digest, checkout,
+project/config hash, containers, network, image IDs, anonymous-volume identity,
+principals, unit absence/source, and reachability matrix. The safe interim
+actions derived from those facts are recorded in the production evidence.
+
+The following require production mutation and therefore remain DB03 evidence,
+not unmet DB02 repository-contract evidence:
+
+- provisioning the canonical group, lock, runtime environment, identity file,
+  and unit;
+- actual operator, systemd, and CI runner contention and boot recreation;
+- unit start/stop/reload, cancellation, application-only rollback, and reboot;
+- before/after production identity preservation during adoption; and
+- a successful locked off-host backup after adoption.

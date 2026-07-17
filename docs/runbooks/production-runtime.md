@@ -1,7 +1,7 @@
 # Production Runtime Contract
 
-Status: repository target; production identity freeze and adoption pending DB02
-and DB03 authority
+Status: DB03 interim runtime installed; self-hosted deployment runner paused
+until the safe workflow is committed and pushed
 
 This contract defines the target production runtime without claiming it is
 currently installed. `forest1` is development. `wepp3` is production and must
@@ -12,17 +12,27 @@ in a work package.
 
 - Checkout: `/workdir/utility-watershed-analytics`
 - Compose project: `utility-watershed-analytics`
-- Compose file: `/workdir/utility-watershed-analytics/compose.prod.yml`
+- Interim installed Compose file:
+  `/workdir/utility-watershed-analytics/compose.db03.yml`
+- Final repository Compose target:
+  `/workdir/utility-watershed-analytics/compose.prod.yml`
 - Runtime environment: `/etc/utility-watershed-analytics/runtime.env`, owned by
   root, non-symlink, mode `0600`
+- Database identity:
+  `/etc/utility-watershed-analytics/database-identity`, owned by root,
+  non-symlink, mode `0600`
 - Systemd unit: `utility-watershed-analytics.service`
 - Operations lock:
   `/run/lock/utility-watershed-analytics/operations.lock`, owned by
   `root:uwa-operators`, mode `0660`
 
 The self-hosted Actions checkout is a build/dispatch workspace, not the
-canonical long-lived runtime. DB03 must reconcile the observed current checkout
-and project with these targets without changing the database identity.
+canonical long-lived runtime. DB03 moved server/Caddy labels to the canonical
+checkout under the existing project without changing the database identity.
+The unsafe unit source remains in the checkout as evidence and is not
+installed. The safe `/etc` unit is enabled and active. Exact sanitized DB03
+evidence is in
+[`wepp3-convergence-evidence.md`](../work-packages/20260716-db03-production-runtime-convergence/artifacts/wepp3-convergence-evidence.md).
 
 ## Target socket contract
 
@@ -35,8 +45,11 @@ and project with these targets without changing the database identity.
 
 DB03 must test this matrix from a Compose peer, localhost, the `wepp3`
 Tailscale address, and the public interface and record firewall assumptions.
-Unexpected host publication is a hold. Do not harden production by recreating
-the current database container.
+Unexpected application host publication is a hold. The DB03 interim preserves
+the exact anonymous-volume database, so its old host publication remains open
+on localhost and the operator Tailscale while public access is blocked. DB05
+must remove that residual during the separately backed-up named-volume cutover;
+do not harden it now by recreating the database container.
 
 ## Exact database image
 
@@ -52,11 +65,14 @@ config hash, checkout, data-volume name/source/destination, and unit text.
 Resolve the running image ID to its existing repository digest without pulling
 a newer tag. DB02 does not authorize an upgrade.
 
-Before any application action, `scripts/database_identity.sh capture` freezes
-the current database boundary. The pinned rendered image must resolve locally
-to the same image ID. After migrations and application-only replacement,
-`scripts/database_identity.sh assert` requires the container, image, project
-labels, and data mount to remain byte-for-byte identical.
+Before production adoption, capture the current database boundary with
+`scripts/database_identity.sh capture` and install the sanitized result as the
+protected database-identity file. The pinned rendered image must resolve
+locally to the same image ID. `scripts/start_runtime.sh` and
+`scripts/deploy_application.sh` assert that identity before and after their
+actions; the deployment helper additionally captures its own operation-local
+copy. Container, image, project labels, and data mount must remain
+byte-for-byte identical.
 
 ## Runtime environment
 
@@ -81,8 +97,7 @@ must still be audited for a leftover file before its next job.
 
 ## Host-wide lock
 
-Install the operator group and boot-time tmpfiles contract only in an authorized
-package:
+DB03 installed the operator group and boot-time tmpfiles contract:
 
 ```bash
 sudo groupadd --system uwa-operators
@@ -92,10 +107,11 @@ sudo install -o root -g root -m 0644 \
 sudo systemd-tmpfiles --create utility-watershed-analytics.conf
 ```
 
-Add the actual human operator, systemd execution identity, and self-hosted CI
-runner identities to `uwa-operators`, then require a new login/session before
-testing. Membership grants authority to contend for the lock, not authority to
-perform a production operation.
+`roger` and `gha` are members of `uwa-operators`; the system unit runs as root.
+DB03 refreshed the lingering user manager and runner context, then passed real
+cross-principal contention, cancellation, and reacquisition. Membership grants
+authority to contend for the lock, not authority to perform a production
+operation.
 
 Use `scripts/with_operation_lock.sh`:
 
@@ -119,24 +135,28 @@ database state, and then acquire the same inode normally.
 
 The tracked unit:
 
-- validates the root-owned runtime file before start;
-- takes the exclusive host lock;
-- starts existing images with `--no-build --no-recreate`;
-- reloads only `server` and `caddy` with `--no-deps`; and
+- requires the root-owned runtime and protected database-identity files;
+- takes one exclusive host lock across the entire start;
+- asserts exact database identity before and after Compose;
+- resolves the pinned database digest to the expected local image ID;
+- dry-runs and rejects database create or replacement actions;
+- starts existing images with `--no-build --no-recreate --pull never`;
+- reloads only `server` and `caddy` with `--no-deps --pull never`; and
 - stops only `server` and `caddy`.
 
 There is no `docker compose down` path and no systemd stop action for the
 database. Host shutdown ultimately stops Docker, but ordinary unit stop/reload
 preserves the database container and anonymous-volume reference.
 
-Before DB03 installs or reloads this unit, capture the currently loaded unit
-and neutralize unsafe legacy `ExecStop` behavior without invoking it. Never use
-`systemctl restart` while an unsafe loaded `ExecStop` remains.
+DB03 installed the reviewed interim unit directly in `/etc` without installing
+or invoking the unsafe checkout source. Start, reload, application-only stop,
+and start passed with unchanged PostgreSQL identity. Never replace it with the
+unsafe source.
 
 ## Application deployment
 
-GitHub Actions uses one non-cancelling production concurrency group and calls
-`scripts/deploy_application.sh`. The script:
+The repository target uses one non-cancelling production concurrency group and
+calls `scripts/deploy_application.sh`. The script:
 
 1. acquires or verifies an inherited exclusive host lock;
 2. validates the minimized mode-`0600` runtime environment;
@@ -154,26 +174,33 @@ when the migration plan requires it, reviewed migration compatibility, current
 base identity, and package-specific authority. The server entrypoint may keep
 `migrate` as a safety check, but it is not the deployment's migration evidence.
 
+The production runner is intentionally disabled because its current `main`
+checkout still contains the old workflow that bypasses this lock and can
+re-expose port 8000. Do not reenable it until the safe workflow and runtime
+helpers are committed and pushed to the intended branch, the runner checkout
+is verified, and a bounded enable/start check is authorized.
+
 ## Interim adoption and rollback
 
-DB03 must use observed identities to produce an interim command set. Before
-execution:
+DB03 executed the interim command set against refreshed observed identities:
 
 1. capture the original unit, checkout, project, containers, images, networks,
    mounts, and volume identity;
 2. inspect every proposed Compose action and fail on database create,
    recreate, replace, stop, remove, rename, project change, or mount change;
-3. neutralize unsafe loaded stop behavior without triggering it;
-4. provision the lock and protected minimized environment;
+3. preserve the absent unsafe registration and install only the safe unit;
+4. provision the lock, protected minimized environment, and protected exact
+   database-identity file;
 5. update only application services with `--no-deps`;
 6. prove database identity and application smoke before/after; and
 7. run a successful scheduled off-host backup under the adopted lock.
 
-If any database identity differs, keep maintenance or the old application path
-active, stop the proposal, and restore the original application-only unit and
-checkout under the lock. Do not invoke `down`, attach a new volume, or attempt
-final project/systemd convergence. The final named-volume Compose convergence
-belongs to DB05's separately backed-up and exercised cutover.
+The target, exercised application-only rollback, target reapplication, safe
+unit cycle, and canonical locked backup all passed with unchanged database
+identity. If any future identity differs, stop the proposal and restore only
+the application path under the lock. Do not invoke `down`, attach a new volume,
+or attempt final database Compose convergence. That convergence belongs to
+DB05's separately backed-up and exercised cutover.
 
 ## Verification matrix
 
@@ -182,10 +209,12 @@ lock nesting/contention/cancellation, environment rejection, database identity
 capture/assert, unit syntax, and application-only dry-run behavior on
 `forest1`.
 
-Only an authorized `wepp3` package may claim:
+DB03's authorized `wepp3` evidence now proves:
 
 - current image/project/unit/container/volume identity;
 - actual operator/systemd/runner group contention;
 - localhost/Tailscale/public/firewall reachability;
-- loaded-unit cancellation and reboot behavior; or
+- safe loaded-unit start/reload/application-only stop/start behavior; and
 - application deployment/rollback with unchanged production database identity.
+
+No reboot was authorized or claimed.

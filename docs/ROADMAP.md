@@ -2,7 +2,7 @@
 
 Status: Living — forward-only queue
 
-Last reconciled: 2026-07-16
+Last reconciled: 2026-07-17
 
 This document orders unfinished work. It is not a history and it does not, by
 itself, authorize execution or production mutation. Completed work moves to
@@ -53,34 +53,42 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-None. DB01 is complete; the remaining packages are held or scaffolded rather
-than bypassing authority or dependencies:
+DB03 is on `EXECUTED-HOLD-PUBLISH` after its authorized host convergence passed
+but the safe deployment workflow could not be committed or pushed:
 
 - [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is
   `EXECUTED-COMPLETE` after permanent restricted transport, production
   scheduling, encrypted backup, success/failure/freshness, journal alerting,
   exact isolated restore, application smoke, a 376-second RTO, and post-reboot
   timer/snapshot persistence passed.
-- [DB02](work-packages/20260716-db02-production-runtime-bundle/package.md) is on
-  `EXECUTED-HOLD-PRODUCTION-IDENTITY` after its target runtime and isolated
-  gates passed.
+- [DB02](work-packages/20260716-db02-production-runtime-bundle/package.md) is
+  `EXECUTED-COMPLETE` after the fail-closed target runtime, isolated gates,
+  exact production identity freeze, current reachability matrix, and DB03
+  adoption boundary passed without production mutation.
 - [DB03](work-packages/20260716-db03-production-runtime-convergence/package.md),
   [DB04](work-packages/20260716-db04-legacy-loader-guardrails/package.md), and
   [DB05](work-packages/20260716-db05-named-postgres-volume-cutover/package.md)
-  are scaffolded but not authorized and may not claim dependent evidence.
+  remain forward work. DB03's host runtime is converged but its runner is
+  intentionally disabled pending safe publication; DB04/DB05 are scaffolded
+  and not authorized. DB04's dependency is met; DB05 still depends on completed
+  DB03 and DB04.
 - [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
   read-only command, tests, and development gates passed; the development domain
   is empty and production read-only evidence remains unauthorized.
 
-The next Wave 0 unblock is an explicit read-only `wepp3`
-identity/reachability freeze for DB02. Include the post-upgrade boot evidence:
-the enabled legacy system unit failed, and its dry run would build, pull,
-create development services, and recreate the server. Its linked registration
-was subsequently disabled without invoking `ExecStop`; systemd now reports it
-`not-found`, and the source unit/hash remain captured. This does not authorize
-runtime mutation. In parallel, authorize DB06's aggregate-only identity audit.
-DB03 remains blocked until DB02 completes, and DB07 remains blocked until DB06
+The reviewed DB02/DB03 changes are published on
+`origin/agent/database-backup-deployment-spec`. The next Wave 0 action is an
+authorized review/merge into `main`, followed by exact runner-checkout
+verification and bounded runner reenable. The safe unit is enabled, server
+port 8000 is closed, the
+canonical lock and protected runtime are installed, application rollback and
+safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
+verified. The exact anonymous-volume database remains unchanged. The old
+remote `main` workflow bypasses the lock, so the idle runner is disabled; do
+not reenable it until the safe workflow is published and verified. Temporary
+sudo was removed. DB04 may run repository implementation independently, but
+production deployment follows completed DB03. DB07 remains blocked until DB06
 completes.
 
 ## Execution environments and Wave 0 readiness
@@ -106,9 +114,12 @@ the installed exact restore and non-empty smoke in 376 seconds. The operator's
 2026-07-17 reboot then proved both backup timers, freshness, and encrypted
 snapshot access persist. The accompanying apt/Compose upgrade exposed a
 separate unsafe legacy serving unit; the exact existing containers were
-recovered without recreate, and that runtime defect is retained for DB02. Port
-5173 remains assigned to an unrelated development service, the ignored
-pgAdmin definition is absent, and the copied WEPPcloud tokens are expired.
+recovered without recreate. DB02 then froze the production identities and
+current reachability, confirmed the registration remains `not-found`, and
+completed the repository-owned fail-closed contract without changing
+production. Port 5173 remains assigned to an unrelated development service,
+the ignored pgAdmin definition is absent, and the copied WEPPcloud tokens are
+expired.
 
 ## Database deployment implementation campaign
 
@@ -186,12 +197,13 @@ Suggested slug: `db02-production-runtime-bundle`
   versus exclusive modes or an inherited token so an orchestrator can invoke a
   backup without deadlocking on its own lock.
 - **Prove:** render and inspect the production Compose configuration and its
-  proposed actions; fail if the database would be recreated; exercise unit
-  start/stop, cancellation, reboot, nested backup, and contention across the
-  actual operator, systemd, and CI runner identities; test intended socket
-  reachability from localhost, Tailscale, Compose peers, and the public
-  interface; record host-firewall assumptions; document rollback without
-  unsafe stop semantics.
+  proposed actions; fail if the database would be created or recreated;
+  exercise the lock, unit, cancellation, nested, and contention contracts in
+  isolated fixtures; freeze actual operator/systemd/CI identities and current
+  socket reachability from localhost, Tailscale, Compose peers, and the public
+  interface; record observed host-firewall behavior; document rollback without
+  unsafe stop semantics. Actual production lock/unit/reboot/rollback behavior
+  is DB03 adoption evidence.
 - **Boundary:** this package creates the repository-owned runtime contract; it
   does not silently apply it to `wepp3`.
 
