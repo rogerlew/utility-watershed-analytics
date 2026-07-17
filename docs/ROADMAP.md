@@ -14,24 +14,30 @@ The roadmap and work-package workflow are adapted from the governance in
 `cligen-rs` at commit `7adce50`, with that project's scientific milestones and
 Rust-specific gates replaced by this repository's requirements.
 
+The implementation campaign received independent data/system and
+operations/security reviews. All actionable findings are dispositioned in the
+[dual-review record](database-deployment-roadmap-review.md).
+
 The initial queue covers the database release and production-safety work that
 is already specified. It does not imply that the application has no other
 product work; add independently ordered tracks as those outcomes are defined.
 
 ## How to use this roadmap
 
-1. Select the next unblocked roadmap item.
-2. Scaffold one bounded work package under `docs/work-packages/` and link the
-   roadmap item from it.
+1. Select the next unblocked package candidate.
+2. Scaffold it under `docs/work-packages/YYYYMMDD-<package-slug>/` and preserve
+   its roadmap ID in `package.md`.
 3. Review scope, authority, dependencies, gates, dispatch coordinates, and
    production permissions before authorizing execution.
 4. Execute the package and record evidence honestly as Ran, Static, or Mixed.
 5. Close the package as complete or on an explicit hold, update the catalog,
    and reconcile this queue. Never silently abandon or reuse an identifier.
 
-One package may cover more than one roadmap item only when their acceptance
-criteria cannot be tested independently. One roadmap item may require multiple
-successor packages, but each successor receives a new package identifier.
+The entries below are package candidates, not pre-authorized work and not empty
+package directories waiting to be filled. Scaffold a directory only when the
+package is ready for scope and authorization review. If execution exposes
+successor work, give it a new roadmap and package identifier rather than
+expanding the active package indefinitely.
 
 ## Ordering principles
 
@@ -47,64 +53,712 @@ successor packages, but each successor receives a new package identifier.
 
 ## Active execution package
 
-None. The next recommended package is **P0A — Backup and restore baseline**.
+None. The next recommended package is **DB01 — Backup and restore baseline**.
 Creating a package does not authorize access to production; its authority must
 state explicitly which read-only and mutating operations are allowed.
 
-## Forward queue
+## Database deployment implementation campaign
 
-### P0 — Production safeguards
+This is the topological execution order for implementing the
+[database deployment architecture](database-deployment-architecture.md). IDs
+are stable. The package directory uses the suggested slug with the execution
+date prepended, for example
+`docs/work-packages/YYYYMMDD-db01-backup-restore-baseline/`.
 
-| ID | Outcome | Dependencies | Exit signal |
-| --- | --- | --- | --- |
-| P0A | Backup and restore baseline | None | Scheduled encrypted off-host backups meet the accepted RPO and retention policy, and a documented restore drill verifies a usable backup. |
-| P0B | Canonical and serialized deployment surface | P0A for production changes | The PostGIS image is pinned without an incidental upgrade; one checkout, Compose project, and production Compose file are canonical; code and data operations share a host lock; database exposure and temporary secrets are hardened. |
-| P0C | Named PostgreSQL volume cutover | P0A, P0B | A quiesced, backed-up, reversible runbook moves production from the anonymous volume to the named volume and retains the source volume through acceptance. |
+Packages in the same wave may run in parallel only when their dependency cells
+allow it. A later-numbered package may be scaffolded for design review, but it
+may not claim execution evidence that depends on an incomplete predecessor.
 
-### R1 — Release representation
+### Campaign gates
 
-| ID | Outcome | Dependencies | Exit signal |
-| --- | --- | --- | --- |
-| R1A | Stable identity and manifest contracts | P0 safeguards may proceed in parallel | Versioned schemas define collection keys, watershed keys, replaceable run IDs, exact batch membership, field-level metadata authority, lineage, and compatibility signatures. |
-| R1B | Immutable artifact store and local content cache | Artifact-provider decision, R1A identity | Content-addressed artifacts, checksums, retention, encryption, access roles, and cache verification are implemented without TTL for retained releases. |
-| R1C | Base-specific plan representation | R1A | Forward, exact inverse, and empty-build plans are keyed to explicit base state, target release, schema/data contracts, materializer digest, and fingerprint versions; removals are exact rather than wildcarded. |
+| Gate | Requirement |
+| --- | --- |
+| S0 — Production safety | DB01–DB05 are complete before any watershed data release mutates production. |
+| S1 — Contract freeze | DB06–DB10 are complete before release-ledger or reconciler schemas are treated as stable. |
+| S2 — Clean-build proof | DB10A and DB11–DB21 can build and validate the same release twice from empty state, with runtime capability reads from materialized state, before reconciler implementation is accepted. |
+| S3 — Reconciliation proof | DB21A–DB24 pass legacy-base, idempotency, failure, recovery, and exact rollback tests before deployment automation can activate data. |
+| S4 — Deployment readiness | DB25–DB27A pass serialization, least-privilege, durable-execution, authorization-path, and compatible production schema/code rollout tests before a production data release is proposed. |
+| S5 — Release readiness | DB28–DB32, including DB30A base adoption, produce and rehearse the exact accepted release before DB33 may be authorized. |
 
-### B1 — Strict preparation and clean build
+These gates supplement package dependencies; they do not grant production
+authority. The minimum operational gates are:
 
-| ID | Outcome | Dependencies | Exit signal |
-| --- | --- | --- | --- |
-| B1A | Reproducible release-tool image | R1A | A code-and-toolchain-only image is built from the repository root, pinned by digest, and consumes manifests and plans separately by verified hash. |
-| B1B | Deterministic preparation and enrichment | R1A, R1B, B1A | Required source failures are fatal; the NASA 202606 resources enrichment contract is automated; exact batch and RHESSys indexes and validation reports are produced. |
-| B1C | Clean-build proof | B1B | An empty database build satisfies integrity and application checks, and two independent builds produce identical watershed-domain fingerprints. |
+| Operation | Required state and authority |
+| --- | --- |
+| Repository-only implementation | Listed package dependencies and repository mutation authority; no production implication. |
+| Production read-only inspection | Explicit host/database read-only authority and evidence handling; no configuration or data mutation. |
+| Runtime or container mutation | DB01 recovery evidence, DB02 lock and no-recreate contract, a reviewed rollback, and package-specific production authority. |
+| Schema or application compatibility rollout | S0, DB25–DB27, fresh backup where required, shared lock, one-shot migrations, and explicit production authority. |
+| Legacy baseline adoption | S0–S4, DB30A, a production-shaped adoption/rollback rehearsal, fresh verified off-host backup, and independent approval bound to exact baseline/capability hashes. |
+| Watershed data activation | S0–S5, a fresh verified off-host backup, independent approval bound to exact hashes, and DB33 authority. |
+| Restore, volume migration, or destructive recovery | DB01 restore proof, the host-wide lock, maintenance/quiescence, exact source/target identity, separately reviewed rollback, and operation-specific authority. |
+| Legacy loader mutation | Rejected in production after DB04; an emergency recovery package cannot bypass base, lock, backup, and approval requirements. |
 
-### C1 — Transactional reconciliation
+### Wave 0 — Make the current production service recoverable
 
-| ID | Outcome | Dependencies | Exit signal |
-| --- | --- | --- | --- |
-| C1A | Release ledger and recoverable staging | R1C, B1C | Active-release, attempt-lease, per-run state, capability, and migration-created staging models support bounded loading, expiry, cleanup, and recovery. |
-| C1B | Atomic desired-state reconciler | C1A | Upserts preserve retained public identities; deletions match the exact approved plan; unexpected bases or removal thresholds fail; non-watershed state is preserved. |
-| C1C | Idempotency, rollback, and failure proof | C1B | Repeat apply produces no domain changes, missing inputs leave active state unchanged, and the exact inverse rollback restores the prior compatible release. |
+#### DB01 — Backup and restore baseline
 
-### D1 — Deployment integration
+Suggested slug: `db01-backup-restore-baseline`
 
-| ID | Outcome | Dependencies | Exit signal |
-| --- | --- | --- | --- |
-| D1A | Shared code/data deployment controls | P0B, C1C | Code migrations and data activation use one production concurrency group and host lock, explicit compatibility checks, and explicit one-shot migrations. |
-| D1B | Production data-deploy command | P0A, D1A | `scripts/deploy_database.sh` performs preflight, verified backup, reviewed base-specific planning, activation, smoke tests, reporting, and exact rollback without interactive-session dependence. |
-| D1C | Protected release workflow | D1B | CI prepares and validates releases; a protected manual action with independent approval deploys an immutable reviewed release; merge alone cannot mutate production. |
+- **Depends on:** none.
+- **Deliver:** turn the existing backup command into scheduled, encrypted,
+  off-host backup with failure reporting; define separate time-based
+  daily/weekly retention and release-point retention for the active plus two
+  rollback releases; document maintenance entry/exit, disaster and selective
+  restore, database-role recreation, and protected operational-account seeding.
+- **Prove:** restore a retained backup into an isolated compatible PostGIS
+  instance, run database and application smoke checks, and record duration,
+  versions, checksums, counts, recovery-point age, and achieved RTO; test
+  encryption-key recovery, a missed/stale timer, forced failure notification,
+  reboot persistence, and controlled pruning. A successful dump alone is not
+  completion evidence.
+- **Decision closed here:** backup provider, key ownership, restore authority,
+  whether the RPO must be shorter than 24 hours, and the maximum acceptable
+  RTO. Provision restore capacity to that decision and terminate on hold when
+  the drill exceeds it; merely recording an arbitrary duration is insufficient.
 
-### E1 — First authoritative data release
+#### DB02 — Canonical production runtime bundle
 
-| ID | Outcome | Dependencies | Exit signal |
-| --- | --- | --- | --- |
-| E1A | Durable RHESSys assets and indexes | R1B, B1B | Accepted Gate Creek, Victoria members, and successor Mill Creek assets are copied, indexed, checksum-verified, and sample-read from project-controlled durable storage. |
-| E1B | Exact target release prepared | B1C, E1A | The release retains Gate Creek and Victoria; replaces former Mill Creek with `some-oligopoly`; replaces `nasa-roses-2026-sbs` with enriched `nasa-roses-202606-psbs`; adds `bremerton-2026-psbs`; and encodes every approved membership or metadata change exactly. |
-| E1C | Staging validation and production rollout | D1C, E1B | Staging passes the full release contract and application smoke tests; backup and rollback are verified; production activates the release; the inventory snapshot and release report are reconciled. |
+Suggested slug: `db02-production-runtime-bundle`
 
-The authoritative target membership and acceptance details for E1 remain in
-the [database inventory](database-inventory.md). The implementation and safety
-contract remains in the
-[database deployment architecture](database-deployment-architecture.md).
+- **Depends on:** none for repository work; DB01 before production mutation.
+- **Deliver:** pin the currently running PostGIS version without upgrading it;
+  define the safe interim and final canonical checkout, Compose project,
+  `compose.prod.yml`, and systemd unit set; specify a no-`down`, no-database-
+  recreate adoption path; inventory and remove or loopback-bind every internal
+  published port; and require mode-`0600` minimized environment files.
+- **Deliver:** define one absolute host-wide lock and its ownership/permissions
+  for application deploy, migration, data activation, scheduled and on-demand
+  backup, restore, volume work, recovery, and legacy mutation. Specify shared
+  versus exclusive modes or an inherited token so an orchestrator can invoke a
+  backup without deadlocking on its own lock.
+- **Prove:** render and inspect the production Compose configuration and its
+  proposed actions; fail if the database would be recreated; exercise unit
+  start/stop, cancellation, reboot, nested backup, and contention across the
+  actual operator, systemd, and CI runner identities; test intended socket
+  reachability from localhost, Tailscale, Compose peers, and the public
+  interface; record host-firewall assumptions; document rollback without
+  unsafe stop semantics.
+- **Boundary:** this package creates the repository-owned runtime contract; it
+  does not silently apply it to `wepp3`.
+
+#### DB03 — Production runtime convergence
+
+Suggested slug: `db03-production-runtime-convergence`
+
+- **Depends on:** DB01, DB02.
+- **Deliver:** stabilize `wepp3` without switching Compose project or invoking
+  the loaded legacy `ExecStop`; record container/image/volume IDs, neutralize
+  unsafe stop behavior without triggering it, adopt the host-wide lock and
+  hardened sockets/secrets, and restart only application services. Final
+  Compose-project and systemd convergence occurs with DB05 when the database
+  has an explicit named-volume target.
+- **Prove:** inspect the proposed Compose action and fail on database recreate;
+  capture before/after Compose, unit, container, image, and volume identity;
+  demonstrate cross-principal mutual exclusion; run smoke checks; verify the
+  original database container and volume remain attached; exercise the
+  no-recreate rollback; and complete a successful scheduled off-host backup
+  cycle under the adopted lock afterward.
+- **Authority:** production mutation must be explicit in the scaffolded
+  package; repository implementation approval is insufficient.
+
+#### DB04 — Legacy loader and observability guardrails
+
+Suggested slug: `db04-legacy-loader-guardrails`
+
+- **Depends on:** DB02; production deployment follows DB03.
+- **Deliver:** prohibit destructive legacy loader modes in production,
+  especially `load_watershed_data --force` and `--force --runids`; make unsafe
+  combinations fail closed; establish Silk retention or disable unnecessary
+  response capture; correct operational guidance and tests.
+- **Prove:** automated tests cover environment detection, every destructive
+  flag combination, non-production behavior, and retention behavior; a
+  production-configured container rejects destructive loader execution before
+  deletion begins.
+
+#### DB05 — Named PostgreSQL volume cutover
+
+Suggested slug: `db05-named-postgres-volume-cutover`
+
+- **Depends on:** DB01, DB03, DB04.
+- **Deliver:** enter maintenance mode and prove write quiescence; record exact
+  container, image, and source-volume IDs; create and verify a fresh encrypted
+  off-host backup; migrate the anonymous production volume to the named volume
+  using the pinned version; finish canonical Compose/systemd convergence; and
+  retain the source through a stable reference that cannot be lost to an
+  ordinary volume prune.
+- **Prove:** restore and migration checks cover roles, extensions, migrations,
+  sequences, release state, schema, watershed and non-watershed counts and
+  checksums, and application behavior; actually exercise rollback; verify
+  restart and host reboot persistence; complete and restore-test a post-cutover
+  scheduled off-host backup; prohibit prune; and leave old-volume deletion to
+  a new separately authorized package after the rollback window.
+
+#### DB05A — Retire the held anonymous volume
+
+Suggested slug: `db05a-retire-anonymous-volume`
+
+- **Depends on:** DB05 complete, its rollback window closed by recorded
+  authority, and a successful post-cutover backup restore test.
+- **Deliver:** re-identify the held source by recorded container/volume ID,
+  prove no running or rollback configuration references it, preserve the DB05
+  cutover/rollback evidence off-host, and delete only that exact volume under
+  the host-wide lock.
+- **Prove:** the named production volume and scheduled backups remain healthy,
+  restart and application smoke checks pass, no unrelated volume is removed,
+  and the administration log records approver, operator, exact deleted ID, and
+  final backup/restore evidence. This cleanup is not part of S0 and may remain
+  pending while the rollback window is open.
+
+### Wave 1 — Freeze identity, release, plan, and storage contracts
+
+#### DB06 — Domain ownership and identity audit
+
+Suggested slug: `db06-domain-identity-audit`
+
+- **Depends on:** none; use production read-only access only when authorized.
+- **Deliver:** enumerate watershed-owned versus persistent tables, foreign-key
+  and deletion boundaries, public identifiers, batch/member identities,
+  Parquet joins, current uniqueness, row counts, schema signature inputs, and
+  compatibility consumers in the API and client.
+- **Prove:** tests or read-only queries substantiate every proposed business
+  key; ambiguities and dirty data become explicit blockers rather than inferred
+  constraints.
+
+#### DB07 — Stable identity and metadata authority contract
+
+Suggested slug: `db07-identity-metadata-contract`
+
+- **Depends on:** DB06.
+- **Deliver:** decide immutable `collection_key` and `watershed_key` naming,
+  replaceable run IDs, child business keys, split/merge/replacement lineage,
+  route compatibility, and the field-by-field metadata and geometry precedence
+  matrix for every current collection.
+- **Prove:** worked fixtures cover retained, renamed, replaced, split, merged,
+  metadata-only, geometry-only, and deliberately removed watersheds; every
+  conflict resolves deterministically or fails preparation.
+
+#### DB08 — Versioned release and index schemas
+
+Suggested slug: `db08-release-index-schemas`
+
+- **Depends on:** DB07.
+- **Deliver:** versioned, machine-validated schemas and representative fixtures
+  for the release manifest, exact batch-member index, artifact reference,
+  transformation lineage, RHESSys capability index, validation report, and
+  compatibility envelope. Authentication fields contain secret references
+  only; credentials and credential-bearing URLs are schema-invalid.
+- **Prove:** positive and negative fixtures validate in CI; schemas reject
+  duplicate logical identity, wildcard removals, mutable unverified inputs,
+  missing required capability assets, and incompatible contract versions.
+
+#### DB09 — Fingerprint and base-specific plan contract
+
+Suggested slug: `db09-fingerprint-plan-contract`
+
+- **Depends on:** DB08.
+- **Deliver:** canonical serialization and versioned fingerprints for artifacts,
+  runs, capabilities, watershed-domain state, and releases; schemas for
+  forward, exact-inverse, and empty-build plans keyed by explicit base,
+  target, schema, data contract, materializer digest, and fingerprint version.
+- **Prove:** golden fixtures are stable across repeated processes; semantic
+  changes alter the intended fingerprint; ordering and irrelevant formatting
+  do not; plans cannot be replayed against a different base.
+
+#### DB10 — Durable artifact-store contract
+
+Suggested slug: `db10-artifact-store-contract`
+
+- **Depends on:** DB08.
+- **Deliver:** select the project-controlled S3-compatible provider and define
+  bucket ownership, encryption and access roles, content-addressed key layout,
+  versioning or object lock, retained-release policy, garbage collection,
+  local cache behavior, credential boundaries, and recovery responsibilities.
+- **Prove:** threat and failure review covers partial upload, hash collision,
+  stale cache, revoked credentials, provider outage, accidental deletion, and
+  restoration of the active plus two rollback releases; record licensing,
+  sensitivity, residency, and retention constraints for every artifact class.
+
+#### DB10A — Artifact-store infrastructure acceptance
+
+Suggested slug: `db10a-artifact-store-infrastructure`
+
+- **Depends on:** DB10.
+- **Deliver:** provision separate test and production namespaces with encryption,
+  versioning or object lock, audit logs, quotas and alerts; separate publisher,
+  runtime reader, deployment reader, and retention-administrator credentials;
+  establish protected configuration, rotation, recovery, and monitoring.
+- **Prove:** infrastructure tests verify immutable reads, encryption and lock
+  settings, cross-role denials, rotation, partial-upload cleanup, attempted
+  deletion of retained objects, version recovery, alert delivery, provider
+  outage behavior, and restoration under the documented break-glass role.
+- **Authority:** a design contract or local emulator does not complete this
+  package; accepted test and production infrastructure must be observed.
+
+### Wave 2 — Build immutable inputs into an empty database
+
+#### DB11 — Release-tool CLI and reproducible image
+
+Suggested slug: `db11-release-tool-foundation`
+
+- **Depends on:** DB08, DB09.
+- **Deliver:** a tested command framework for `prepare`, `validate`, `plan`,
+  `build`, `apply`, `rollback`, `recover`, and `status`; stable exit codes and
+  structured logs; and a repository-root, code-and-toolchain-only image built
+  before manifests and plans reference its digest.
+- **Prove:** the image contains no release manifests, plans, secrets, or source
+  data; a digest-pinned invocation consumes verified read-only inputs; CLI
+  errors are fatal and machine distinguishable.
+
+#### DB12 — Content-addressed artifact client and cache
+
+Suggested slug: `db12-artifact-client-cache`
+
+- **Depends on:** DB10A, DB11.
+- **Deliver:** streaming publish, fetch, checksum verification, atomic cache
+  promotion, cache corruption recovery, immutable lookup, and bounded cleanup
+  for all release artifacts.
+- **Prove:** integration tests exercise interrupted transfer, wrong checksum,
+  existing corrupt cache entries, concurrent fetches, missing objects,
+  permission denial, credential rotation, retention-protected objects, and the
+  accepted test/production role boundaries.
+
+#### DB13 — Stable watershed identity migration
+
+Suggested slug: `db13-watershed-identity-migration`
+
+- **Depends on:** DB07, DB06 evidence.
+- **Deliver:** choose and implement the relational shape that separates an
+  immutable internal/logical watershed identity from the current replaceable
+  source run revision; add aliases/redirects decided by DB07; migrate child
+  foreign keys through an expand, backfill, dual-compatible, validate, and
+  later contract sequence; preserve run-ID routes and feature IDs during the
+  compatibility window.
+- **Prove:** migrate a production-shaped snapshot forward, run old/new code at
+  the documented compatibility points, reject duplicate keys, and use a run-
+  replacement fixture to preserve watershed relational identity, child feature
+  IDs, and the supported old/new routes; prove the rollback boundary without
+  delete/reinsert semantics.
+
+#### DB14 — Watershed-domain integrity constraints
+
+Suggested slug: `db14-domain-integrity-constraints`
+
+- **Depends on:** DB06, DB13.
+- **Deliver:** database and model constraints for accepted watershed, batch,
+  subcatchment, channel, soil, land-use, and join identities; make table
+  ownership and cascade behavior explicit.
+- **Prove:** production-shaped data satisfies the constraints; duplicate and
+  orphan fixtures fail; migration locking and duration are measured; auth,
+  session, and other non-watershed tables remain outside the rebuild boundary.
+
+#### DB15 — Release ledger and capability-serving schema
+
+Suggested slug: `db15-release-ledger-capabilities`
+
+- **Depends on:** DB08, DB09, DB13.
+- **Deliver:** migrations and models for immutable release records, the
+  singleton `ActiveDataRelease` initialized in `EMPTY`, attempts and leases,
+  per-run state, artifact lineage, and atomically activated `RunCapability`
+  rows with durable URI and immutable index references.
+- **Prove:** model and migration tests cover first activation, retained
+  history, state transitions, uniqueness, expired leases, incompatible
+  releases, sanitized failure summaries, operator/workflow attribution, and
+  capability visibility tied to the active release.
+
+#### DB16 — Attempt-scoped staging and recovery schema
+
+Suggested slug: `db16-staging-recovery-schema`
+
+- **Depends on:** DB14, DB15.
+- **Deliver:** fixed migration-created staging tables keyed by attempt, bounded
+  loading paths, staging constraints and indexes, owner/heartbeat/expiry,
+  space preflight including artifact, staging, index, backup, and WAL margins,
+  and recovery cleanup semantics for every non-terminal state.
+- **Prove:** concurrent-attempt rejection, crash/expiry recovery, bounded-memory
+  loading, disk preflight failure, cleanup retry, and preservation of active
+  serving tables are covered by integration tests.
+
+#### DB17 — Strict source resolution and exact member indexes
+
+Suggested slug: `db17-source-resolution-indexes`
+
+- **Depends on:** DB08, DB11, DB12.
+- **Deliver:** standalone and batch source adapters that resolve mutable
+  upstream discovery during preparation only, freeze exact run membership and
+  source metadata, publish immutable artifacts, and make every required fetch
+  or parse failure fatal.
+- **Prove:** fixtures cover empty upstream results, missing members, duplicate
+  IDs, custom master filenames, membership drift, partial download, malformed
+  GeoJSON/Parquet, and repeat preparation from cached immutable inputs.
+
+#### DB18 — Deterministic NASA 202606 enrichment
+
+Suggested slug: `db18-nasa-202606-enrichment`
+
+- **Depends on:** DB07, DB12, DB17.
+- **Deliver:** implement the inventory's merge contract for
+  `batch;;nasa-roses-202606-psbs`, preserving target run IDs and geometry while
+  adding the approved attributes from the locked source artifact with explicit
+  join keys, precedence, provenance, and checksums.
+- **Prove:** positive, missing-key, duplicate-key, conflicting-value,
+  geometry-change, and member-count fixtures; repeated execution produces the
+  same bytes and fingerprints.
+
+#### DB19 — RHESSys vendor, index, and validation tooling
+
+Suggested slug: `db19-rhessys-artifact-tooling`
+
+- **Depends on:** DB08, DB12, DB17.
+- **Deliver:** tools for dynamic Parquet/spatial-input and precomputed GeoTIFF
+  capability modes, durable copying, immutable indexes, structural validation,
+  scenario/variable metadata, CRS and geometry compatibility, and representative
+  sample reads.
+- **Prove:** fixtures cover missing and partial scenarios, renamed variables,
+  Parquet schema drift, corrupt GeoTIFFs, CRS mismatch, geometry revision
+  mismatch, interrupted upload, and capability removal.
+
+#### DB19A — Materialized capability runtime integration
+
+Suggested slug: `db19a-capability-runtime-integration`
+
+- **Depends on:** DB15, DB19.
+- **Deliver:** make server RHESSys and release-declared SBS endpoints resolve
+  eligibility, mode, durable base URI, immutable index and checksum, scenarios,
+  variables, geometry revision, and access policy from the active
+  `RunCapability` state; expose that capability metadata to the client; remove
+  hard-coded run/scenario lists and run-ID-derived WEPPcloud URL conventions.
+- **Deliver:** define dual-compatible behavior while `ActiveDataRelease` is
+  still `EMPTY` for the production schema rollout. Only in `EMPTY`, an exact
+  allowlisted, observable legacy fallback may retain the current upstream
+  probes; it is disabled atomically by DB30A adoption. Runtime probing in
+  `ACTIVE` may report health but cannot create intended capability.
+- **Prove:** the `EMPTY` allowlist preserves only reviewed current behavior and
+  emits fallback telemetry; after the state becomes `ACTIVE`, absent or
+  disabled capability rows do not probe upstream or expose features. Catalog,
+  tile, geometry, dynamic Parquet/query, and SBS paths read declared durable
+  indexed assets; checksum/geometry/index mismatch fails closed; client
+  eligibility and scenarios come from the API; TTL-managed upstream
+  unavailability does not break an accepted durable capability. Tests exercise
+  both sides of the atomic adoption transition.
+
+#### DB20 — Strict empty-database materializer
+
+Suggested slug: `db20-strict-empty-builder`
+
+- **Depends on:** DB12, DB14, DB16, DB17; use DB18 and DB19 fixtures where
+  relevant.
+- **Deliver:** refactor loader writers into a strict, bounded-memory
+  materializer that consumes only locked artifacts, always produces the same
+  canonical attempt-scoped staged rows, and applies them to an `EMPTY` base
+  through reusable mutation primitives; build all declared watershed and
+  capability state and fail the whole attempt on any required run or
+  validation error.
+- **Prove:** multi-run and mixed-source fixtures load exact expected rows and
+  relationships; one bad required input leaves no accepted partial build;
+  geometry and large-file paths remain bounded and deterministic.
+
+#### DB21 — Validation, fingerprint, and clean-build CI
+
+Suggested slug: `db21-clean-build-reproducibility`
+
+- **Depends on:** DB09, DB18, DB19A, DB20.
+- **Deliver:** artifact, run, release, database, and application validators;
+  release reports; domain fingerprinting; and CI that performs independent
+  empty builds from the same locked release.
+- **Prove:** two clean builds have identical domain and capability fingerprints;
+  negative releases fail before acceptance; expected counts, geometry validity,
+  reasonable bounds and area deltas, Parquet joins, API lists/details/GeoJSON,
+  removed-run behavior, and representative RHESSys reads are checked; saved
+  artifacts are rejected when they are credential-bearing URLs or HTML error
+  responses.
+
+#### DB21A — Legacy-base export and adoption tooling
+
+Suggested slug: `db21a-legacy-base-tooling`
+
+- **Depends on:** DB09, DB12, DB14, DB15, DB20, DB21.
+- **Deliver:** canonical export of populated watershed-domain rows and exact
+  membership into immutable, content-addressed rebuild artifacts; assignment
+  of reviewed stable identities; a baseline manifest and fingerprint; and a
+  guarded adoption command that can register an unmanaged populated database
+  without changing existing watershed, child, or non-watershed rows. The
+  command may insert only the exact reviewed capability-bootstrap set atomically
+  with adoption, and those rows are part of the baseline fingerprint. A paired
+  rollback command must assert that exact adopted baseline is active, remove
+  only its reviewed capability-bootstrap rows, and restore `EMPTY` plus the
+  bounded legacy fallback without changing pre-existing rows.
+- **Prove:** export then rebuild a production-shaped legacy fixture to the same
+  domain fingerprint; adoption succeeds only when the singleton is `EMPTY`,
+  serving state is populated, schema/contracts match, and the recomputed
+  fingerprint equals the reviewed baseline; every mismatch fails with no
+  ledger, capability, watershed, child, or non-watershed mutation. Exported
+  artifacts must be sufficient for the first exact inverse even when an
+  upstream source no longer exists.
+- **Boundary:** this package implements and tests the mechanism. Capturing and
+  adopting the actual production base is DB30A and requires separate authority.
+
+### Wave 3 — Reconcile an existing database atomically
+
+#### DB22 — Base-aware planner and exact inverse
+
+Suggested slug: `db22-base-aware-planner`
+
+- **Depends on:** DB09, DB15, DB21, DB21A.
+- **Deliver:** inspect the active base, assert compatibility, compare canonical
+  identities and fingerprints, classify exact adds/updates/removals/unchanged
+  state, generate forward and exact-inverse plans, and generate an empty-build
+  plan independently.
+- **Prove:** fixtures cover metadata-only and geometry changes, run replacement,
+  batch shrink/expansion, capability changes, unexpected large removals,
+  unknown active base, changed materializer/schema, and deterministic plans.
+
+#### DB23 — Atomic desired-state reconciler
+
+Suggested slug: `db23-atomic-reconciler`
+
+- **Depends on:** DB16, DB22.
+- **Deliver:** activation that reasserts the base, locks the active-release row
+  and transaction advisory lock, validates attempt staging, upserts retained
+  identities in place, regenerates simplified geometry when its source changes,
+  deletes only exact reviewed state, atomically replaces capability-serving
+  rows, advances the active pointer, and records results. It must reuse DB20's
+  canonical staged rows and mutation primitives, extending them for non-empty
+  bases rather than implementing a second writer.
+- **Prove:** retained watershed and child public identities remain stable;
+  exact removals do not affect unrelated runs; readers see old or new accepted
+  state rather than a partial mixture; non-watershed application state is
+  unchanged.
+
+#### DB24 — Idempotency, failure, recovery, and rollback proof
+
+Suggested slug: `db24-reconciler-resilience`
+
+- **Depends on:** DB23.
+- **Deliver:** an integration fault matrix and recovery commands covering every
+  preparation, staging, locking, activation, post-activation, and rollback
+  boundary; exact rollback asserts the failed target is currently active.
+- **Prove:** applying an active release produces zero domain/capability changes;
+  missing sources and pre-activation failures preserve the prior release;
+  expired attempts recover; injected activation failures roll back; the exact
+  inverse restores the prior fingerprint; disaster rebuild reaches the same
+  accepted state; and clean build versus reconciliation to the same target
+  produce identical domain and capability fingerprints.
+- **Prove the no-op boundary:** the active pointer and activation timestamp,
+  serving rows, and immutable artifacts remain unchanged; only documented
+  audit/report records may append. The later orchestrator must not create a
+  backup for an already-active verified no-op.
+
+### Wave 4 — Integrate controlled deployment
+
+#### DB25 — Code/data compatibility and deployment serialization
+
+Suggested slug: `db25-deployment-serialization`
+
+- **Depends on:** DB03, DB24.
+- **Deliver:** one GitHub production concurrency group and one canonical host
+  lock shared by code, schema, and data operations; explicit one-shot
+  migrations; compatibility checks for code, schema, contract, materializer,
+  artifacts, capabilities, and active base.
+- **Deliver:** least-privilege database roles and separately delivered,
+  rotatable credentials for planner/status reads, staging writes, activation,
+  application runtime, backup, migration, and restore/break-glass operations;
+  document which transaction steps require elevation and prevent ordinary
+  application or preparation roles from bypassing the reconciler.
+- **Prove:** competing code/data jobs serialize at both layers; stale reviewed
+  plans, incompatible migrations, wrong image digests, and lock loss fail
+  before activation; normal application container startup does not race or
+  implicitly run production migrations; negative permission tests and
+  credential rotation cover every role and emergency elevation is audited.
+
+#### DB26 — Production database deployment orchestrator
+
+Suggested slug: `db26-deploy-database-orchestrator`
+
+- **Depends on:** DB01, DB24, DB25.
+- **Deliver:** `scripts/deploy_database.sh` and its durable non-interactive
+  execution unit, covering secrets, digest-pinned tool launch, preflight,
+  verified off-host backup, reviewed plan/base/hash confirmation, apply, smoke
+  checks, report persistence, failure recovery, exact rollback, and cleanup.
+- **Prove:** staging exercises success, interruption, lost client session,
+  failed backup, stale base, failed smoke test, no-op apply, rollback, process
+  crash, and host reboot; logs and final status remain available without a
+  persistent SSH or tmux session.
+- **Prove durable-unit semantics:** use an explicit principal and oneshot or
+  equivalent no-blind-restart policy; define signals and timeouts; detect and
+  recover nonterminal attempts before resume; invalidate discovery caches or
+  restart affected workers after activation; store mode/ownership-controlled,
+  secret-scanned logs and reports, copy required reports off-host, enforce
+  retention, and alert on failed, stale, or abandoned attempts. An already-
+  active verified no-op takes no backup and rewrites no serving state.
+
+#### DB27 — Protected release workflow, roles, and status
+
+Suggested slug: `db27-protected-release-workflow`
+
+- **Depends on:** DB26.
+- **Deliver:** CI preparation and clean-build validation, immutable release
+  artifacts and reports, protected manual production deployment, separation of
+  preparer/approver/deployer/rollback roles, active-release status, and
+  inventory-snapshot reconciliation; monitor active-release mismatch, storage
+  capacity/growth, artifact and backup age, and failed attempts. Merging a PR
+  does not deploy data.
+- **Prove:** permission tests and a staging rehearsal show that unapproved or
+  mutable inputs cannot deploy, approvals bind exact hashes, reports survive
+  failed jobs, active status matches the database, and rollback remains a
+  distinct protected action.
+
+#### DB27A — Production compatibility schema and code rollout
+
+Suggested slug: `db27a-production-compatibility-rollout`
+
+- **Depends on:** S0, DB19A, DB25, DB26, DB27, and explicit production
+  schema/application mutation authority.
+- **Deliver:** under the shared host lock and a fresh verified backup, run the
+  additive one-shot DB13–DB16 migrations and deploy dual-compatible application
+  code, including bounded `EMPTY`-ledger capability behavior, before any base
+  adoption or data activation.
+- **Prove:** current watershed and non-watershed data, public identities, API
+  behavior, and observed legacy capabilities remain unchanged; migration locks
+  and duration fit the accepted budget; schema signatures and database roles
+  match; ordinary application startup cannot race or implicitly substitute for
+  the migration; the rollback/roll-forward boundary is recorded and rehearsed
+  on a production-shaped copy.
+- **Authority:** this is the first production schema/code mutation in the
+  campaign and needs its own approver/operator/rollback assignment; DB27's
+  workflow-role design is not authorization by itself.
+
+### Wave 5 — Prepare and activate the first authoritative release
+
+#### DB28 — Gate Creek and Victoria locked release inputs
+
+Suggested slug: `db28-gate-victoria-release-inputs`
+
+- **Depends on:** DB19.
+- **Deliver:** freeze exact Victoria membership and publish immutable Gate
+  Creek and Victoria boundary, subcatchment, channel, soil, land-use, hillslope,
+  and other required ordinary release inputs; copy and index accepted Gate
+  Creek dynamic RHESSys inputs/outputs plus verified Sooke09 and Sooke15 map
+  products into durable project storage. Do not infer capability for other
+  Victoria members.
+- **Prove:** source and destination checksums, immutable indexes, structural
+  validation, exact member/count/join checks, representative sample reads,
+  clean preparation without upstream access, and retention protection satisfy
+  the inventory, release, and capability contracts.
+
+#### DB29 — Mill Creek re-vendoring
+
+Suggested slug: `db29-mill-creek-rhessys-revendor`
+
+- **Depends on:** DB19.
+- **Deliver:** publish every ordinary watershed input required to build
+  `some-oligopoly`, re-vendor its spatial and precomputed RHESSys map assets
+  durably, build its immutable capability index, and establish explicit lineage
+  from `mdobre-invincible-scarab` without relying on the deleted source.
+- **Prove:** every acceptance criterion in the inventory passes, including
+  catalog and representative map reads; former Mill Creek remains untouched in
+  production until the successor watershed and capability are release-ready.
+
+#### DB30 — NASA successor and Bremerton locked inputs
+
+Suggested slug: `db30-nasa-bremerton-inputs`
+
+- **Depends on:** DB18, DB21.
+- **Deliver:** prepare the enriched exact member index and immutable artifacts
+  for `nasa-roses-202606-psbs`, plus validated exact membership and artifacts
+  for `bremerton-2026-psbs`; record all approved exclusions and metadata.
+- **Prove:** counts, identities, geometries, checksums, enrichment lineage,
+  expected Parquet joins, and negative membership-drift tests pass from the
+  durable artifacts without upstream access.
+
+#### DB30A — Production legacy-base capture and adoption
+
+Suggested slug: `db30a-production-legacy-base-adoption`
+
+- **Depends on:** DB01, DB10A, DB21A, DB27A, DB28, and explicit production
+  release-metadata/capability mutation authority.
+- **Deliver:** under the shared lock and after a fresh verified encrypted
+  off-host backup, capture exact current production membership and canonical
+  normalized watershed-domain rows as immutable artifacts; assign the reviewed
+  stable identities; produce and retain the legacy baseline manifest,
+  fingerprint, rebuild report, and source-independent artifacts needed for the
+  first inverse, including old NASA and former Mill Creek; materialize any
+  retained legacy capabilities only from accepted durable indexed assets; then
+  register that baseline as active without changing watershed-domain rows.
+- **Prove:** rebuild the captured baseline in staging to the same fingerprint;
+  rehearse adoption, post-commit capability/API verification, rollback to
+  `EMPTY` plus fallback, and adoption again on a production-shaped copy before
+  production mutation. Production adoption rechecks `ActiveDataRelease=EMPTY`,
+  populated serving state, schema, contracts, and reviewed fingerprint
+  atomically; watershed-domain rows and non-watershed state are unchanged;
+  public capability behavior remains equivalent when new capability rows
+  replace legacy probing with already verified durable assets; those rows are
+  part of the reviewed baseline fingerprint; all artifacts are retained and
+  restore-tested. A failed post-commit check invokes the rehearsed rollback and
+  re-verifies the unchanged watershed and non-watershed fingerprints.
+- **Failure rule:** any mismatch rolls back the ledger and reviewed capability
+  bootstrap together, leaves the ledger `EMPTY`, and leaves all pre-existing
+  rows untouched. If exact source-independent rollback artifacts cannot be
+  produced, terminate on hold rather than substituting backup-only rollback
+  silently.
+
+#### DB31 — First target manifest and clean build
+
+Suggested slug: `db31-first-release-candidate`
+
+- **Depends on:** DB21, DB22, DB28, DB29, DB30, DB30A.
+- **Deliver:** the complete desired-state manifest retaining Gate Creek and
+  Victoria, replacing Mill Creek with `some-oligopoly`, replacing
+  `nasa-roses-2026-sbs` with `nasa-roses-202606-psbs`, adding Bremerton, and
+  declaring only verified RHESSys capabilities.
+- **Prove:** exact reviewed adds, updates, replacements, and removals match the
+  inventory; empty-build CI passes twice with identical fingerprints; the
+  forward and exact-inverse plans bind the adopted legacy manifest and
+  fingerprint; the empty plan is independently keyed; all plans and the
+  validation report are retained by hash.
+
+#### DB32 — Full staging deployment rehearsal
+
+Suggested slug: `db32-staging-release-rehearsal`
+
+- **Depends on:** DB27, DB27A, DB31.
+- **Deliver:** define and create a production-shaped staging copy with recorded
+  snapshot age and base fingerprint, exact PostgreSQL/PostGIS/GDAL/code/schema
+  versions, production-scale rows and geometry, disk/WAL margin, worker
+  concurrency, and network shape; document every deviation. Restore through a
+  controlled path, preserve relational shape while masking sensitive user data,
+  use no production credentials, restrict access, and destroy the copy on its
+  recorded retention schedule.
+- **Deliver:** deploy the exact release candidate through the protected path,
+  measure preparation/staging/lock time and API latency, exercise the inverse
+  rollback, then deploy forward again. Production-base drift that changes the
+  plan invalidates approval and requires a new plan and rehearsal disposition.
+- **Prove:** every architecture acceptance criterion passes; retained public
+  identities and non-watershed state survive; reports and active status agree;
+  rollback returns the prior fingerprint; measurements disposition whether
+  blue-green activation remains deferred.
+
+#### DB33 — First production release activation
+
+Suggested slug: `db33-first-production-release`
+
+- **Depends on:** S0, DB32, distinct approval and explicit production mutation
+  authority.
+- **Deliver:** after final preflight/staging and immediately before activation,
+  create a fresh backup, complete and verify its encrypted off-host copy, and
+  record its maximum age and artifact hash; verify the reviewed base-specific
+  plan; activate the exact rehearsed release by immutable hashes; run smoke and
+  capability checks; retain the prior release and inverse plan; and reconcile
+  the production inventory snapshot and administration log. The ordinary
+  scheduled backup cannot satisfy this activation gate.
+- **Prove:** production active-release identity and fingerprint match the
+  approved candidate; target dataset membership and capabilities match the
+  inventory; old NASA and former Mill Creek are absent only after successors
+  pass; rollback readiness and retention are independently confirmed.
+
+The authoritative target membership and dataset-specific acceptance details
+remain in the [database inventory](database-inventory.md). Package execution
+must not weaken the implementation and safety contract in the architecture.
 
 ## Independent compatibility axes
 
@@ -123,19 +777,18 @@ boundary. A release is not compatible merely because Django migrations pass.
 
 ## Open decisions
 
-These decisions can be investigated in bounded packages. Production activation
-must not assume an unresolved answer.
+Unresolved decisions have an owning package. That package must either close the
+decision with recorded authority or terminate on hold; a downstream package
+must not silently choose a value.
 
-1. Select the S3-compatible provider, bucket ownership, encryption keys, and
-   access roles for durable artifacts and backups.
-2. Define watershed-key names for existing members and the future public-route
-   migration and redirect policy.
-3. Complete the field-level metadata precedence matrix for every collection.
-4. Define the activation lock-time and API-latency budget that would trigger a
-   blue-green design.
-5. Decide whether persistent application state needs an RPO shorter than the
-   current 24-hour default.
-6. Assign prepare, approve, deploy, and rollback roles and separation rules.
+| Decision | Owning package |
+| --- | --- |
+| Backup provider, key ownership, restore authority, final RPO, and maximum acceptable RTO | DB01 |
+| Watershed-key names and future public-route migration policy | DB07 |
+| Field-level metadata and geometry precedence for every collection | DB07 |
+| Artifact provider, bucket ownership, encryption, and access roles | DB10 |
+| Prepare, approve, deploy, and rollback roles and separation | DB27 |
+| Activation lock-time and API-latency budget for blue-green escalation | DB32 |
 
 ## Deferred work
 
