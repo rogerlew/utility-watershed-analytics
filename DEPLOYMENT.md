@@ -119,17 +119,28 @@ tmux attach -t data-load
 
 ### Download Data Files (Optional)
 
-Pre-download data files to avoid repeated network fetches when reloading the database. Downloaded files are cached in the named Docker volume `watershed_data` (mounted at `/data` in the server container). The server Dockerfile creates `/data` and sets permissions so the loader can write files. You can pre-download from the container using the `download_data` management command.
+Pre-download data files to avoid repeated network fetches when initially loading
+an empty database. Downloaded files are cached in the named Docker volume
+`watershed_data` (mounted at `/data` in the server container). The current
+command skips every existing filename without checking a source revision or
+checksum; remove or replace stale cache entries only under an approved runbook.
 
 ```bash
 # Download ALL production data (recommended for production)
 docker compose -f compose.prod.yml exec server python manage.py download_data --all
-
-# Or download specific watersheds by runid
-docker compose -f compose.prod.yml exec server python manage.py download_data --runids <runid1> <runid2>
 ```
 
+Do not use `download_data --runids` for the NASA batch in the current
+implementation. Its custom master filename is incorrectly treated as the batch
+identifier, so matching NASA run IDs are silently skipped. Use `--all` under an
+approved initial-load runbook until the filter is corrected and regression
+tested.
+
 ### Load Data into Database
+
+The commands below are legacy initial-load tools for an empty database. They do
+not reconcile a populated production database and must not be used as a routine
+update procedure.
 
 ```bash
 # Load ALL watersheds (production - discovers all from API)
@@ -141,16 +152,13 @@ docker compose -f compose.prod.yml exec server python manage.py load_watershed_d
 # Load development subset only (defaults if no args provided - testing only)
 docker compose -f compose.prod.yml exec server python manage.py load_watershed_data
 
-# Preview what would be loaded (safe to test)
+# Print the selected configuration only; this does not fetch or validate data
 docker compose -f compose.prod.yml exec server python manage.py load_watershed_data --dry-run
-
-# Force reload even if data already exists
-docker compose -f compose.prod.yml exec server python manage.py load_watershed_data --force --all
 ```
 
 ### Complete Data Setup (Download + Load)
 
-For initial deployment or major data updates:
+For an initial empty-database load only:
 
 ```bash
 # 1. (Optional) Pre-download all production data files to avoid network fetches
@@ -160,29 +168,27 @@ docker compose -f compose.prod.yml exec server python manage.py download_data --
 docker compose -f compose.prod.yml exec server python manage.py load_watershed_data --all
 ```
 
-**Note:** The download step is optional — the loader will fetch from remote URLs if cached files aren't available. Pre-downloading can be faster for subsequent reloads.
+**Note:** The download step is optional—the loader will fetch from remote URLs
+if cached files are unavailable. This workflow is not safe for updating a
+populated production database.
 
 ### Major Schema or Data Source Updates
 
-When updating data sources or making significant schema changes, you may need to fully reset and reload the data:
+Do not use `docker compose down` or `load_watershed_data --force` as a routine
+production data-update procedure. PostgreSQL currently uses an anonymous
+volume, and the loader deletes all watershed rows before replacement loading;
+a failure or partial source load can therefore leave production empty or
+incomplete.
 
-```bash
-# 1. Stop services and remove containers (⚠️ this WIPES the database - see note below)
-docker compose -f compose.prod.yml down
-
-# 2. Re-run the deploy action from GitHub Actions UI to rebuild containers
-
-# 3. After deployment completes, reload all watershed data
-tmux new -s data-load
-docker compose -f compose.prod.yml exec server python manage.py load_watershed_data --force --all
-```
-
-> ⚠️ **Important:** The database currently has NO persistent volume configured. Running `docker compose down` removes the database container and **all data is lost**. This is acceptable while only loading watershed data, but a persistent volume must be added before storing user data.
-
-> **Future Consideration:** Before adding user data:
-> 1. Add a named volume for PostgreSQL data persistence in `compose.prod.yml`
-> 2. Implement migration strategies that preserve user data while updating watershed/geospatial data
-> 3. Consider separating user data into distinct tables with foreign key relationships that can survive watershed data reloads
+The proposed reproducible release, reconciliation, validation, and rollback
+workflow is specified in
+[docs/database-deployment-architecture.md](docs/database-deployment-architecture.md).
+Until that tooling is implemented, every production data-source change requires
+an individually reviewed runbook, a newly verified off-host backup, validation
+in an isolated database, explicit expected additions/removals/counts, and
+post-change API verification. Adding a named volume also requires a controlled
+backup/restore cutover; merely adding the Compose mount would start an empty
+database.
 
 ## Useful Commands
 
@@ -193,8 +199,8 @@ docker compose -f compose.prod.yml logs -f [service_name]
 # Check service status
 docker compose -f compose.prod.yml ps
 
-# Stop all services
-docker compose -f compose.prod.yml down
+# Stop services without removing containers or losing the database reference
+docker compose -f compose.prod.yml stop
 
 # Start services
 docker compose -f compose.prod.yml up -d

@@ -14,6 +14,14 @@ The application is deployed on a managed virtual machine provided by the [Univer
 
 For more deployment information, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
+The authoritative list of production watershed datasets, run migrations, and
+RHESSys availability is maintained in
+[docs/database-inventory.md](./docs/database-inventory.md).
+The proposed reproducible build and deployment design is documented in
+[docs/database-deployment-architecture.md](./docs/database-deployment-architecture.md).
+Its independent review findings and dispositions are recorded in
+[docs/database-deployment-architecture-review.md](./docs/database-deployment-architecture-review.md).
+
 ## Development Setup
 This section guides developers on how to set up, configure, and run the application locally using Docker and VSCode Dev Containers.
 
@@ -140,6 +148,10 @@ docker compose exec server python manage.py download_data --runids <runid1> <run
 docker compose exec server python manage.py download_data --all
 ```
 
+Known limitation: filtered download currently skips NASA runs because that
+batch uses a custom master filename. Use `--all` when the NASA files are needed
+until the filter is fixed and regression tested.
+
 #### Loading Watershed Data
 
 ```bash
@@ -152,7 +164,7 @@ docker compose exec server python manage.py load_watershed_data --runids <runid1
 # Load ALL watersheds (discovers all available from API)
 docker compose exec server python manage.py load_watershed_data --all
 
-# Preview what would be loaded (safe to test)
+# Preview selected configuration only (does not fetch or validate source data)
 docker compose exec server python manage.py load_watershed_data --dry-run
 
 # Force reload data (clears existing data first)
