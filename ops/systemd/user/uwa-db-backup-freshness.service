@@ -1,0 +1,13 @@
+[Unit]
+Description=Verify Utility Watershed Analytics production backup freshness
+OnFailure=uwa-db-backup-failure@%n.service
+ConditionPathIsDirectory=%h/.local/lib/utility-watershed-analytics-backup/current
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/.local/lib/utility-watershed-analytics-backup/current
+EnvironmentFile=%h/.config/utility-watershed-analytics/backup.env
+ExecStart=%h/.local/lib/utility-watershed-analytics-backup/current/scripts/with_operation_lock.sh --mode shared -- %h/.local/lib/utility-watershed-analytics-backup/current/scripts/check_backup_freshness.sh
+TimeoutStartSec=15m
+UMask=0077
+NoNewPrivileges=true

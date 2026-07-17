@@ -129,7 +129,7 @@ recorded reason.
 
 | Package | Roadmap item | Status | Disposition |
 | --- | --- | --- | --- |
-| [20260716-db01-backup-restore-baseline](20260716-db01-backup-restore-baseline/package.md) | DB01 | `EXECUTED-HOLD-PRODUCTION-DRILL` | `forest1:/wc1/utility-watershed-analytics-db-backups`, single-operator ownership, 24-hour RPO/RTO, local alerts, encryption, timers, retention, and isolated restore are accepted and exercised; representative `wepp3` transport/restore and reboot evidence remain required. |
+| [20260716-db01-backup-restore-baseline](20260716-db01-backup-restore-baseline/package.md) | DB01 | `EXECUTED-COMPLETE` | Permanent restricted transport, production scheduling, encrypted backup, success/failure/freshness, journal alerting, exact isolated restore, non-empty smoke, 376-second RTO, and post-reboot timer/snapshot persistence passed. The unsafe legacy runtime registration is disabled/not-found; its source and evidence are retained for DB02. |
 | [20260716-db02-production-runtime-bundle](20260716-db02-production-runtime-bundle/package.md) | DB02 | `EXECUTED-HOLD-PRODUCTION-IDENTITY` | Target runtime, lock, identity, socket, workflow, unit, and isolated gates passed; authorized production identity/reachability freeze and runtime proof remain required. |
 | [20260716-db03-production-runtime-convergence](20260716-db03-production-runtime-convergence/package.md) | DB03 | `SCAFFOLDED` | Not authorized; blocked on DB01/DB02 completion and separate production read/mutation authority. |
 | [20260716-db04-legacy-loader-guardrails](20260716-db04-legacy-loader-guardrails/package.md) | DB04 | `SCAFFOLDED` | Not authorized; blocked on DB02 completion, with production deployment following DB03. |

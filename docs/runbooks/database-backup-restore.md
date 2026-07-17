@@ -1,6 +1,6 @@
 # Database Backup and Restore Runbook
 
-Status: repository contract; production installation pending DB01 acceptance
+Status: production backup profile installed and reboot-verified
 
 This runbook implements the backup and restore controls required by DB01. It
 does not authorize production access or mutation. `forest1` is the shared
@@ -45,8 +45,9 @@ it does not prove encryption, off-host durability, or restorability.
 `scripts/publish_backup.sh` rechecks the set, publishes it into the encrypted
 restic repository, and runs `restic check` with a rotating data subset. Restic
 snapshot identity is the accepted off-host backup identity. Provider-side
-versioning or object lock is required so a compromised writer cannot silently
-erase the only recovery copy.
+versioning or object lock is the preferred defense against a compromised
+writer silently erasing the only recovery copy; the single operator currently
+accepts its absence as a documented residual risk.
 
 ## Provider acceptance
 
@@ -65,14 +66,60 @@ administrator, immutable object lock, or external alert channel is required at
 this stage; those are explicit residual risks rather than unimplemented hidden
 requirements.
 
-Before production scheduling, exercise repository upload, list, download, and
-password recovery from `wepp3`, then restore into an isolated disposable target.
-Preserve a sanitized acceptance report; never preserve credentials or the
-restic password in Git.
+Production acceptance must exercise repository upload, list, download, and
+password recovery from `wepp3`, then restore into an isolated disposable
+target. The current installation passed those gates. Preserve a sanitized
+acceptance report; never preserve credentials or the restic password in Git.
+
+### Production-shaped manual drill
+
+On 2026-07-16, a bounded read-only production drill backed up the non-empty
+`wepp3` database, transferred the protected set over authenticated SSH to
+`forest1`, published restic snapshot
+`d18a3f06085a8aed92fdc1b48949f6dea2578114de169b1dde1730f31213716b`,
+and restored it with exact database comparison and representative Django smoke
+in 387 seconds. Production container identity, uptime, row counts, and public
+health remained unchanged. The sanitized result is in the
+[DB01 production drill evidence](../work-packages/20260716-db01-backup-restore-baseline/artifacts/wepp3-forest1-production-drill-evidence.md).
+
+The drill used an authenticated pull from `forest1` because `wepp3` lacked an
+accepted outbound SSH identity at that time. The later production installation
+below replaced that fallback with a dedicated restricted identity and direct
+scheduled publication. The manual result remains separate evidence.
+
+### Current `wepp3` production profile
+
+On 2026-07-16, the operator authorized every remaining DB01 backup task except
+the reboot. Because non-interactive root access was unavailable, the accepted
+single-operator profile was installed under the lingering `roger` user:
+
+- exact-revision bundle:
+  `~/.local/lib/utility-watershed-analytics-backup/7a7d8cc`;
+- protected configuration and transport credentials:
+  `~/.config/utility-watershed-analytics`;
+- protected state and staging:
+  `~/.local/state/utility-watershed-analytics/backup`;
+- backup timer: `uwa-db-backup.timer`;
+- six-hour freshness timer: `uwa-db-backup-freshness.timer`; and
+- failure reporter: `uwa-db-backup-failure@.service`.
+
+The dedicated production key is source-restricted on `forest1` and forced to
+`internal-sftp`; the client pins the authoritative `forest1` host key. The
+latest proved production-scheduled snapshot is
+`1db1e3a475748e86692a26f5da0127e23399a2a2833a715bd68fd11133592359`.
+Normal freshness, a planned stale failure, the accepted journal alert, exact
+isolated restore, and non-empty application smoke passed. The sanitized result
+is in the
+[production scheduler evidence](../work-packages/20260716-db01-backup-restore-baseline/artifacts/wepp3-production-scheduler-evidence.md).
+The operator's 2026-07-17 reboot also proved both timers, post-reboot freshness,
+and encrypted snapshot visibility. See the
+[post-reboot evidence](../work-packages/20260716-db01-backup-restore-baseline/artifacts/wepp3-post-reboot-evidence.md).
 
 ### Current `forest1` operator profile
 
-The accepted repository is initialized and the development rehearsal is active:
+The accepted repository is initialized. The development backup timer is now
+disabled so it cannot mix development snapshots with production schedule
+evidence:
 
 - encrypted repository: `/wc1/utility-watershed-analytics-db-backups/repository`;
 - protected runtime configuration:
@@ -80,9 +127,14 @@ The accepted repository is initialized and the development rehearsal is active:
 - protected restic password:
   `~/.config/utility-watershed-analytics/restic-password`;
 - local restic client: `~/.local/bin/restic`;
-- daily user timer: `uwa-db-backup.timer`;
+- disabled development backup timer: `uwa-db-backup.timer`;
 - weekly retention timer: `uwa-db-retention.timer`; and
 - weekly restore-test timer: `uwa-db-restore-test.timer`.
+
+The restore profile requires non-empty data and retains the exact production
+PostGIS image as `postgis/postgis:uwa-production-db01-20260716` plus the pinned
+application smoke image. Retention and restore-test timers remain enabled and
+active.
 
 The `roger` user has lingering enabled so these user timers continue after
 logout. Inspect them without special tooling:
@@ -93,9 +145,9 @@ systemctl --user --failed
 journalctl --user -u uwa-db-backup.service -n 50
 ```
 
-These timers currently back up the development `postgis` container on
-`forest1`. They prove the destination and schedule but do not replace the later
-authorized `wepp3` schedule.
+The backup command must remain disabled on `forest1`; production `wepp3` owns
+the daily schedule. `forest1` owns repository retention and isolated restore
+testing.
 
 Initialize exactly once after confirming the intended repository string:
 
@@ -111,6 +163,11 @@ Do not automate `restic init` in the daily job. A mistyped bucket must fail
 rather than create a second repository that appears healthy.
 
 ## Credentials and installation
+
+The current `wepp3` installation uses the user-local paths and `uwa-db-*` units
+listed above. The following root-owned layout remains the preferred template
+for a future multi-operator deployment; do not migrate a working profile merely
+for path consistency.
 
 Install a reviewed restic release and record its version and package source.
 Create the configuration directory and files without shell history or process
@@ -152,15 +209,60 @@ Verify that behavior through an authorized reboot drill and record the timer's
 pre-reboot next-elapse, post-reboot last-trigger, service result, off-host
 snapshot ID, and notification behavior.
 
+### Reboot verification
+
+The 2026-07-16 task intentionally stopped before reboot. The operator rebooted
+`wepp3` on 2026-07-17 after an apt upgrade. The backup and freshness timers
+survived under the lingering user manager, freshness passed, and the expected
+encrypted scheduled snapshot remained readable from both hosts. DB01's backup
+reboot gate is complete.
+
+The same reboot exposed a separate serving-runtime defect: upgraded Compose
+rejected an exact `//` line in the legacy checkout's `.env`, and the enabled
+legacy system unit failed. After the one-line parser correction, a dry run
+showed that unit would build, pull, create development services, and recreate
+the server. It was not started. The exact existing PostGIS/server containers
+were started without recreate and all database/API invariants passed. Treat the
+legacy unit as DB02 evidence. The operator then disabled its linked systemd
+registration without `--now`; systemd reports it `not-found`, the running
+containers were unchanged, and the unsafe source file remains in the checkout.
+Do not relink or start it. Install the canonical unit before another reboot.
+
+For a future authorized reboot, record the same backup evidence before and
+after the operator runs:
+
+```bash
+sudo reboot
+```
+
+After the host returns, verify the backup profile:
+
+```bash
+systemctl --user list-timers uwa-db-backup.timer \
+  uwa-db-backup-freshness.timer --all
+systemctl --user --failed
+systemctl --user show uwa-db-backup.service \
+  uwa-db-backup-freshness.service -p Result -p ExecMainStatus
+systemctl --user start uwa-db-backup-freshness.service
+docker inspect postgis --format \
+  'status={{.State.Status}} health={{.State.Health.Status}} restarts={{.RestartCount}}'
+```
+
+Then query the newest snapshot from `forest1` and record its ID, age, source
+host, tags, and freshness result. Stop if either timer is inactive, any user
+unit is failed, the snapshot is stale or unreadable, or serving health differs
+from the pre-reboot record. Do not use the legacy
+`utility-watershed-analytics.service` to restart the Compose stack.
+
 ## Routine operation
 
 Inspect without changing the stack:
 
 ```bash
-systemctl list-timers 'utility-watershed-analytics-*'
-systemctl status utility-watershed-analytics-backup.service
-journalctl -u utility-watershed-analytics-backup.service --since today
-sudo -E scripts/check_backup_freshness.sh
+systemctl --user list-timers 'uwa-db-*'
+systemctl --user status uwa-db-backup.service
+journalctl --user -u uwa-db-backup.service --since today
+systemctl --user start uwa-db-backup-freshness.service
 ```
 
 A successful run must have all of the following:

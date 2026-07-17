@@ -1,6 +1,6 @@
 # DB01 — Backup and restore baseline
 
-Status: `EXECUTED-HOLD-PRODUCTION-DRILL`
+Status: `EXECUTED-COMPLETE`
 
 Date: 2026-07-16
 
@@ -9,8 +9,19 @@ Roadmap item: `DB01`
 Evidence mode: Mixed
 
 Execution authorization: User-authorized Wave 0 orchestration on 2026-07-16,
-limited to repository mutation and non-production execution on `forest1`.
-Production access and mutation are not authorized.
+initially limited to repository mutation and non-production execution on
+`forest1`. The operator later authorized a bounded `wepp3` backup and
+`forest1` isolated restore drill. That supplemental authority allowed
+production database reads and protected task staging but no serving database,
+service, deployment, scheduler, or configuration mutation. The operator then
+authorized every remaining DB01 backup task except the reboot. That authority
+allowed restricted transport and backup-only user configuration/units on
+`wepp3`, timer activation, scheduled success/failure/freshness proof, an
+isolated `forest1` restore, and cleanup without changing the serving stack. On
+2026-07-17 the operator performed the reserved reboot after an apt upgrade and
+authorized post-reboot verification. When the upgrade exposed a legacy runtime
+failure, the operator temporarily enabled sudo for a bounded parser correction
+and no-recreate recovery of the exact existing production containers.
 
 ## Objective
 
@@ -24,21 +35,27 @@ retention, isolated restore testing, and recovery runbooks.
 Included:
 
 - harden the existing logical backup command and its evidence contract;
-- add encrypted S3-compatible off-host backup orchestration;
+- add encrypted off-host backup orchestration;
 - add daily scheduled backup and periodic isolated restore-test units;
 - add daily/weekly and explicit release-point retention controls;
 - add failure notification hooks and stale-backup monitoring;
 - add isolated restore tooling and development fixtures;
 - document maintenance, disaster restore, selective restore, role recreation,
   operational-account seeding, key recovery, retention, and failure response;
-- execute safe repository gates and isolated `forest1` backup/restore tests.
+- execute safe repository gates and isolated `forest1` backup/restore tests;
+- execute one bounded representative `wepp3` backup, encrypted transfer, and
+  isolated production-shaped restore on `forest1`;
+- install and exercise the permanent restricted production transport and
+  backup-only user scheduler without rebooting or changing the serving stack;
+- verify backup timer, freshness, and encrypted snapshot persistence after the
+  operator reboot, then restore serving health without recreating production
+  containers or changing database data, image, or volume.
 
 Excluded:
 
-- reading or changing `wepp3`, its database, containers, volumes, services,
-  firewall, credentials, backup locations, or production scheduler;
-- changing or provisioning production-side access to the accepted backup host;
-- declaring a production RTO achieved from development-sized data;
+- writing or restoring the serving `wepp3` database;
+- recreating or replacing production containers, images, or volumes;
+- an agent-initiated reboot of either host;
 - changing the production Compose project or PostgreSQL volume;
 - implementing DB02 runtime convergence or DB03–DB05 production operations.
 
@@ -55,7 +72,9 @@ Excluded:
 - Observed development state: `docs/wave-0-readiness.md`.
 - Frozen external inputs: the operator selected
   `forest1:/wc1/utility-watershed-analytics-db-backups` as the backup
-  destination on 2026-07-16. Production remains unauthorized.
+  destination on 2026-07-16. The final no-reboot authority selected a dedicated
+  forced-SFTP production identity and user-local systemd installation while
+  continuing to exclude serving-runtime mutation.
 
 ## Assumptions and decisions
 
@@ -65,8 +84,8 @@ Excluded:
   locally and do not claim off-host evidence. The operator accepts that no
   independent object lock or storage administrator has been established.
 - Encryption: `restic` repository encryption. The repository password and
-  object-store credentials are separate root-readable credentials and never
-  appear in repository files, command lines, logs, or evidence.
+  transport credentials are separate protected operator-readable credentials
+  and never appear in repository files, command lines, logs, or evidence.
 - Key ownership: this is an explicitly accepted single-operator service. The
   project operator, currently the `roger` account owner, controls backup,
   recovery, restore approval, and restore execution. Separation of duties is
@@ -113,6 +132,20 @@ Excluded:
   services must not be changed
 - Executor and review assignments: Codex authors and validates; the operator
   owns production decisions and later production authorization
+- Supplemental drill boundary: read the production database into an exact
+  protected task set, transfer and encrypt it on the accepted backup host,
+  restore only into an isolated `forest1` target, verify production health, and
+  remove task-created plaintext staging; do not change production runtime or
+  scheduling
+- Supplemental no-reboot boundary: install only the reviewed restricted
+  transport, protected backup configuration, immutable bundle, and user units;
+  prove backup/freshness/failure/restore gates and cleanup; do not reboot or
+  mutate the serving Compose project
+- Supplemental post-reboot boundary: inspect the operator's reboot, invoke the
+  reviewed freshness service, verify the encrypted snapshot and serving
+  invariants, correct only the Compose-parser-invalid comment discovered after
+  upgrade, and recover only the exact existing stopped production containers;
+  do not start the unsafe legacy unit, recreate containers, or converge DB02
 
 Every derived kickoff prompt must preserve these coordinates and permissions.
 
@@ -133,15 +166,10 @@ Applicable checks:
   PostGIS container, with archive checksums, roles, extensions, migrations,
   sequences, table counts/fingerprints, database checks, and API smoke checks;
 - documentation links, referenced paths, code fences, and commands;
-- production Compose is render-only and no production command is run.
+- production Compose remains render-only; the supplemental production drill
+  must not recreate, restart, or reconfigure the serving stack.
 
-Skipped gate and reason:
-
-- production backup/restore and scheduler evidence: production access and
-  mutation are not authorized;
-- production backup-host transport: `forest1` is accepted, but production-side
-  SSH/SFTP access and scheduling were not authorized or exercised;
-- production RTO proof: a development-sized restore cannot establish it.
+Skipped gate and reason: none.
 
 ## Exit criteria
 
@@ -173,14 +201,25 @@ Legitimate hold outcomes:
   but the encrypted `wepp3`-to-`forest1` backup and isolated production-shaped
   restore have not been authorized and exercised. First follow-on: authorize
   that bounded drill without changing the serving production stack.
+- `EXECUTED-HOLD-PRODUCTION-SCHEDULER`: the representative manual production
+  backup and isolated restore pass, but the permanent transport identity,
+  production schedule, scheduled failure/stale notification, or reboot
+  persistence remain unproved. First follow-on: authorize a bounded
+  backup-only installation and reboot drill without changing the serving
+  database or Compose project.
+- `EXECUTED-HOLD-REBOOT-EVIDENCE`: permanent transport, scheduling,
+  success/failure/freshness, isolated restore, and cleanup pass, but the
+  operator-reserved reboot and post-reboot persistence checks remain. First
+  follow-on: reboot `wepp3`, then verify timers, service results, snapshot
+  visibility/freshness, and serving health without changing the stack.
 
 ## Risks and recovery
 
 - Risk: backup artifacts or logs expose credentials or role verifiers.
-  - Prevention: mode-`0600` staging, root-readable credentials, redacted logs,
-    secret scanning, encrypted transport, and no artifacts in Git.
+  - Prevention: protected staging and credentials, redacted logs, secret
+    scanning, encrypted transport, and no sensitive artifacts in Git.
   - Recovery or rollback: revoke exposed credentials, quarantine the artifact,
-    rotate database and object-store access, and rerun from a clean target.
+    rotate database and transport access, and rerun from a clean target.
 - Risk: pruning removes required release recovery points.
   - Prevention: exact release allowlist, minimum-three invariant, dry-run
     report, and separate apply action under the host-wide lock.
@@ -216,7 +255,13 @@ Fill this section during execution.
 | ShellCheck, Ruff, targeted Django tests, shell/Python syntax, and systemd verification | `forest1` and pinned tool containers | Ran | Passed; detailed commands and the one unrelated host-unit warning are recorded in `artifacts/forest1-isolated-evidence.md`. |
 | Accepted backup-host setup | `forest1:/wc1/utility-watershed-analytics-db-backups` | Ran | Installed user-local restic 0.16.4, initialized the mode-`0700` encrypted repository, published and verified two development snapshots, passed freshness and 14-daily/8-weekly retention, and restored the newest snapshot with database and Django smoke checks in 25 seconds. |
 | User scheduler | `forest1` user systemd manager | Ran | Daily backup, weekly retention, and weekly restore-test timers enabled; backup, retention, and restore-test services passed; user lingering enabled so timers survive logout. |
-| Production transport, source, and reboot gates | `wepp3` and host reboot | Static | Not run; production access remains unauthorized and no host reboot was performed. |
+| Bounded production backup, authenticated SSH pull, restic publication, exact isolated restore, Django smoke, production postcheck, and cleanup | `wepp3` source and `forest1` isolated target, 2026-07-16 | Ran | Non-empty 27.8 GB production database backed up into a 1.21 GB verified archive; encrypted snapshot `d18a3f06085a8aed92fdc1b48949f6dea2578114de169b1dde1730f31213716b` published; every restored table fingerprint/schema check and representative API smoke passed in 387 seconds; production identity, counts, uptime, and public health remained unchanged. See `artifacts/wepp3-forest1-production-drill-evidence.md`. |
+| Permanent restricted transport and user-local production installation | `wepp3` to `forest1`, 2026-07-16 | Ran | Dedicated source-restricted forced-SFTP identity, pinned host key, immutable exact-revision bundle, protected configuration/state, restic 0.16.4, and reviewed user units installed and verified. See `artifacts/wepp3-production-scheduler-evidence.md`. |
+| Installed production backup and independent snapshot verification | `wepp3` source and `forest1` repository | Ran | Source backup checks passed; direct client-side encrypted publication created scheduled snapshot `1db1e3a475748e86692a26f5da0127e23399a2a2833a715bd68fd11133592359`; independent query and repository verification passed. |
+| Normal freshness, planned stale failure, and accepted notification | `wepp3` user systemd manager | Ran | Normal 90,000-second checks passed; an isolated one-second threshold failed, invoked `OnFailure`, and wrote the accepted local journal alert; exact cleanup returned the service to success with no failed units. |
+| Installed restore-test service against newest scheduled snapshot | `forest1` isolated target | Ran | Exact schema and every-table comparison plus non-empty Django smoke passed in 376 seconds; disposable resources were removed. |
+| Backup/freshness timer activation and no-reboot production postcheck | `wepp3` | Ran | Both timers are enabled and active under the lingering user manager; boot time, serving identities, zero restarts, data counts, checkout, and public health remained unchanged. Reboot was intentionally deferred to the operator. |
+| Operator reboot, backup persistence, snapshot verification, bounded serving recovery, and final invariants | `wepp3` and `forest1`, 2026-07-17 | Ran | Both backup timers persisted; post-reboot freshness and independent snapshot access passed. An apt/Compose upgrade exposed an invalid legacy `.env` comment and unsafe boot unit. The exact comment was corrected; the unsafe unit was not started; only the existing database/server containers were started. Image, volume, 27.8 GB database, all three aggregate counts, and HTTP/API health passed. See `artifacts/wepp3-post-reboot-evidence.md`. |
 
 ### Findings and deviations
 
@@ -231,23 +276,58 @@ Fill this section during execution.
 - A `pg_isready`-only target check raced the PostGIS initialization restart.
   The runner now waits for the final initialization-complete log marker before
   readiness; the complete rerun passed.
+- The representative production drill proved the accepted 24-hour RTO with a
+  387-second full encrypted restore, exact database comparison, and non-empty
+  application smoke. It did not change or restart the serving stack.
+- `wepp3` could verify `forest1` over Tailscale but lacked accepted outbound SSH
+  authentication. The manual drill safely used the existing authenticated
+  `forest1` pull path before local restic publication. The later no-reboot task
+  installed a dedicated source-restricted forced-SFTP identity and proved
+  direct encrypted scheduled publication.
+- Non-interactive sudo was unavailable. The backup-only profile was therefore
+  installed under the lingering `roger` user, matching the already accepted
+  single-operator model. Refreshing only that user's systemd manager supplied
+  its existing Docker-group context; no serving container was restarted.
+- The first scheduled service attempt safely failed before staging because the
+  old lingering user manager lacked the Docker group. `OnFailure` logged the
+  accepted journal alert. After the user-manager-only refresh, the retry and
+  all later gates passed.
+- The first stale-test override was ineffective because the base
+  `EnvironmentFile` had later precedence. A runtime-only `ExecStart` override
+  supplied the one-second threshold, produced the planned failure and alert,
+  and was removed before the normal passing rerun.
+- The operator's apt upgrade moved Docker Engine/Compose to 29.6.2/v5.3.1.
+  After reboot, the legacy production unit failed because Compose rejected an
+  exact `//` line in `.env`. The database shut down cleanly and retained its
+  image and volume. Correcting only that comment restored parsing.
+- A dry run proved the legacy unit would build, pull, create development
+  services, and recreate the existing server. It was not started. The task
+  recovered only the exact stopped database and server containers, after which
+  counts and public health matched. Runtime convergence and future serving
+  reboot persistence remain DB02 work. After verification, the operator used
+  plain `systemctl disable`; the linked registration is now `not-found` without
+  invoking its unsafe stop action, while the source unit and hash remain
+  captured for DB02. The legacy unit is not DB01 backup evidence.
 
 ### Terminal disposition
 
-- Final status: `EXECUTED-HOLD-PRODUCTION-DRILL`
+- Final status: `EXECUTED-COMPLETE`
 - Exit criteria disposition: repository implementation, isolated encrypted
   workflow, exact restore comparison, application smoke framework, failure
   injection, retention, recovery access, accepted provider/owner/RPO/RTO/alert
-  decisions, and live `forest1` scheduler gates met; encrypted transport from
-  `wepp3`, reboot persistence, and non-empty production-shaped evidence remain
-  unmet.
-- Blocker, if held: production access remains unauthorized, so the repository
-  has not received or restored a representative `wepp3` backup.
-- First follow-on action, if held: authorize a bounded encrypted
-  `wepp3`-to-`forest1` backup and isolated restore drill without changing the
-  serving production stack.
-- Successor package, if any: DB02 repository work may proceed independently;
-  DB03 and DB05 remain blocked on DB01 completion.
+  decisions, live `forest1` scheduler gates, representative encrypted
+  `wepp3` transport, non-empty production-shaped restore, exact comparison,
+  application smoke, accepted RTO, permanent restricted production transport,
+  installed production scheduling, scheduled success/failure/freshness,
+  journal notification, exact scheduled restore, cleanup, operator reboot,
+  timer persistence, post-reboot freshness, independent snapshot visibility,
+  and final production invariants met.
+- Blocker, if held: none.
+- First follow-on action, if held: not applicable.
+- Successor package, if any: DB02 should use the captured failed legacy boot,
+  unsafe Compose dry run, disabled/not-found registration, and preserved source
+  unit/hash as production-identity evidence before any runtime mutation. DB03
+  and DB05 remain blocked on their other dependencies.
 
 ## Closeout checklist
 

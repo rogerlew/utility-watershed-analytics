@@ -53,14 +53,14 @@ expanding the active package indefinitely.
 
 ## Active execution package
 
-None. Wave 0 and DB06 are terminally held rather than bypassing authority or
-dependencies:
+None. DB01 is complete; the remaining packages are held or scaffolded rather
+than bypassing authority or dependencies:
 
-- [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is on
-  `EXECUTED-HOLD-PRODUCTION-DRILL` after its repository and isolated encrypted
-  backup/restore gates passed and the operator accepted
-  `forest1:/wc1/utility-watershed-analytics-db-backups`, single-operator
-  ownership, 24-hour RPO/RTO, and local journal alerts.
+- [DB01](work-packages/20260716-db01-backup-restore-baseline/package.md) is
+  `EXECUTED-COMPLETE` after permanent restricted transport, production
+  scheduling, encrypted backup, success/failure/freshness, journal alerting,
+  exact isolated restore, application smoke, a 376-second RTO, and post-reboot
+  timer/snapshot persistence passed.
 - [DB02](work-packages/20260716-db02-production-runtime-bundle/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-IDENTITY` after its target runtime and isolated
   gates passed.
@@ -73,11 +73,14 @@ dependencies:
   read-only command, tests, and development gates passed; the development domain
   is empty and production read-only evidence remains unauthorized.
 
-The first unblock is now a bounded `wepp3`-to-`forest1` encrypted backup and
-isolated production-shaped restore drill. In parallel, grant an explicit
-read-only `wepp3` identity/reachability freeze for DB02 and authorize DB06's
-aggregate-only identity audit; neither grants runtime mutation. DB03 remains
-blocked until DB01 and DB02 complete, and DB07 remains blocked until DB06
+The next Wave 0 unblock is an explicit read-only `wepp3`
+identity/reachability freeze for DB02. Include the post-upgrade boot evidence:
+the enabled legacy system unit failed, and its dry run would build, pull,
+create development services, and recreate the server. Its linked registration
+was subsequently disabled without invoking `ExecStop`; systemd now reports it
+`not-found`, and the source unit/hash remain captured. This does not authorize
+runtime mutation. In parallel, authorize DB06's aggregate-only identity audit.
+DB03 remains blocked until DB02 completes, and DB07 remains blocked until DB06
 completes.
 
 ## Execution environments and Wave 0 readiness
@@ -90,15 +93,22 @@ completes.
 The 2026-07-16 [Wave 0 environment readiness record](wave-0-readiness.md)
 concludes that `forest1` is ready to start repository-only DB01 and DB02 work.
 The local database/API subset also starts cleanly after the operator released
-ports 8000 and 5432, and DB01 later passed an encrypted empty-development
-backup/restore drill with exact database comparison and application smoke. It
-is not yet ready to claim complete full-stack or production-shaped restore
-evidence: port 5173 remains assigned to an unrelated development service, the
-ignored pgAdmin definition is absent, the copied WEPPcloud tokens are expired,
-  while production-shaped restore evidence remains open. The only production access during the
-preflight was an explicitly authorized read of environment-file metadata and
-the two external WEPPcloud tokens; no production runtime or database inspection
-or mutation was performed.
+ports 8000 and 5432, and DB01 passed its encrypted empty-development rehearsal.
+On 2026-07-16, a separately authorized bounded drill backed up the
+non-empty `wepp3` database, published an encrypted snapshot on `forest1`, and
+passed exact isolated restore plus representative application smoke in 387
+seconds without changing the serving stack. A later no-reboot task installed
+the permanent restricted `wepp3` transport and backup/freshness user timers,
+published scheduled snapshot
+`1db1e3a475748e86692a26f5da0127e23399a2a2833a715bd68fd11133592359`,
+proved normal and stale freshness paths plus journal notification, and passed
+the installed exact restore and non-empty smoke in 376 seconds. The operator's
+2026-07-17 reboot then proved both backup timers, freshness, and encrypted
+snapshot access persist. The accompanying apt/Compose upgrade exposed a
+separate unsafe legacy serving unit; the exact existing containers were
+recovered without recreate, and that runtime defect is retained for DB02. Port
+5173 remains assigned to an unrelated development service, the ignored
+pgAdmin definition is absent, and the copied WEPPcloud tokens are expired.
 
 ## Database deployment implementation campaign
 
