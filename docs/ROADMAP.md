@@ -80,8 +80,8 @@ rehearsal and production operation and is held only for publication:
   is `EXECUTED-HOLD-PUBLISH`. Its exact-image production anonymous-to-named
   cutover, actual rollback/reapply, restart/recreation, reboot, fork checkout,
   encrypted pre/post backups, exact fingerprints, and isolated post-backup
-  restore all passed. The reviewed running Compose delta still needs separate
-  commit/push authority and a clean production fast-forward.
+  restore all passed. Commit `2c6f426...` is published on the agent branch;
+  fork `main` and a clean production fast-forward remain separately authorized.
 - [DB06](work-packages/20260716-db06-domain-identity-audit/package.md) is on
   `EXECUTED-HOLD-PRODUCTION-EVIDENCE` after its repository audit, aggregate
   read-only command, tests, and development gates passed; the development domain

@@ -106,7 +106,8 @@ record the state, and request a new decision from `roger`.
 
 ## Publication hold
 
-Production execution is complete. The next action requires explicit
-commit/push authority for the reviewed DB05 delta, followed by a clean
-fast-forward of the fork-owned production checkout. No source-volume deletion
-is authorized; that remains DB05A.
+Production execution is complete and reviewed commit `2c6f426...` is published
+on the agent branch. The next action requires explicit fork `main`
+fast-forward authority, followed by a clean fast-forward of the fork-owned
+production checkout. No source-volume deletion is authorized; that remains
+DB05A.

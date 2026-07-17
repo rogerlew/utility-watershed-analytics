@@ -13,7 +13,9 @@ rehearsal, then on 2026-07-17 explicitly granted the reviewed `wepp3`
 production authority and confirmed passwordless sudo. This authorized the
 exact preflight, maintenance, backup, cutover, rollback/reapply, runtime
 convergence, reboot, post-backup/restore, and temporary-privilege removal in
-the authority plan. Commit, push, and source-volume deletion remain excluded.
+the authority plan. The user later separately authorized commit/push, producing
+agent-branch commit `2c6f426...`. Fork `main` fast-forward, production clean
+fast-forward, and source-volume deletion remain excluded.
 
 ## Objective
 
@@ -76,7 +78,8 @@ Excluded:
 - Starting branch or commit:
   `6f46aaf643374047e2b5251fd5c15167c9843c0e`
 - Working branch: `agent/database-backup-deployment-spec`
-- Push target: do not push unless separately authorized
+- Push target: agent branch published at `2c6f426...`; fork `main` remains
+  separately authorized
 - Pull-request target: do not open a PR unless separately authorized
 - Authorized systems: repository, isolated `forest1` rehearsal resources,
   encrypted backup repository, and exact DB05 runtime/database/service/checkout
@@ -102,9 +105,9 @@ Excluded:
 
 Skipped gate and reason:
 
-- Commit/push and final production fast-forward to the resulting DB05 commit
-  require separate publication authority. Production currently runs the exact
-  reviewed local Compose delta fail-closed from fork `main`.
+- Fork `main` and final production fast-forward to the published DB05 commit
+  require separate authority. Production currently runs the exact reviewed
+  local Compose delta fail-closed from fork `main`.
 
 ## Exit criteria
 
@@ -121,9 +124,9 @@ Legitimate holds:
 - `EXECUTED-HOLD-ROLLBACK`: rollback cannot be exercised exactly.
 - `EXECUTED-HOLD-PRODUCTION-AUTHORITY`: the rehearsal passed but production
   access and mutation are not authorized.
-- `EXECUTED-HOLD-PUBLISH`: production gates passed but the reviewed repository
-  delta is not yet committed/pushed and the production checkout cannot be
-  cleanly fast-forwarded to it.
+- `EXECUTED-HOLD-PUBLISH`: production gates passed and the reviewed commit is
+  on the agent branch, but fork `main` and the production checkout cannot yet
+  be cleanly fast-forwarded to it.
 
 Each hold preserves both volumes and records one concrete next action. No hold
 authorizes deletion or an upgrade.
@@ -167,6 +170,7 @@ authorizes deletion or an upgrade.
 | Post-cutover recovery | `wepp3` / isolated `forest1` | Ran | 1,212,259,187-byte backup `da89c44f...` published as snapshot `cb9284c0...`; global-newest restore, exact comparisons, and production-mode smoke passed in 386 seconds. |
 | Production closeout | `wepp3` / external `forest1` | Ran | Named database is healthy with no 5432 publication; source holder remains stopped/prune-prohibited; 8000 is not published; public routes return 200; disposable resources/plaintext are absent; temporary passwordless sudo was removed. |
 | Final repository/evidence gates | `forest1` / read-only `wepp3` | Ran | Shell syntax, Compose render, lock/runtime tests, links, whitespace, literal-secret scan, local/production Compose SHA equality, ignored-log boundary, final public/identity/resource checks, and development health passed. ShellCheck remained unavailable. |
+| Agent-branch publication | repository / GitHub | Ran | Commit `2c6f426...` was pushed to `origin/agent/database-backup-deployment-spec` under separate authority; the remote ref matched exactly and no PR or workflow dispatch was requested. |
 
 ### Findings and deviations
 
@@ -199,11 +203,12 @@ authorizes deletion or an upgrade.
 
 - Final status: `EXECUTED-HOLD-PUBLISH`
 - Exit criteria disposition: every rehearsal and production operational gate
-  passed; repository publication and clean production fast-forward remain
-- Blocker, if held: commit/push authority for the reviewed DB05 delta
-- First follow-on action, if held: commit and push this branch, fast-forward
-  fork `main`, then fast-forward the `wepp3` checkout and remove only obsolete
-  `compose.db03.yml` after exact target verification
+  passed and the agent branch is published; fork `main` and clean production
+  fast-forward remain
+- Blocker, if held: authority to fast-forward fork `main`
+- First follow-on action, if held: authorize fork `main` fast-forward, then
+  fast-forward the `wepp3` checkout and remove only obsolete `compose.db03.yml`
+  after exact target verification
 - Successor package, if any: DB05A after rollback window and post-cutover
   restore acceptance
 

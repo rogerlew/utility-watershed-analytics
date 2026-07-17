@@ -102,9 +102,10 @@ maximum RTO. The smoke reported 126 watersheds, 195,457 subcatchments, and
 - The database is healthy with zero restarts; exact identity assertion passes.
 - Public root and representative APIs return 200.
 - Temporary passwordless sudo was removed and no longer passes `sudo -n`.
-- Commit/push were not authorized or performed. Production runs the reviewed
-  local DB05 Compose delta from fork `main`; publication and a clean
-  fast-forward are the only remaining DB05 hold.
+- At production closeout, commit/push were not authorized or performed.
+  Separate later authority published reviewed commit `2c6f426...` to the agent
+  branch. Production runs the same Compose delta from fork `main`; fork `main`
+  advancement and a clean production fast-forward are the remaining DB05 hold.
 
 Detailed administrative logging is retained outside Git at
 `docs/sys-administration/logs/20260717-1322-db05-wepp3-production-cutover.md`.
