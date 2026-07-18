@@ -62,8 +62,9 @@ sets the corresponding timestamps.
 
 At most one attempt has `lease_active=true`. Owner, heartbeat, and expiry are
 stored on that attempt. An expired lease remains a conflict and reports that
-recovery is required; it never grants silent takeover. DB16 owns recovery and
-staging cleanup.
+recovery is required; it never grants silent takeover. DB16 implements
+terminalization and cleanup in the
+[database staging and recovery contract](database-staging-recovery-contract.md).
 
 Failure summaries are single-line and limited to 512 characters. Common
 password, token, secret, API-key assignments and URI user information are

@@ -841,10 +841,13 @@ composite feature IDs must precede the reconciler.
 ### 14.4 Staging representation
 
 Version 1 uses fixed, logged, attempt-scoped staging tables created by Django
-migrations. Deployment performs no activation-time DDL. Proposed tables mirror
-the serving watershed, subcatchment, channel, and capability contracts and
-include `attempt_id`, source fingerprint, validation state, and canonical
-business keys.
+migrations. Deployment performs no activation-time DDL. DB16 implements the
+staging state plus watershed, subcatchment, channel, and capability tables in
+`watershed.0010_attempt_scoped_staging`; the exact capacity, bounded-loading,
+retention, and cleanup rules are frozen in the
+[database staging and recovery contract](database-staging-recovery-contract.md).
+The tables include `attempt_id`, target run/logical identity, source
+fingerprint, validation state, and canonical business keys.
 
 The staging implementation must:
 

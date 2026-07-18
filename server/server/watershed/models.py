@@ -863,3 +863,12 @@ class RunCapability(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+from server.watershed.staging_models import (  # noqa: E402, F401
+    DataReleaseStagingState,
+    StagedChannel,
+    StagedRunCapability,
+    StagedSubcatchment,
+    StagedWatershed,
+)
