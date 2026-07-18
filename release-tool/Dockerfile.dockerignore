@@ -1,0 +1,4 @@
+**
+!release-tool/
+!release-tool/uwa_release_tool/
+!release-tool/uwa_release_tool/cli.py

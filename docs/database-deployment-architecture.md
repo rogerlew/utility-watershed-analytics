@@ -714,6 +714,11 @@ content-addressed cache, staging/report paths, and required secrets. Deployment
 must not depend on files being present in the long-running server container,
 whose current build context contains only the `server` directory.
 
+DB11 freezes the command names, JSON event envelope, exit codes, verified-input
+behavior, reproducible build, and image content/runtime boundary in the
+[release-tool foundation contract](database-release-tool-contract.md). Commands
+owned by later packages fail explicitly until implemented.
+
 The deployment sequence is:
 
 1. Acquire the shared host deployment lock and verify the canonical checkout,

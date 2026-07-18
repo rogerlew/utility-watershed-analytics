@@ -110,6 +110,11 @@ packages DB01 through DB05 are complete:
   is `EXECUTED-COMPLETE`: the real forest1 artifact backup tree was provisioned
   with private test/production namespaces; three test releases, negative
   integrity cases, idempotent rerun, and an exact clean restore passed.
+- [DB11](work-packages/20260717-db11-release-tool-foundation/package.md) is
+  `EXECUTED-COMPLETE`: all eight command names, stable JSON events and exit
+  codes, verified read-only input, explicit unavailable-command failures, and a
+  non-root code-only image passed unit, double-build, content-audit, and
+  digest-pinned runtime proof.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -120,8 +125,8 @@ safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
 DB04 is repository-complete but not deployed to production. The S1 contract
-freeze and DB10A local infrastructure acceptance are complete. DB11 is the next
-recommended repository package.
+freeze, DB10A local infrastructure acceptance, and DB11 release-tool foundation
+are complete. DB12 is the next recommended repository package.
 
 ## Execution environments and Wave 0 readiness
 
