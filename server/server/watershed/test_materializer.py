@@ -59,7 +59,7 @@ def polygon(offset):
     }
 
 
-class StrictEmptyMaterializerTests(TestCase):
+class MaterializerFixtureMixin:
     def setUp(self):
         self.temporary_directory = TemporaryDirectory()
         self.root = Path(self.temporary_directory.name)
@@ -220,7 +220,12 @@ class StrictEmptyMaterializerTests(TestCase):
             capability=capability_declaration,
         )
 
-    def _release(self, *, invalid_capability=False):
+    def _release(
+        self,
+        *,
+        invalid_capability=False,
+        runid_format="{source}/run-{index}",
+    ):
         release = DataRelease.objects.create(
             release_id="2026-07-18.20",
             manifest_sha256=digest("db20-manifest"),
@@ -254,7 +259,7 @@ class StrictEmptyMaterializerTests(TestCase):
                 release=release,
                 collection=collection,
                 watershed_identity=identity,
-                runid=f"{source_kind}/run-{index}",
+                runid=runid_format.format(source=source_kind, index=index),
                 run_fingerprint=digest(f"run-{index}"),
                 metadata_fingerprint=digest(f"metadata-{index}"),
                 geometry_fingerprint=digest(f"geometry-{index}"),
@@ -308,6 +313,9 @@ class StrictEmptyMaterializerTests(TestCase):
             wal_bytes=1024,
             margin_bytes=1024,
         )
+
+
+class StrictEmptyMaterializerTests(MaterializerFixtureMixin, TestCase):
 
     def test_multi_run_mixed_source_build_is_exact_and_bounded(self):
         release, members = self._release()

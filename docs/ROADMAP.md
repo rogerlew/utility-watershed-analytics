@@ -167,6 +167,11 @@ packages DB01 through DB05 are complete:
   capability build. Multi-run mixed-source, deterministic replay, bad required
   input, and late rollback proof passed disposable PostGIS without production
   access.
+- [DB21](work-packages/20260718-db21-clean-build-reproducibility/package.md) is
+  `EXECUTED-COMPLETE`: fatal artifact, staging, database, application, and
+  report validation now wraps the DB20 clean build. Two independent disposable
+  builds produced byte-identical bounded domain/capability fingerprints, while
+  unsafe artifacts and invalid geometry failed before acceptance.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -181,8 +186,9 @@ freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
 artifact-client foundations, DB13 stable identity expansion, and DB14 domain
 integrity, DB15 release-ledger foundations, DB16 staging/recovery, DB17 strict
 source preparation, DB18 NASA enrichment, DB19 RHESSys artifact tooling, and
-DB19A materialized capability runtime integration, and DB20 strict empty-build
-materialization are complete. DB21 is the next recommended package.
+DB19A materialized capability runtime integration, DB20 strict empty-build
+materialization, and DB21 clean-build validation/reproducibility are complete.
+DB21A legacy-base export and adoption tooling is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 
@@ -616,21 +622,6 @@ Suggested slug: `db19a-capability-runtime-integration`
   eligibility and scenarios come from the API; TTL-managed upstream
   unavailability does not break an accepted durable capability. Tests exercise
   both sides of the atomic adoption transition.
-
-#### DB21 — Validation, fingerprint, and clean-build CI
-
-Suggested slug: `db21-clean-build-reproducibility`
-
-- **Depends on:** DB09, DB18, DB19A, DB20.
-- **Deliver:** artifact, run, release, database, and application validators;
-  release reports; domain fingerprinting; and CI that performs independent
-  empty builds from the same locked release.
-- **Prove:** two clean builds have identical domain and capability fingerprints;
-  negative releases fail before acceptance; expected counts, geometry validity,
-  reasonable bounds and area deltas, Parquet joins, API lists/details/GeoJSON,
-  removed-run behavior, and representative RHESSys reads are checked; saved
-  artifacts are rejected when they are credential-bearing URLs or HTML error
-  responses.
 
 #### DB21A — Legacy-base export and adoption tooling
 

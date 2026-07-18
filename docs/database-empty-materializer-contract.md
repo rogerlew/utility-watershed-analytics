@@ -26,8 +26,11 @@ consumed artifact role, and the reviewed actual-plan hash. DB20 does not assign
 stable identities, create release/run fingerprints, download artifacts, or
 derive a plan from filenames or current serving rows.
 
-DB21 still owns artifact/domain/application validation, fingerprints, reports,
-and independent clean-build comparison. DB22 owns base-aware reviewed plans.
+DB21 owns artifact/domain/application validation, fingerprints, reports, and
+independent clean-build comparison through
+`server.watershed.release_validation.validated_empty_build`, as frozen in the
+[clean-build validation contract](database-clean-build-validation-contract.md).
+DB22 owns base-aware reviewed plans.
 DB23 owns non-empty reconciliation. DB20's Python entry points are executable
 inside the server image; the code-only preparation image's `data-release build`
 command remains unavailable until the later operator command can consume the
@@ -115,6 +118,11 @@ helper inside one outer database transaction. Readers therefore observe either
 the prior empty state or the complete active release, never an accepted partial
 build. This composition, not a standalone call that commits between apply and
 activation, is the accepted clean-build operation.
+
+DB21 strengthens that composition by running artifact and staged validators
+before apply, then database and public-application validators after activation
+inside the same outer transaction. A database or application validation
+failure therefore rolls back the DB20 serving mutation and active pointer.
 
 ## Failure and recovery
 

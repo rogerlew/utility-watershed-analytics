@@ -17,7 +17,7 @@ The operator entry point is `data-release` in the image and
 | Command | DB11 behavior | Successor owner |
 | --- | --- | --- |
 | `prepare` | DB17 resolves reviewed standalone/batch inputs; DB18 adds fixed NASA enrichment; DB19 prepares reviewed RHESSys assets and immutable capability indexes. | DB20 consumes prepared artifacts. |
-| `validate` | Verify a regular JSON object and optional exact SHA-256. | DB21 extends domain validation. |
+| `validate` | Verify a regular JSON object and optional exact SHA-256. | The server-image DB21 API owns full clean-build validation; later orchestration may integrate reviewed release inputs. |
 | `plan` | Fatal `command_unavailable`. | DB22 |
 | `build` | Fatal `command_unavailable` in the code-only preparation image. DB20 provides the server-image materializer API; command integration waits for reviewed validation and plan inputs rather than defining an interim format. | DB21, DB22, and the later deployment orchestrator |
 | `apply` | Fatal `command_unavailable`. | DB23 |
@@ -72,7 +72,11 @@ data-release validate \
 The command rejects symlinks and non-regular files, optionally requires all
 filesystem write bits to be absent, hashes the exact bytes, compares the
 expected digest before parsing, and accepts only a JSON object root. This is
-structural foundation proof, not DB21 release-domain validation.
+structural foundation proof, not DB21 release-domain validation. DB21
+implements full artifact, staging, database, application, report, and
+fingerprint validation in `server.watershed.release_validation`, where the
+Django models and DB20 writer already exist. The code-only preparation image
+does not import Django or grow a second validator/writer interface.
 
 ## 5. Image contract
 
@@ -141,10 +145,12 @@ sha256:14fd35b2cbfeac308cd796e466af1acf59c29f5e70ddea72cfa950a057217b42
 DB20 implements the strict server-image clean-build path in
 `server.watershed.materializer` and freezes it in the
 [empty materializer contract](database-empty-materializer-contract.md). The
-preparation image intentionally remains database-free and continues to report
-`build` unavailable until DB21 validation and DB22 reviewed-plan coordinates
-provide a stable operator input; this avoids a second temporary writer or plan
-format.
+preparation image intentionally remains database-free. DB21 now provides the
+full server-image validation composition frozen in the
+[clean-build validation contract](database-clean-build-validation-contract.md),
+but `build` remains unavailable until DB22 reviewed-plan coordinates and later
+orchestration provide one stable operator input. This avoids a second temporary
+writer, validator, or plan format.
 
 ## 6. Runtime boundary
 

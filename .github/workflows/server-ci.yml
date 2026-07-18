@@ -40,3 +40,30 @@ jobs:
 
       - name: Run Django tests in container
         run: docker run --rm --add-host db:127.0.0.1 --network host -e APP_ENVIRONMENT=test -e POSTGRES_USER=test_user -e POSTGRES_PW=test_password -e POSTGRES_DB=test_db -e DJANGO_SECRET_KEY=test-secret-key-for-ci-only -e DEBUG=True server-test:latest python manage.py test
+
+      - name: Prepare clean-build report directory
+        run: mkdir -m 0777 clean-build-reports
+
+      - name: Run two independent empty builds
+        run: |
+          for build in first second; do
+            docker run --rm \
+              --add-host db:127.0.0.1 \
+              --network host \
+              -e APP_ENVIRONMENT=test \
+              -e POSTGRES_USER=test_user \
+              -e POSTGRES_PW=test_password \
+              -e POSTGRES_DB=test_db \
+              -e DJANGO_SECRET_KEY=test-secret-key-for-ci-only \
+              -e DEBUG=True \
+              -e DB21_REPORT_PATH=/reports/${build}.json \
+              -v "$PWD/clean-build-reports:/reports" \
+              server-test:latest \
+              python manage.py test \
+                server.watershed.test_release_validation.CleanBuildValidationTests.test_clean_build_acceptance
+          done
+
+      - name: Compare clean-build fingerprints
+        run: |
+          cmp clean-build-reports/first.json clean-build-reports/second.json
+          sha256sum clean-build-reports/first.json

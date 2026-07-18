@@ -32,9 +32,12 @@ unsupported scalar types are invalid. Version 1 geometry inputs are not
 canonicalized from coordinates. A materializer must first produce a canonical
 CRS-qualified binary geometry artifact and use its content digest.
 
-The implementation is `scripts/release_fingerprints.py`. Any change to these
-rules requires a new `fingerprint_version` and coordinated data-contract
-review; changing code without changing the version is invalid.
+The shared implementation is
+`server/server/watershed/fingerprint_contract.py`.
+`scripts/release_fingerprints.py` imports and re-exports it for the existing
+CLI and contract suite. Any change to these rules requires a new
+`fingerprint_version` and coordinated data-contract review; changing code
+without changing the version is invalid.
 
 ## 2. Semantic subjects
 
