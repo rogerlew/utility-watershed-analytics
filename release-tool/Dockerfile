@@ -8,9 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /work
 
-COPY --chown=65532:65532 release-tool/uwa_release_tool/cli.py /usr/local/bin/data-release.py
+COPY --chown=65532:65532 release-tool/uwa_release_tool /opt/release-tool/uwa_release_tool
 
 USER 65532:65532
 
-ENTRYPOINT ["python3", "/usr/local/bin/data-release.py"]
+ENTRYPOINT ["python3", "-m", "uwa_release_tool"]
 CMD ["status"]

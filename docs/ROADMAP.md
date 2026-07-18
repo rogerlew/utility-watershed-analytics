@@ -115,6 +115,11 @@ packages DB01 through DB05 are complete:
   codes, verified read-only input, explicit unavailable-command failures, and a
   non-root code-only image passed unit, double-build, content-audit, and
   digest-pinned runtime proof.
+- [DB12](work-packages/20260717-db12-artifact-client-cache/package.md) is
+  `EXECUTED-COMPLETE`: streaming immutable publication/fetch, checksum and cache
+  verification/recovery, concurrent fetch, typed failures, private paths,
+  namespace isolation, and bounded retained/leased cache cleanup passed unit,
+  real-forest1 temporary acceptance, and reproducible image proof.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -125,8 +130,8 @@ safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
 DB04 is repository-complete but not deployed to production. The S1 contract
-freeze, DB10A local infrastructure acceptance, and DB11 release-tool foundation
-are complete. DB12 is the next recommended repository package.
+freeze, DB10A local infrastructure acceptance, and DB11–DB12 release-tool and
+artifact-client foundations are complete. DB13 is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 
@@ -437,8 +442,10 @@ Suggested slug: `db12-artifact-client-cache`
   for all release artifacts.
 - **Prove:** integration tests exercise interrupted transfer, wrong checksum,
   existing corrupt cache entries, concurrent fetches, missing objects,
-  permission denial, credential rotation, retention-protected objects, and the
-  accepted test/production role boundaries.
+  permission denial, store conflict, retained/leased cache protection, absence
+  of a store-delete API, and the accepted test/production filesystem boundary.
+  Credential rotation and cloud roles do not apply to the operator-authorized
+  local forest1 design.
 
 #### DB13 — Stable watershed identity migration
 

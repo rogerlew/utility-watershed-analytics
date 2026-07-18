@@ -35,7 +35,7 @@ tar \
   --create \
   --file="$context_archive" \
   release-tool/Dockerfile \
-  release-tool/uwa_release_tool/cli.py
+  release-tool/uwa_release_tool
 
 docker buildx create --name "$builder_name" --driver docker-container >/dev/null
 docker buildx inspect "$builder_name" --bootstrap >/dev/null

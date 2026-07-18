@@ -104,6 +104,10 @@ The authoritative machine-readable policy and failure review are:
 - `data-releases/storage-contract/v1/artifact-store-policy.json`; and
 - `data-releases/storage-contract/v1/threat-review.json`.
 
+DB12 implements the corresponding publication, immutable lookup, cache
+verification/recovery, and bounded cache cleanup behavior in the accepted
+[artifact client and cache contract](database-artifact-client-contract.md).
+
 ## 7. DB10A acceptance
 
 DB10A is complete only after the real `forest1:/wc1` path is observed with:

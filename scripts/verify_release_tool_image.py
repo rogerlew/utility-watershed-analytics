@@ -13,7 +13,7 @@ from typing import Any
 
 
 EXPECTED_USER = "65532:65532"
-EXPECTED_ENTRYPOINT = ["python3", "/usr/local/bin/data-release.py"]
+EXPECTED_ENTRYPOINT = ["python3", "-m", "uwa_release_tool"]
 PROHIBITED_PATH_PARTS = (
     "/.env",
     "/.git/",
@@ -93,12 +93,17 @@ def audit_export(image: str) -> dict[str, int]:
             prohibited = prohibited_member_names(names)
             if prohibited:
                 raise ImageVerificationError(f"prohibited image paths: {prohibited}")
-            required = {"usr/local/bin/data-release.py"}
+            required = {
+                "opt/release-tool/uwa_release_tool/__init__.py",
+                "opt/release-tool/uwa_release_tool/__main__.py",
+                "opt/release-tool/uwa_release_tool/artifacts.py",
+                "opt/release-tool/uwa_release_tool/cli.py",
+            }
             if not required.issubset(set(names)):
                 raise ImageVerificationError("release-tool package is incomplete in image")
             scanned_files = 0
             for member in members:
-                if not member.isfile() or member.name != "usr/local/bin/data-release.py":
+                if not member.isfile() or not member.name.startswith("opt/release-tool/"):
                     continue
                 extracted = rootfs.extractfile(member)
                 if extracted is None:
@@ -161,7 +166,29 @@ def verify_invocation(image_id: str) -> dict[str, Any]:
     unavailable_events = parse_events(unavailable.stderr)
     if unavailable_events[-1].get("error_code") != "command_unavailable":
         raise ImageVerificationError("future command did not fail as unavailable")
-    return {"input_sha256": digest, "wrong_digest_exit": 11, "unavailable_exit": 20}
+    artifact_import = run_command(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--read-only",
+            "--network",
+            "none",
+            "--entrypoint",
+            "python3",
+            image_id,
+            "-c",
+            "from uwa_release_tool.artifacts import validate_digest; print(validate_digest('0' * 64))",
+        ]
+    )
+    if artifact_import.stdout.strip() != "0" * 64:
+        raise ImageVerificationError("artifact client module import failed")
+    return {
+        "artifact_module_imported": True,
+        "input_sha256": digest,
+        "wrong_digest_exit": 11,
+        "unavailable_exit": 20,
+    }
 
 
 def verify_image(image: str) -> dict[str, Any]:

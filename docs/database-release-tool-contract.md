@@ -85,12 +85,12 @@ The build:
 
 - pins `python:3.12.9-slim-bookworm` by immutable index digest;
 - creates a normalized allowlisted context containing only the Dockerfile and
-  the self-contained CLI file;
+  release-tool Python package;
 - uses an isolated BuildKit container and source-epoch layer rewriting;
 - performs two no-cache builds and requires identical image IDs;
 - runs as numeric non-root user `65532:65532`; and
 - audits the complete root filesystem for prohibited project paths and scans
-  the copied project file for credential markers.
+  every copied project file for credential markers.
 
 The accepted forest1 build produced local immutable image ID:
 
@@ -102,6 +102,10 @@ This local ID is evidence for the exact DB11 working tree. It is not a published
 registry digest and must not be embedded in a real release. A later release
 builds its reviewed code/toolchain image first, resolves that exact digest, then
 creates manifests and plans that reference it.
+
+DB12 adds the artifact client to the same code-only package and therefore has a
+different accepted local image ID. Successor code changes are expected to change
+the image ID while preserving this build and audit contract.
 
 ## 6. Runtime boundary
 

@@ -1043,7 +1043,8 @@ directories defined by the
 
 Version 1 cache paths, hit verification, atomic promotion, concurrency, cleanup,
 and storage-unavailable behavior are defined by the
-[artifact-store contract](database-artifact-store-contract.md).
+[artifact-store contract](database-artifact-store-contract.md) and implemented
+by the [artifact client contract](database-artifact-client-contract.md).
 
 - verify content on every cache hit;
 - download to a temporary file and atomically rename after verification;
