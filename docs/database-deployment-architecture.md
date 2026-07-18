@@ -403,10 +403,13 @@ their references are protected. The executable boundary and enforced child
 keys are defined in the
 [watershed domain integrity contract](database-domain-integrity-contract.md).
 
-Future capability and release-ledger tables must declare their own ownership
-before reconciliation may mutate them. Every other Django table is persistent
-by default. Before any non-owned table is allowed to reference a reconciled
-row, its stable identity, deletion behavior, and rollback semantics must be
+DB15 declares capability rows as release-scoped retained history: a reconciler
+may create the target release's rows, while active visibility follows the
+singleton pointer and older release rows remain for rollback. Release, attempt,
+run-state, artifact-lineage, and capability tables are persistent ledger state,
+not DB14 serving rebuild targets. Every other Django table is persistent by
+default. Before any non-owned table is allowed to reference a reconciled row,
+its stable identity, deletion behavior, and rollback semantics must be
 specified; a data release must not cascade-delete user-owned state.
 
 ### 9.2 Release ledger
@@ -433,8 +436,13 @@ A Django migration should introduce a small release ledger. Proposed records:
 - active manifest hash and data-contract version; and
 - activation timestamp.
 
+DB15 implements these records in migration
+`watershed.0009_release_ledger_capabilities`, with the bounded differences and
+executable behavior frozen in the
+[release ledger and capability contract](database-release-ledger-contract.md).
 The singleton constraint and a row lock provide the authoritative base-state
-assertion during activation.
+assertion during activation. Release payload and artifact lineage are
+immutable; lifecycle status is helper-controlled and retained for rollback.
 
 #### `DataReleaseAttempt`
 

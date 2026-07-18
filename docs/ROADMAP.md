@@ -131,6 +131,11 @@ packages DB01 through DB05 are complete:
   and status checks, fail-closed Topaz joins, exact three-table rebuild
   ownership, negative fixtures, and production-shaped migration/rollback and
   lock measurement passed in isolated PostGIS.
+- [DB15](work-packages/20260717-db15-release-ledger-capabilities/package.md) is
+  `EXECUTED-COMPLETE`: immutable version-1 release coordinates, one bootstrapped
+  `EMPTY` singleton, attributable attempts and one bounded lease, per-run and
+  artifact history, sanitized failures, and atomic active-only RHESSys
+  capability visibility passed isolated lifecycle and scale migration proof.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -143,7 +148,8 @@ anonymous source remains held and prune-prohibited. Temporary sudo was removed.
 DB04 is repository-complete but not deployed to production. The S1 contract
 freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
 artifact-client foundations, DB13 stable identity expansion, and DB14 domain
-integrity are complete. DB15 is the next recommended package.
+integrity and DB15 release-ledger foundations are complete. DB16 is the next
+recommended package.
 
 ## Execution environments and Wave 0 readiness
 
