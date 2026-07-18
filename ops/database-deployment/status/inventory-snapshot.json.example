@@ -1,0 +1,13 @@
+{
+  "artifact_published_at": "2026-07-18T18:00:00Z",
+  "captured_at": "2026-07-18T19:00:00Z",
+  "counts": {
+    "capabilities": 1,
+    "channels": 4,
+    "subcatchments": 3,
+    "watersheds": 2
+  },
+  "manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "release_id": "RELEASE",
+  "schema_version": 1
+}

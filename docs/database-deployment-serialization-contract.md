@@ -131,3 +131,18 @@ compatibility phase and verified encrypted publication on
 smoke/refresh failure invokes only the reviewed DB22 inverse. DB26 provides no
 production authority, phase-package installation, or protected workflow;
 those remain explicit later operations.
+
+## Protected release authorization
+
+DB27 adds three separate manual workflow paths around DB26: preparation,
+deployment, and rollback. Preparation runs on GitHub-hosted CI without an
+environment, self-hosted runner, or secret. Deployment and rollback use the
+same production concurrency group but distinct reviewed environments and
+fixed `deploy`/`rollback` authorization actions. Their protected inputs bind
+the preparation run, artifact name, operation ID, source commit, and exact
+authorization SHA-256.
+
+No data-release workflow has a push or pull-request trigger. The existing
+application deployment workflow does not invoke DB26, so merging code cannot
+deploy watershed data. The durable role/settings/status contract is in the
+[protected database release runbook](runbooks/protected-database-release.md).

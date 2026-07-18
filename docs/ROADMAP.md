@@ -206,9 +206,10 @@ DB19A materialized capability runtime integration, DB20 strict empty-build
 materialization, DB21 clean-build validation/reproducibility, and DB21A
 legacy-base export/adoption tooling are complete. DB22 base-aware planning and
 exact inverse generation is complete; DB23 atomic desired-state reconciliation
-and DB24 reconciler resilience are complete; DB25 deployment serialization and
-DB26 production database orchestration are complete; DB27 protected workflow,
-roles, and status is the next recommended package.
+and DB24 reconciler resilience are complete; DB25 deployment serialization,
+DB26 production database orchestration, and DB27 protected workflow, roles,
+and status are complete. DB27A production compatibility schema/code rollout is
+the next recommended package and requires its separate production authority.
 
 ## Execution environments and Wave 0 readiness
 

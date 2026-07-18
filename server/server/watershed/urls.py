@@ -5,6 +5,7 @@ from server.watershed.views import (
     WatershedChannelByKeyListView,
     WatershedChannelListView,
     WatershedCapabilityView,
+    ReleaseStatusView,
     WatershedSubcatchmentByKeyListView,
     WatershedSubcatchmentListView,
     WatershedViewSet,
@@ -19,6 +20,11 @@ router.register('', WatershedViewSet, basename='watershed')
 
 # Make router routes accessible to project URL configuration
 urlpatterns = [
+    path(
+        'release-status/',
+        ReleaseStatusView.as_view(),
+        name='release-status',
+    ),
     path(
         'by-key/<str:watershed_key>/',
         WatershedByKeyDetailView.as_view(),

@@ -1,0 +1,107 @@
+name: Prepare Database Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Prepare a deploy or rollback authorization bundle
+        required: true
+        type: choice
+        options: [deploy, rollback]
+      operation_id:
+        description: Stable operation ID recorded in the request
+        required: true
+        type: string
+      request_path:
+        description: Repository-relative DB26 request path
+        required: true
+        type: string
+      release_path:
+        description: Repository-relative release document path
+        required: true
+        type: string
+      members_path:
+        description: Repository-relative member index path
+        required: true
+        type: string
+      forward_plan_path:
+        description: Repository-relative forward plan path
+        required: true
+        type: string
+      inverse_plan_path:
+        description: Repository-relative inverse plan path
+        required: true
+        type: string
+      clean_build_report_path:
+        description: Repository-relative accepted clean-build report path
+        required: true
+        type: string
+      inventory_snapshot_path:
+        description: Repository-relative inventory snapshot path
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  server-ci:
+    name: Reuse server clean-build CI
+    uses: ./.github/workflows/server-ci.yml
+
+  contract-ci:
+    name: Reuse data-contract CI
+    uses: ./.github/workflows/data-contract-ci.yml
+
+  prepare:
+    name: Create immutable authorization bundle
+    needs: [server-ci, contract-ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ACTION: ${{ inputs.action }}
+      OPERATION_ID: ${{ inputs.operation_id }}
+      REQUEST_PATH: ${{ inputs.request_path }}
+      RELEASE_PATH: ${{ inputs.release_path }}
+      MEMBERS_PATH: ${{ inputs.members_path }}
+      FORWARD_PLAN_PATH: ${{ inputs.forward_plan_path }}
+      INVERSE_PLAN_PATH: ${{ inputs.inverse_plan_path }}
+      CLEAN_BUILD_REPORT_PATH: ${{ inputs.clean_build_report_path }}
+      INVENTORY_SNAPSHOT_PATH: ${{ inputs.inventory_snapshot_path }}
+    steps:
+      - name: Checkout exact preparation commit
+        uses: actions/checkout@v4
+
+      - name: Prepare checksum-bound bundle
+        run: |
+          umask 077
+          scripts/release_authorization.py prepare \
+            --action "$ACTION" \
+            --source-commit "$GITHUB_SHA" \
+            --preparation-run-id "run-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --output release-authorization \
+            --request "$REQUEST_PATH" \
+            --release "$RELEASE_PATH" \
+            --members "$MEMBERS_PATH" \
+            --forward-plan "$FORWARD_PLAN_PATH" \
+            --inverse-plan "$INVERSE_PLAN_PATH" \
+            --clean-build-report "$CLEAN_BUILD_REPORT_PATH" \
+            --inventory-snapshot "$INVENTORY_SNAPSHOT_PATH" \
+            | tee preparation-result.json
+          test "$(python3 -c 'import json; print(json.load(open("release-authorization/authorization.json"))["operation_id"])')" = "$OPERATION_ID"
+
+      - name: Publish immutable release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-release-${{ inputs.operation_id }}-${{ inputs.action }}
+          path: release-authorization/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish preparation result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-release-${{ inputs.operation_id }}-${{ inputs.action }}-preparation-result
+          path: preparation-result.json
+          if-no-files-found: warn
+          retention-days: 90

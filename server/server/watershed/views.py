@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from django.db.models import CharField, F, OuterRef, Subquery, Value
 from django.db.models.functions import Cast, Coalesce, Concat
 from server.watershed.models import (
+    ActiveDataRelease,
     Channel,
     Subcatchment,
     Watershed,
@@ -55,7 +56,6 @@ class WatershedViewSet(viewsets.ReadOnlyModelViewSet):
                 F('runid'),
             ),
         )
-
     # No logic changes, only decorating for documentation
     @extend_schema(
         operation_id='watershed_list',
@@ -106,6 +106,35 @@ class WatershedViewSet(viewsets.ReadOnlyModelViewSet):
             id_field='route_id',
             properties=self._properties + ('watershed_key', 'current_runid'),
         )
+
+
+class ReleaseStatusView(APIView):
+    def get(self, request):
+        active = ActiveDataRelease.objects.select_related("release").get(singleton_id=1)
+        document = {
+            "schema_version": 1,
+            "state": active.state,
+            "active_release": None,
+        }
+        if active.state == ActiveDataRelease.State.ACTIVE:
+            release = active.release
+            document["active_release"] = {
+                "release_id": release.release_id,
+                "manifest_sha256": active.manifest_sha256,
+                "data_contract": active.data_contract,
+                "activated_at": active.activated_at,
+                "counts": {
+                    "watersheds": release.actual_watersheds,
+                    "subcatchments": release.actual_subcatchments,
+                    "channels": release.actual_channels,
+                    "capabilities": release.run_states.filter(
+                        capability_fingerprint__isnull=False
+                    ).count(),
+                },
+            }
+        response = Response(document)
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class WatershedByKeyDetailView(APIView):

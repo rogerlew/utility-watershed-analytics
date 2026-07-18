@@ -20,7 +20,11 @@ def main():
     groups = set()
     for path in sorted(WORKFLOW_DIRECTORY.glob("*.yml")):
         content = path.read_text(encoding="utf-8")
-        if re.search(r"^\s*environment:\s*production\s*$", content, re.MULTILINE):
+        if re.search(
+            r"^\s*environment:\s*production(?:-data-(?:deploy|rollback))?\s*$",
+            content,
+            re.MULTILINE,
+        ):
             production_workflows.append(path.relative_to(ROOT).as_posix())
             match = re.search(r"^\s*group:\s*([^\s#]+)", content, re.MULTILINE)
             require(match is not None, f"Production workflow lacks concurrency group: {path.name}")

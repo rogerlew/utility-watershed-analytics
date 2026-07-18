@@ -1,0 +1,128 @@
+name: Deploy Database Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      preparation_run_id:
+        description: Numeric Actions run containing the prepared bundle
+        required: true
+        type: string
+      artifact_name:
+        description: Exact prepared artifact name
+        required: true
+        type: string
+      authorization_sha256:
+        description: Exact authorization.json SHA-256 shown to the approver
+        required: true
+        type: string
+      operation_id:
+        description: Exact stable deployment operation ID
+        required: true
+        type: string
+      source_commit:
+        description: Exact 40-character preparation commit
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: utility-watershed-analytics-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Approved database deployment
+    runs-on: [self-hosted, Linux, X64, deploy]
+    environment: production-data-deploy
+    timeout-minutes: 480
+    env:
+      PREPARATION_RUN_ID: ${{ inputs.preparation_run_id }}
+      ARTIFACT_NAME: ${{ inputs.artifact_name }}
+      AUTHORIZATION_SHA256: ${{ inputs.authorization_sha256 }}
+      OPERATION_ID: ${{ inputs.operation_id }}
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+    steps:
+      - name: Checkout exact authorized commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_commit }}
+
+      - name: Download exact prepared bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: release-authorization
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.preparation_run_id }}
+
+      - name: Verify deploy authorization
+        run: |
+          umask 077
+          find release-authorization -maxdepth 1 -type f -exec chmod 0400 {} +
+          scripts/release_authorization.py verify \
+            --action deploy \
+            --bundle release-authorization \
+            --authorization-sha256 "$AUTHORIZATION_SHA256" \
+            --operation-id "$OPERATION_ID" \
+            --source-commit "$SOURCE_COMMIT" \
+            --result deployment-verification.json
+
+      - name: Install immutable request bundle
+        run: |
+          target="/srv/utility-watershed-analytics/releases/$OPERATION_ID"
+          if sudo test -d "$target"; then
+            for source in release-authorization/*; do
+              sudo cmp --silent "$source" "$target/$(basename "$source")"
+            done
+          else
+            sudo install -d -o root -g root -m 0700 "$target"
+            sudo find release-authorization -maxdepth 1 -type f -print0 \
+              | sudo xargs -0 -I{} install -o root -g root -m 0400 {} "$target/"
+          fi
+          sudo install -d -o root -g root -m 0700 \
+            /etc/utility-watershed-analytics/database-deployments
+          python3 -c 'import json; print(json.load(open("deployment-verification.json"))["request_sha256"])' \
+            > request.sha256
+          request_target="/etc/utility-watershed-analytics/database-deployments/$OPERATION_ID.json"
+          hash_target="/etc/utility-watershed-analytics/database-deployments/$OPERATION_ID.sha256"
+          if sudo test -e "$request_target" || sudo test -e "$hash_target"; then
+            sudo cmp --silent "$target/request.json" "$request_target"
+            sudo cmp --silent request.sha256 "$hash_target"
+          else
+            sudo install -o root -g root -m 0400 "$target/request.json" "$request_target"
+            sudo install -o root -g root -m 0400 request.sha256 "$hash_target"
+          fi
+
+      - name: Start and wait for durable deployment
+        run: |
+          report="/var/lib/utility-watershed-analytics/database-deployments/$OPERATION_ID/report.json"
+          if sudo test -f "$report"; then
+            status="$(sudo cat "$report" | python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')"
+            [[ "$status" == succeeded || "$status" == noop ]]
+            exit
+          fi
+          sudo systemctl start "utility-watershed-analytics-database-deploy@$OPERATION_ID.service"
+
+      - name: Copy sanitized deployment report
+        if: always()
+        run: |
+          state_root=/var/lib/utility-watershed-analytics/database-deployments
+          if sudo test -f "$state_root/$OPERATION_ID/report.json"; then
+            sudo install -o "$(id -u)" -g "$(id -g)" -m 0600 \
+              "$state_root/$OPERATION_ID/report.json" deployment-report.json
+          fi
+
+      - name: Retain deployment report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-release-${{ inputs.operation_id }}-deployment-report
+          path: |
+            deployment-verification.json
+            deployment-report.json
+          if-no-files-found: warn
+          retention-days: 365
