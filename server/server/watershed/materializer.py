@@ -709,3 +709,40 @@ def reconcile_and_activate_release(
             raise
         raise MaterializationError(str(error) or type(error).__name__) from error
     return ReconciledBuildResult(staging_result, applied_result)
+
+
+def rollback_and_activate_release(
+    attempt,
+    members,
+    inverse_plan,
+    source_forward_plan,
+    *,
+    budget: SpaceBudget,
+    observed_available_bytes,
+    batch_size=1000,
+):
+    staging_result = stage_locked_release(
+        attempt,
+        members,
+        budget=budget,
+        observed_available_bytes=observed_available_bytes,
+        batch_size=batch_size,
+    )
+    attempt = transition_attempt(
+        attempt,
+        DataReleaseAttempt.Status.APPLYING,
+        actual_plan_sha256=canonical_sha256(inverse_plan),
+    )
+    try:
+        applied_result = apply_staged_release(
+            attempt,
+            inverse_plan,
+            source_forward_plan=source_forward_plan,
+            batch_size=batch_size,
+        )
+    except Exception as error:
+        _fail_attempt(attempt, "rollback-apply", error)
+        if isinstance(error, MaterializationError):
+            raise
+        raise MaterializationError(str(error) or type(error).__name__) from error
+    return ReconciledBuildResult(staging_result, applied_result)

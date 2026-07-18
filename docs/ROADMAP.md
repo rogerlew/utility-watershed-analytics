@@ -178,6 +178,11 @@ packages DB01 through DB05 are complete:
   transactional adoption/rollback preserve every pre-existing domain row while
   changing only ledger, pointer, attempt, and reviewed bootstrap capability
   state.
+- [DB24](work-packages/20260718-db24-reconciler-resilience/package.md) is
+  `EXECUTED-COMPLETE`: exact read-only no-op verification, forward-bound inverse
+  rollback, expired-attempt recovery, injected post-pointer rollback, and
+  clean-build/reconciliation fingerprint equivalence passed disposable PostGIS
+  proof without production access.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -196,7 +201,8 @@ DB19A materialized capability runtime integration, DB20 strict empty-build
 materialization, DB21 clean-build validation/reproducibility, and DB21A
 legacy-base export/adoption tooling are complete. DB22 base-aware planning and
 exact inverse generation is complete; DB23 atomic desired-state reconciliation
-is complete; DB24 reconciler resilience is the next recommended package.
+and DB24 reconciler resilience are complete; DB25 deployment serialization is
+the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

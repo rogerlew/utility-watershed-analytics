@@ -1,11 +1,14 @@
 import hashlib
+import json
 from datetime import timedelta
+from io import StringIO
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.db import IntegrityError, connection
 from django.test import TestCase
 from django.utils import timezone
@@ -373,6 +376,20 @@ class StagingRecoveryTests(TestCase):
                         attempt.staging_state.status,
                         DataReleaseStagingState.Status.CLEANED,
                     )
+
+    def test_recovery_command_reports_expired_attempt(self):
+        _, _, release, _, _ = create_release(1)
+        attempt = begin_attempt(release)
+        self.expire(attempt, now=timezone.now())
+        output = StringIO()
+
+        call_command("recover_release_attempts", stdout=output)
+
+        document = json.loads(output.getvalue())
+        attempt.refresh_from_db()
+        self.assertEqual(document["status"], "recovered")
+        self.assertEqual(document["attempts"][0]["attempt_id"], str(attempt.pk))
+        self.assertEqual(attempt.status, DataReleaseAttempt.Status.FAILED)
 
     def test_retention_cleanup_failure_and_retry_are_explicit(self):
         now = timezone.now()

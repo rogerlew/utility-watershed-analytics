@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from server.watershed.domain_mutations import (
     ReconciliationError,
+    apply_staged_empty_base,
     apply_staged_release,
 )
 from server.watershed.fingerprint_contract import canonical_sha256
@@ -29,9 +30,18 @@ from server.watershed.models import (
     WatershedIdentity,
     WatershedRunAlias,
 )
-from server.watershed.planner import plan_forward
+from server.watershed.planner import (
+    plan_empty_build,
+    plan_exact_inverse,
+    plan_forward,
+)
 from server.watershed.planner import PlanningError
-from server.watershed.release_ledger import begin_release_attempt, transition_attempt
+from server.watershed.reconciliation import verify_active_release_noop
+from server.watershed.release_ledger import (
+    activate_release,
+    begin_release_attempt,
+    transition_attempt,
+)
 from server.watershed.release_validation import compute_serving_fingerprints
 from server.watershed.staging_models import (
     DataReleaseStagingState,
@@ -175,7 +185,7 @@ class AtomicReconcilerTests(TransactionTestCase):
             logical_watershed=state.watershed_identity,
             srcname=f"old-{state.watershed_identity.watershed_key}",
             geom=geometry(offset),
-            simplified_geom=geometry(offset, 0.8),
+            simplified_geom=geometry(offset),
         )
         keys = subcatchments or range(1, state.actual_subcatchments + 1)
         for topazid in keys:
@@ -206,6 +216,8 @@ class AtomicReconcilerTests(TransactionTestCase):
         source_name=None,
         subcatchments=None,
         capability_suffix=None,
+        slope_divisor=5,
+        channel_offset=0.6,
     ):
         staged = StagedWatershed.objects.create(
             attempt=attempt,
@@ -228,7 +240,7 @@ class AtomicReconcilerTests(TransactionTestCase):
                 topazid=topazid,
                 weppid=100 + topazid,
                 geom=geometry(offset + topazid / 10, 0.1),
-                attributes={"slope_scalar": topazid / 5},
+                attributes={"slope_scalar": topazid / slope_divisor},
             )
         StagedChannel.objects.create(
             attempt=attempt,
@@ -239,7 +251,7 @@ class AtomicReconcilerTests(TransactionTestCase):
             topazid=1,
             weppid=201,
             order=1,
-            geom=geometry(offset + 0.6, 0.1),
+            geom=geometry(offset + channel_offset, 0.1),
         )
         if capability_suffix:
             values = self.capability_values(
@@ -431,6 +443,77 @@ class AtomicReconcilerTests(TransactionTestCase):
         attempt.refresh_from_db()
         return base, target, attempt, final_plan
 
+    def prepare_rollback(self, base, forward_plan):
+        inverse = plan_exact_inverse(forward_plan)
+        inverse_digest = canonical_sha256(inverse)
+        attempt = begin_release_attempt(
+            release=base,
+            actor_kind=DataReleaseAttempt.ActorKind.OPERATOR,
+            actor_identifier="db24-rollback-test",
+            target_environment="test",
+            application_git_commit=digest("application")[:40],
+            reviewed_plan_sha256=inverse_digest,
+            lease_owner="forest1:db24-rollback-test",
+        )
+        attempt = transition_attempt(attempt, DataReleaseAttempt.Status.STAGING)
+        states = {
+            row.watershed_identity.watershed_key: row
+            for row in base.run_states.select_related("watershed_identity")
+        }
+        self.stage_run(
+            attempt,
+            states["alpha"],
+            1,
+            source_name="old-alpha",
+            subcatchments=(1, 2),
+            capability_suffix="old-capability",
+            slope_divisor=10,
+            channel_offset=0.5,
+        )
+        self.stage_run(
+            attempt,
+            states["beta"],
+            4,
+            slope_divisor=10,
+            channel_offset=0.5,
+        )
+        self.stage_run(
+            attempt,
+            states["replacement"],
+            7,
+            slope_divisor=10,
+            channel_offset=0.5,
+        )
+        self.stage_run(
+            attempt,
+            states["removed"],
+            10,
+            slope_divisor=10,
+            channel_offset=0.5,
+        )
+        DataReleaseStagingState.objects.create(
+            attempt=attempt,
+            status=DataReleaseStagingState.Status.READY,
+            artifact_bytes=1,
+            staging_bytes=1,
+            index_bytes=1,
+            backup_bytes=1,
+            wal_bytes=1,
+            margin_bytes=1,
+            available_bytes=10,
+            watershed_rows=4,
+            subcatchment_rows=5,
+            channel_rows=4,
+            capability_rows=1,
+            retention_until=timezone.now() + timedelta(hours=1),
+        )
+        attempt = transition_attempt(
+            attempt,
+            DataReleaseAttempt.Status.APPLYING,
+            actual_plan_sha256=inverse_digest,
+        )
+        return attempt, inverse
+
     def test_reconciles_exact_scope_and_preserves_retained_public_ids(self):
         base, target, attempt, plan = self.prepare()
         alpha = self.identity("alpha")
@@ -574,3 +657,141 @@ class AtomicReconcilerTests(TransactionTestCase):
         self.assertEqual(Watershed.objects.get(logical_watershed__watershed_key="alpha").srcname, "new-alpha")
         self.assertFalse(Watershed.objects.filter(logical_watershed__watershed_key="removed").exists())
         self.assertTrue(Watershed.objects.filter(logical_watershed__watershed_key="added").exists())
+
+    def test_exact_noop_and_inverse_restore_prior_release(self):
+        base, target, attempt, forward = self.prepare()
+        base_fingerprint = base.domain_fingerprint
+        apply_staged_release(attempt, forward)
+        before_noop = self.snapshot()
+        attempt_count = DataReleaseAttempt.objects.count()
+
+        verification = verify_active_release_noop(target)
+
+        self.assertEqual(verification.domain_fingerprint, target.domain_fingerprint)
+        self.assertEqual(self.snapshot(), before_noop)
+        self.assertEqual(DataReleaseAttempt.objects.count(), attempt_count)
+
+        rollback_attempt, inverse = self.prepare_rollback(base, forward)
+        apply_staged_release(
+            rollback_attempt,
+            inverse,
+            source_forward_plan=forward,
+        )
+        self.assertEqual(ActiveDataRelease.objects.get().release_id, base.release_id)
+        self.assertEqual(compute_serving_fingerprints(base).domain, base_fingerprint)
+        self.assertEqual(
+            DataReleaseAttempt.objects.get(pk=rollback_attempt.pk).status,
+            DataReleaseAttempt.Status.SUCCEEDED,
+        )
+
+    def test_post_activation_failure_and_broken_inverse_roll_back(self):
+        base, target, attempt, forward = self.prepare()
+        before = self.snapshot()
+        original_compute = compute_serving_fingerprints
+
+        def fail_target(release):
+            if release.pk == target.pk:
+                raise RuntimeError("injected final fingerprint failure")
+            return original_compute(release)
+
+        with patch(
+            "server.watershed.release_validation.compute_serving_fingerprints",
+            side_effect=fail_target,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "final fingerprint"):
+                apply_staged_release(attempt, forward)
+        self.assertEqual(self.snapshot(), before)
+
+        apply_staged_release(attempt, forward)
+        rollback_attempt, inverse = self.prepare_rollback(base, forward)
+        broken_forward = {**forward, "plan_id": "broken-forward-binding"}
+        rollback_before = self.snapshot()
+        with self.assertRaisesRegex(ReconciliationError, "not bound"):
+            apply_staged_release(
+                rollback_attempt,
+                inverse,
+                source_forward_plan=broken_forward,
+            )
+        self.assertEqual(self.snapshot(), rollback_before)
+
+    def test_disaster_empty_build_matches_populated_reconciliation(self):
+        base, target, attempt, forward = self.prepare()
+        apply_staged_release(attempt, forward)
+        reconciled = compute_serving_fingerprints(target)
+
+        RunCapability.objects.all().delete()
+        Channel.objects.all().delete()
+        Subcatchment.objects.all().delete()
+        Watershed.objects.all().delete()
+        ActiveDataRelease.objects.update(
+            state=ActiveDataRelease.State.EMPTY,
+            release=None,
+            manifest_sha256=None,
+            data_contract=None,
+            activated_at=None,
+        )
+        DataRelease.objects.filter(pk=target.pk).update(status=DataRelease.Status.VALIDATED)
+        DataRelease.objects.filter(pk=base.pk).update(status=DataRelease.Status.SUPERSEDED)
+        target.refresh_from_db()
+        empty_plan = plan_empty_build(target)
+        empty_digest = canonical_sha256(empty_plan)
+        empty_attempt = begin_release_attempt(
+            release=target,
+            actor_kind=DataReleaseAttempt.ActorKind.OPERATOR,
+            actor_identifier="db24-disaster-test",
+            target_environment="test",
+            application_git_commit=digest("application")[:40],
+            reviewed_plan_sha256=empty_digest,
+            lease_owner="forest1:db24-disaster-test",
+        )
+        empty_attempt = transition_attempt(
+            empty_attempt,
+            DataReleaseAttempt.Status.STAGING,
+        )
+        states = {
+            row.watershed_identity.watershed_key: row
+            for row in target.run_states.select_related("watershed_identity")
+        }
+        self.stage_run(
+            empty_attempt,
+            states["alpha"],
+            2,
+            source_name="new-alpha",
+            subcatchments=(1, 3),
+            capability_suffix="new-capability",
+        )
+        self.stage_run(empty_attempt, states["added"], 13)
+        self.stage_run(empty_attempt, states["beta"], 4, slope_divisor=10, channel_offset=0.5)
+        self.stage_run(
+            empty_attempt,
+            states["replacement"],
+            7,
+            slope_divisor=10,
+            channel_offset=0.5,
+        )
+        DataReleaseStagingState.objects.create(
+            attempt=empty_attempt,
+            status=DataReleaseStagingState.Status.READY,
+            artifact_bytes=1,
+            staging_bytes=1,
+            index_bytes=1,
+            backup_bytes=1,
+            wal_bytes=1,
+            margin_bytes=1,
+            available_bytes=10,
+            watershed_rows=4,
+            subcatchment_rows=5,
+            channel_rows=4,
+            capability_rows=1,
+            retention_until=timezone.now() + timedelta(hours=1),
+        )
+        empty_attempt = transition_attempt(
+            empty_attempt,
+            DataReleaseAttempt.Status.APPLYING,
+            actual_plan_sha256=empty_digest,
+        )
+        with transaction.atomic():
+            apply_staged_empty_base(empty_attempt)
+            activate_release(empty_attempt)
+        rebuilt = compute_serving_fingerprints(target)
+        self.assertEqual(rebuilt, reconciled)

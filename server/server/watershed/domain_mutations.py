@@ -259,7 +259,9 @@ def apply_staged_empty_base(attempt, *, batch_size=1000):
                 is_current=True,
             ).exists():
                 raise EmptyBaseMutationError("Current run alias is absent or inconsistent.")
-            row = Watershed(**_watershed_values(staged))
+            row = Watershed(
+                **_watershed_values(staged, derive_simplified=True)
+            )
             row.full_clean(validate_unique=False, validate_constraints=False)
             rows.append(row)
         Watershed.objects.bulk_create(rows, batch_size=batch_size)
@@ -449,23 +451,51 @@ def _replace_target_capabilities(attempt, *, batch_size):
     return len(rows)
 
 
-def _assert_reviewed_plan(attempt, forward_plan):
-    digest = canonical_sha256(forward_plan)
+def _assert_reviewed_plan(attempt, deployment_plan, source_forward_plan=None):
+    digest = canonical_sha256(deployment_plan)
     if not (
         digest == attempt.reviewed_plan_sha256 == attempt.actual_plan_sha256
     ):
         raise ReconciliationError("Actual and reviewed plan digests differ.")
     if attempt.previous_active_release_id is None:
         raise ReconciliationError("Populated reconciliation requires a reviewed base.")
-    from server.watershed.planner import plan_forward
+    from server.watershed.planner import (
+        plan_exact_inverse,
+        plan_forward,
+    )
 
     regenerated = plan_forward(
         attempt.previous_active_release,
         attempt.release,
         allow_large_removals=True,
     )
-    if regenerated != forward_plan:
-        raise ReconciliationError("Regenerated forward plan differs from review.")
+    if deployment_plan.get("plan_kind") == "forward":
+        if regenerated != deployment_plan or source_forward_plan is not None:
+            raise ReconciliationError("Regenerated forward plan differs from review.")
+    elif deployment_plan.get("plan_kind") == "exact-inverse":
+        if (
+            source_forward_plan is None
+            or plan_exact_inverse(source_forward_plan) != deployment_plan
+        ):
+            raise ReconciliationError("Exact inverse is not bound to its forward plan.")
+        comparable_fields = (
+            "fingerprint_version",
+            "data_contract",
+            "identity_contract",
+            "supported_migration",
+            "materializer",
+            "base",
+            "target",
+            "actions",
+            "expected_row_delta",
+        )
+        if any(
+            regenerated[field] != deployment_plan[field]
+            for field in comparable_fields
+        ):
+            raise ReconciliationError("Regenerated inverse direction differs from review.")
+    else:
+        raise ReconciliationError("Unsupported deployment plan kind.")
     from server.watershed.release_validation import compute_serving_fingerprints
 
     observed = compute_serving_fingerprints(attempt.previous_active_release)
@@ -481,11 +511,17 @@ def _assert_reviewed_plan(attempt, forward_plan):
         or observed.capability_rows != expected_capabilities
     ):
         raise ReconciliationError("Observed base row counts differ from review.")
-    return regenerated
+    return deployment_plan
 
 
 @transaction.atomic
-def apply_staged_release(attempt, forward_plan, *, batch_size=1000):
+def apply_staged_release(
+    attempt,
+    deployment_plan,
+    *,
+    source_forward_plan=None,
+    batch_size=1000,
+):
     if batch_size < 1:
         raise ValueError("Batch size must be positive.")
     with connection.cursor() as cursor:
@@ -506,7 +542,11 @@ def apply_staged_release(attempt, forward_plan, *, batch_size=1000):
     if state.status != DataReleaseStagingState.Status.READY:
         raise ReconciliationError("Reconciliation requires READY staging.")
     _assert_exact_staging(attempt, state)
-    plan = _assert_reviewed_plan(attempt, forward_plan)
+    plan = _assert_reviewed_plan(
+        attempt,
+        deployment_plan,
+        source_forward_plan,
+    )
 
     base_states = {
         row.watershed_identity.watershed_key: row
