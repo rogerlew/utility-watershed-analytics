@@ -18,39 +18,44 @@ SPEC.loader.exec_module(MODULE)
 class ArtifactStoreContractTests(unittest.TestCase):
     def setUp(self):
         self.directory = ROOT / "data-releases" / "storage-contract" / "v1"
-        self.policy = json.loads((self.directory / "artifact-store-policy.json").read_text(encoding="utf-8"))
-        self.classes = json.loads((self.directory / "artifact-classes.json").read_text(encoding="utf-8"))
-        self.threats = json.loads((self.directory / "threat-review.json").read_text(encoding="utf-8"))
+        self.policy = json.loads((self.directory / "artifact-store-policy.json").read_text())
+        self.classes = json.loads((self.directory / "artifact-classes.json").read_text())
+        self.threats = json.loads((self.directory / "threat-review.json").read_text())
 
     def test_complete_contract_passes(self):
         self.assertEqual(
             MODULE.validate_suite(self.directory),
-            {"buckets": 2, "roles": 5, "artifact_classes": 6, "threat_cases": 9},
+            {"namespaces": 2, "operators": 1, "artifact_classes": 6, "failure_cases": 7},
         )
 
-    def test_provider_change_fails(self):
+    def test_paid_provider_fails(self):
         policy = copy.deepcopy(self.policy)
-        policy["provider"]["id"] = "unreviewed-provider"
-        with self.assertRaisesRegex(MODULE.ContractError, "backblaze-b2"):
+        policy["storage"]["paid_provider_required"] = True
+        with self.assertRaisesRegex(MODULE.ContractError, "paid provider"):
             MODULE.validate_policy(policy)
 
-    def test_publisher_delete_capability_fails(self):
+    def test_wrong_host_fails(self):
         policy = copy.deepcopy(self.policy)
-        publisher = next(role for role in policy["roles"] if role["role"] == "publisher")
-        publisher["capabilities"].append("deleteFiles")
-        with self.assertRaisesRegex(MODULE.ContractError, "publisher capabilities"):
+        policy["storage"]["host"] = "other-host"
+        with self.assertRaisesRegex(MODULE.ContractError, "forest1"):
             MODULE.validate_policy(policy)
 
-    def test_short_object_lock_fails(self):
+    def test_group_readable_directory_fails(self):
         policy = copy.deepcopy(self.policy)
-        policy["immutability"]["default_days"] = 30
-        with self.assertRaisesRegex(MODULE.ContractError, "at least 365"):
+        policy["ownership"]["directory_mode"] = "0750"
+        with self.assertRaisesRegex(MODULE.ContractError, "0700"):
             MODULE.validate_policy(policy)
 
     def test_two_release_retention_fails(self):
         policy = copy.deepcopy(self.policy)
         policy["retention"]["minimum_releases"] = 2
         with self.assertRaisesRegex(MODULE.ContractError, "active plus two"):
+            MODULE.validate_policy(policy)
+
+    def test_automatic_deletion_fails(self):
+        policy = copy.deepcopy(self.policy)
+        policy["retention"]["automatic_deletion_allowed"] = True
+        with self.assertRaisesRegex(MODULE.ContractError, "automatic deletion"):
             MODULE.validate_policy(policy)
 
     def test_missing_artifact_class_fails(self):
@@ -61,9 +66,7 @@ class ArtifactStoreContractTests(unittest.TestCase):
 
     def test_missing_required_failure_fails(self):
         threats = copy.deepcopy(self.threats)
-        threats["cases"] = [
-            item for item in threats["cases"] if item["case_key"] != "provider-outage"
-        ]
+        threats["cases"] = [item for item in threats["cases"] if item["case_key"] != "storage-full"]
         with self.assertRaisesRegex(MODULE.ContractError, "failure coverage"):
             MODULE.validate_threat_review(threats)
 
@@ -73,16 +76,10 @@ class ArtifactStoreContractTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.ContractError, "mutable aliases"):
             MODULE.validate_policy(policy)
 
-    def test_incomplete_recovery_mirror_fails(self):
+    def test_low_free_space_floor_fails(self):
         policy = copy.deepcopy(self.policy)
-        policy["recovery"]["minimum_mirrored_releases"] = 1
-        with self.assertRaisesRegex(MODULE.ContractError, "active plus two"):
-            MODULE.validate_policy(policy)
-
-    def test_public_bucket_fails(self):
-        policy = copy.deepcopy(self.policy)
-        policy["buckets"][1]["private"] = False
-        with self.assertRaisesRegex(MODULE.ContractError, "production bucket must be private"):
+        policy["monitoring"]["minimum_free_bytes"] = 1
+        with self.assertRaisesRegex(MODULE.ContractError, "100 GiB"):
             MODULE.validate_policy(policy)
 
 

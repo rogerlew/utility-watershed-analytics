@@ -579,7 +579,7 @@ The design must support the following already identified work:
 | RHESSys | Scenario added or removed, variable renamed, Parquet schema changes, GeoTIFF CRS changes, geometry revision changes, only some assets upload successfully. |
 | Deployment | Retry after interruption, concurrent deploy, disk exhaustion, long transaction, application traffic during activation, post-activation smoke-test failure. |
 | Compatibility | New data requires code not deployed yet, code rollback cannot read new schema, migration changes field meaning, transform code changes with identical source bytes. |
-| Operations | Restore from backup, redeploy previous release, cache garbage collection, credential expiration, artifact-store outage, checksum mismatch. |
+| Operations | Restore from backup, redeploy previous release, cache garbage collection, forest1 storage unavailable, checksum mismatch. |
 | Persistent state | Django users, sessions, admin logs, or future user-created records must survive watershed rebuilds and may reference stable watershed identities. |
 | Reproducibility | GDAL, PostGIS, or transformation-library version changes output; timestamps or unordered iteration make artifacts nondeterministic. |
 
@@ -1020,15 +1020,14 @@ cutover must therefore:
 
 ### 19.2 Data artifacts
 
-DB10 selects Backblaze B2 and freezes the provider, role, immutability,
-retention, cache, governance, and recovery behavior in the
-[artifact-store contract](database-artifact-store-contract.md). DB10A must
-provision and accept separate test and production infrastructure before the
-selection is operational.
+DB10 follows the operator's decision to use the existing ZFS-backed
+`forest1:/wc1` filesystem. DB10A provisions and accepts the test and production
+directories defined by the
+[artifact backup contract](database-artifact-store-contract.md).
 
-- use off-host, project-controlled S3-compatible storage with encryption,
-  versioning or object lock, content-addressed keys, and no TTL for retained
-  releases;
+- use the operator-owned `/wc1/utility-watershed-analytics-artifacts/v1` tree;
+- keep it separate from `/wc1/utility-watershed-analytics-db-backups`;
+- use private filesystem modes, content-addressed keys, and verified copies;
 - keep artifacts for the active release and at least two rollback releases;
 - use content-addressed keys so identical artifacts are shared safely;
 - garbage-collect only blobs unreferenced by retained manifests;
@@ -1038,7 +1037,7 @@ selection is operational.
 ### 19.3 Local cache
 
 Version 1 cache paths, hit verification, atomic promotion, concurrency, cleanup,
-and provider-outage behavior are defined by the
+and storage-unavailable behavior are defined by the
 [artifact-store contract](database-artifact-store-contract.md).
 
 - verify content on every cache hit;
@@ -1178,9 +1177,9 @@ demonstrate all of the following:
 The architecture adopts these defaults unless an implementation proposal
 documents and approves a replacement:
 
-1. Accepted artifacts use off-host, project-controlled S3-compatible storage
-   with encryption, object versioning or lock, content-addressed keys, and no
-   TTL while referenced by a retained release.
+1. Accepted artifact backups use the operator-owned `forest1:/wc1` filesystem,
+   private modes, content-addressed keys, verified atomic copies, and no TTL
+   while referenced by a retained release.
 2. Every non-watershed Django table is persistent by default. Only explicitly
    declared watershed-domain and capability tables are reconciled; Silk has a
    separate expiry policy.
@@ -1203,17 +1202,15 @@ documents and approves a replacement:
 
 The remaining project-specific decisions are:
 
-1. Which S3-compatible provider, bucket ownership, encryption keys, and access
-   roles will implement the artifact-store default?
-2. What naming scheme assigns watershed keys to existing batch members, and
+1. What naming scheme assigns watershed keys to existing batch members, and
    when do public routes migrate from run IDs with compatibility redirects?
-3. What is the complete field-level metadata precedence matrix for each
+2. What is the complete field-level metadata precedence matrix for each
    collection?
-4. What activation lock-time and API-latency budget triggers blue-green
+3. What activation lock-time and API-latency budget triggers blue-green
    deployment?
-5. Does persistent application state require an RPO shorter than the proposed
+4. Does persistent application state require an RPO shorter than the proposed
    24-hour default?
-6. Which people or teams may prepare, independently approve, deploy, and roll
+5. Which people or teams may prepare, independently approve, deploy, and roll
    back a release?
 
 Until these are resolved, release preparation and planning can be implemented

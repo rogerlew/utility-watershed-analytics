@@ -7,7 +7,7 @@ Date: 2026-07-17
 This document defines the machine-readable release representation accepted by
 DB08. It encodes the identity and metadata decisions in the
 [DB07 contract](database-identity-metadata-contract.md) without choosing an
-artifact provider, fingerprint algorithm, deployment plan, or production
+artifact backup, fingerprint algorithm, deployment plan, or production
 release membership.
 
 ## 1. Canonical format and version boundary
@@ -104,8 +104,9 @@ the suite fail until coverage is reconciled.
 DB09 defines canonical fingerprints and base-specific forward, inverse, and
 empty-build plans in the accepted
 [fingerprint and plan contract](database-fingerprint-plan-contract.md). DB10
-selects Backblaze B2 and freezes storage, retention, recovery, and role behavior
-in the accepted [artifact-store contract](database-artifact-store-contract.md).
+freezes the operator-owned `forest1:/wc1` backup layout, retention, integrity,
+and recovery behavior in the accepted
+[artifact backup contract](database-artifact-store-contract.md).
 Neither successor may weaken immutable verification, exact membership,
 identity, removal, replay, or credential boundaries without a new reviewed
 contract version.

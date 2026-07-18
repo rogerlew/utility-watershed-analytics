@@ -12,6 +12,8 @@ on:
       - 'scripts/tests/test_fingerprint_plan_contract.py'
       - 'scripts/validate_artifact_store_contract.py'
       - 'scripts/tests/test_artifact_store_contract.py'
+      - 'scripts/accept_artifact_backup.py'
+      - 'scripts/tests/test_artifact_backup_acceptance.py'
       - '.github/workflows/data-contract-ci.yml'
   workflow_call:
 
@@ -49,3 +51,6 @@ jobs:
 
       - name: Run artifact-store contract tests
         run: PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_artifact_store_contract
+
+      - name: Run local artifact-backup acceptance tests
+        run: PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_artifact_backup_acceptance

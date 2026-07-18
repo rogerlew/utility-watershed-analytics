@@ -57,8 +57,8 @@ corresponding production implementation has already occurred.
 
 ## Defaults adopted from review
 
-- Project-controlled encrypted S3-compatible artifact storage with versioning
-  or object lock, content-addressed keys, and no TTL for retained releases.
+- Operator-owned artifact backups on `forest1:/wc1` with private modes,
+  content-addressed verified copies, and no TTL for retained releases.
 - All non-watershed Django tables are persistent by default.
 - Mandatory stable watershed keys are introduced before release schema
   implementation.

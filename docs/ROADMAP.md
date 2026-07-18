@@ -102,10 +102,14 @@ packages DB01 through DB05 are complete:
   mutation proof, and strict forward, exact-inverse, and empty-build plan
   contracts passed with exact wrong-base replay rejection.
 - [DB10](work-packages/20260717-db10-artifact-store-contract/package.md) is
-  `EXECUTED-COMPLETE`: Backblaze B2 is selected for private S3-compatible
-  storage; encryption, Object Lock, five roles, active-plus-two retention,
-  content keys, cache/recovery, six artifact classes, and nine failure cases are
-  frozen and CI-validated without provisioning infrastructure.
+  `EXECUTED-COMPLETE`: the original provider choice was superseded by the
+  operator's authoritative `forest1:/wc1` decision; private filesystem storage,
+  content hashes, active-plus-two retention, six artifact classes, and seven
+  failure cases are frozen and CI-validated.
+- [DB10A](work-packages/20260717-db10a-artifact-store-infrastructure/package.md)
+  is `EXECUTED-COMPLETE`: the real forest1 artifact backup tree was provisioned
+  with private test/production namespaces; three test releases, negative
+  integrity cases, idempotent rerun, and an exact clean restore passed.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -116,8 +120,8 @@ safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
 DB04 is repository-complete but not deployed to production. The S1 contract
-freeze through DB10 is complete. DB10A infrastructure acceptance is the next
-storage gate, and DB11 remains unblocked for repository work.
+freeze and DB10A local infrastructure acceptance are complete. DB11 is the next
+recommended repository package.
 
 ## Execution environments and Wave 0 readiness
 
@@ -378,30 +382,30 @@ Suggested slug: `db09-fingerprint-plan-contract`
 Suggested slug: `db10-artifact-store-contract`
 
 - **Depends on:** DB08.
-- **Deliver:** select the project-controlled S3-compatible provider and define
-  bucket ownership, encryption and access roles, content-addressed key layout,
-  versioning or object lock, retained-release policy, garbage collection,
-  local cache behavior, credential boundaries, and recovery responsibilities.
-- **Prove:** threat and failure review covers partial upload, hash collision,
-  stale cache, revoked credentials, provider outage, accidental deletion, and
-  restoration of the active plus two rollback releases; record licensing,
-  sensitivity, residency, and retention constraints for every artifact class.
+- **Deliver:** define the operator-owned `forest1:/wc1` artifact backup root,
+  private filesystem ownership, content-addressed key layout, retained-release
+  policy, manual cleanup, cache behavior, and recovery responsibilities.
+- **Prove:** threat and failure review covers partial copy, hash collision,
+  corrupt backup, accidental deletion, storage exhaustion, forest1
+  unavailability, and restoration of the active plus two rollback releases;
+  record licensing, sensitivity, residency, and retention constraints for every
+  artifact class.
 
 #### DB10A — Artifact-store infrastructure acceptance
 
 Suggested slug: `db10a-artifact-store-infrastructure`
 
 - **Depends on:** DB10.
-- **Deliver:** provision separate test and production namespaces with encryption,
-  versioning or object lock, audit logs, quotas and alerts; separate publisher,
-  runtime reader, deployment reader, and retention-administrator credentials;
-  establish protected configuration, rotation, recovery, and monitoring.
-- **Prove:** infrastructure tests verify immutable reads, encryption and lock
-  settings, cross-role denials, rotation, partial-upload cleanup, attempted
-  deletion of retained objects, version recovery, alert delivery, provider
-  outage behavior, and restoration under the documented break-glass role.
-- **Authority:** a design contract or local emulator does not complete this
-  package; accepted test and production infrastructure must be observed.
+- **Deliver:** provision private test and production directories at
+  `forest1:/wc1/utility-watershed-analytics-artifacts/v1`, with verified atomic
+  copies, capacity preflight, deterministic inventory, retention, and restore
+  behavior. Keep database backups separate.
+- **Prove:** the real path passes three-release copy and exact clean restore,
+  idempotent rerun, private-mode checks, partial/conflicting/corrupt copy and
+  missing-object rejection, unavailable-path failure, and the 100 GiB
+  free-space floor.
+- **Authority:** the operator's explicit forest1 decision controls this package;
+  no paid provider or external storage account is authorized.
 
 ### Wave 2 — Build immutable inputs into an empty database
 
@@ -894,7 +898,7 @@ must not silently choose a value.
 | Backup provider, key ownership, restore authority, final RPO, and maximum acceptable RTO | DB01 |
 | Watershed-key names and future public-route migration policy | DB07 |
 | Field-level metadata and geometry precedence for every collection | DB07 |
-| Artifact provider, bucket ownership, encryption, and access roles | DB10 |
+| Artifact backup host, root, ownership, integrity, and retention | DB10 |
 | Prepare, approve, deploy, and rollback roles and separation | DB27 |
 | Activation lock-time and API-latency budget for blue-green escalation | DB32 |
 

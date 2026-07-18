@@ -1,15 +1,9 @@
-# Kickoff prompt — DB10 artifact-store contract
+# Kickoff prompt — DB10 durable artifact backup contract
 
-Execute
-`docs/work-packages/20260717-db10-artifact-store-contract/package.md` to an
-honest terminal state from
-`/workdir/utility-watershed-analytics` at
-`040f045bf0f24ef58df70c4996d8e728591125ed` on
-`agent/database-backup-deployment-spec`.
+Execute `package.md` to its honest terminal state on
+`agent/database-backup-deployment-spec` without commit or push.
 
-Do not push or open a PR. Use only repository changes, official public provider
-documentation, and local `forest1` validation. Author the Backblaze B2 storage
-contract, machine-readable artifact/failure policies, validator/tests, CI
-integration, threat/recovery evidence, and DB10A acceptance handoff. Do not
-create an account, bucket, key, secret, real artifact, cache, mirror, or any
-production/external infrastructure.
+Use the operator-authorized `forest1:/wc1` filesystem design. Do not select,
+compare, contact, or provision a paid provider. Keep database backups separate
+from artifact backups. Validate the machine-readable contract and record any
+conflict with the operator decision as a documentation defect to correct.
