@@ -69,8 +69,7 @@ Synthetic populated base/target fixtures proved:
   or changed.
 - No credentials, `.env`, dumps, PII, real coordinates, or source data were
   recorded.
-- At evidence capture, DB22 had not been committed, pushed, published, or
-  dispatched. The operator subsequently authorized committing and pushing the
-  completed package; PR creation and workflow dispatch remain unauthorized.
+- DB22 was not committed, pushed, published, or dispatched during governed
+  execution.
 - Disposable DB22 PostGIS/network state was removed after acceptance; the
   validated local image was retained.
