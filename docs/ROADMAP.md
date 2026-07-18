@@ -183,6 +183,11 @@ packages DB01 through DB05 are complete:
   rollback, expired-attempt recovery, injected post-pointer rollback, and
   clean-build/reconciliation fingerprint equivalence passed disposable PostGIS
   proof without production access.
+- [DB25](work-packages/20260718-db25-deployment-serialization/package.md) is
+  `EXECUTED-COMPLETE`: one production concurrency/host-lock contract, explicit
+  separately credentialed migration, executable application/release
+  compatibility, and seven least-privilege role/rotation boundaries passed
+  disposable PostGIS and exact-image proof without production access.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -202,7 +207,8 @@ materialization, DB21 clean-build validation/reproducibility, and DB21A
 legacy-base export/adoption tooling are complete. DB22 base-aware planning and
 exact inverse generation is complete; DB23 atomic desired-state reconciliation
 and DB24 reconciler resilience are complete; DB25 deployment serialization is
-the next recommended package.
+complete; DB26 production database orchestration is the next recommended
+package.
 
 ## Execution environments and Wave 0 readiness
 

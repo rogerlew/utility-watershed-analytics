@@ -2,9 +2,9 @@
 
 echo "=== PRODUCTION STARTUP ==="
 
-# Run migrations
-echo "Running Migrations"
-python manage.py migrate
+# Migrations are an explicit, separately credentialed deployment step.
+echo "Checking migration state"
+python manage.py migrate --check --noinput
 
 # Health check
 echo "Running health checks..."

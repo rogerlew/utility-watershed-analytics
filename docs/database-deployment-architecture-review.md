@@ -82,8 +82,9 @@ validation of every future release artifact.
 
 ## Remaining implementation status
 
-The architecture and documentation findings are dispositioned. Production
-changes—including volume migration, network hardening, release schemas,
-staging tables, ledger models, capability serving rows, workflow serialization,
-and the deploy tool—remain future implementation work and must follow the
-phased plan in the specification.
+The architecture and documentation findings are dispositioned. DB25 implements
+the repository workflow/host serialization, explicit migration, compatibility,
+and database-role contract. Production role/credential installation and schema
+rollout remain DB27A work, while the database deploy tool and protected release
+workflow remain DB26/DB27 work and must follow the phased plan in the
+specification.

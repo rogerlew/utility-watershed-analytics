@@ -34,16 +34,21 @@ jobs:
       - name: Create protected runtime environment
         env:
           PRODUCTION_ENV: ${{ secrets.PRODUCTION_ENV }}
+          PRODUCTION_MIGRATION_ENV: ${{ secrets.PRODUCTION_MIGRATION_ENV }}
         run: |
           umask 077
           install -m 0600 /dev/null .env.production-runtime
           printf '%s\n' "$PRODUCTION_ENV" > .env.production-runtime
+          install -m 0600 /dev/null .env.production-migration
+          printf '%s\n' "$PRODUCTION_MIGRATION_ENV" > .env.production-migration
           test "$(stat -c '%a' .env.production-runtime)" = 600
+          test "$(stat -c '%a' .env.production-migration)" = 600
 
       - name: Deploy under canonical operations lock
         run: >-
           scripts/deploy_application.sh
           --env-file .env.production-runtime
+          --migration-env-file .env.production-migration
           --healthcheck-url https://unstable.wepp.cloud/api/schema/
 
       - name: Deployment Summary
@@ -59,4 +64,8 @@ jobs:
           if [[ -f .env.production-runtime ]]; then
             shred --remove --zero .env.production-runtime \
               || { truncate --size 0 .env.production-runtime; rm .env.production-runtime; }
+          fi
+          if [[ -f .env.production-migration ]]; then
+            shred --remove --zero .env.production-migration \
+              || { truncate --size 0 .env.production-migration; rm .env.production-migration; }
           fi

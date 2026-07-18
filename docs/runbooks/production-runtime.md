@@ -16,6 +16,9 @@ in a work package.
   `/workdir/utility-watershed-analytics/compose.prod.yml`
 - Runtime environment: `/etc/utility-watershed-analytics/runtime.env`, owned by
   root, non-symlink, mode `0600`
+- Migration environment target:
+  `/etc/utility-watershed-analytics/migration.env`, owned by root, non-symlink,
+  mode `0600`; DB25 defines it, but DB27A owns production provisioning
 - Database identity:
   `/etc/utility-watershed-analytics/database-identity`, owned by root,
   non-symlink, mode `0600`
@@ -97,8 +100,18 @@ wrong mode, empty/duplicate/unknown keys, missing required keys, carriage
 returns, and an unpinned image.
 
 The Actions workflow creates `.env.production-runtime` with `umask 077`,
-validates it, and shreds it in an `always()` cleanup step. A cancelled runner
-must still be audited for a leftover file before its next job.
+and creates a separate `.env.production-migration` from its separately scoped
+secret. It validates both mode-`0600` files and shreds each in an `always()`
+cleanup step. A cancelled runner must still be audited for either leftover file
+before its next job. DB25 repository code expects the migration secret; do not
+dispatch production deployment until DB27A has provisioned the corresponding
+least-privilege database identity and protected secret.
+
+Application deployment runs migrations once with the migration file, then
+checks active-release compatibility before replacing workers. Normal container
+startup runs `migrate --check`; it never applies migrations. The accepted role,
+rotation, and compatibility details are in the
+[deployment serialization contract](../database-deployment-serialization-contract.md).
 
 ## Host-wide lock
 

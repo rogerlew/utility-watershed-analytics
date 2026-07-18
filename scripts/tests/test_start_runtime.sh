@@ -43,6 +43,16 @@ if [[ "$1" == "compose" ]]; then
         printf 'runtime-up\n'
         exit 0
     fi
+    if [[ "$arguments" == *" build server frontend-build "* ]]; then
+        exit 0
+    fi
+    if [[ "$arguments" == *" run --rm --no-deps "* ]]; then
+        exit 0
+    fi
+    if [[ "$arguments" == *" ps server caddy "* ]]; then
+        printf 'server running\ncaddy running\n'
+        exit 0
+    fi
 fi
 printf 'Unexpected fake Docker invocation: %s\n' "$*" >&2
 exit 1
@@ -103,13 +113,18 @@ DJANGO_SECRET_KEY=fixture
 WEPPCLOUD_JWT_TOKEN=fixture
 WEPPCLOUD_JWT_TOKEN_2=fixture
 EOF
+cat >"$fixture_dir/migration.env" <<'EOF'
+POSTGRES_USER=uwa_migration_login
+POSTGRES_PW=fixture-migration-only
+POSTGRES_DB=fixture
+EOF
 cat >"$fixture_dir/compose.yml" <<'EOF'
 services:
   db:
     image: ${POSTGIS_IMAGE}
 EOF
 printf 'Container postgis Running\n' >"$fixture_dir/dry-run.txt"
-chmod 0600 "$fixture_dir/identity" "$fixture_dir/runtime.env"
+chmod 0600 "$fixture_dir/identity" "$fixture_dir/runtime.env" "$fixture_dir/migration.env"
 touch "$fixture_dir/operations.lock"
 chmod 0600 "$fixture_dir/operations.lock"
 
@@ -144,5 +159,17 @@ if "$repo_root/scripts/start_runtime.sh" \
     printf 'Expected missing database identity rejection\n' >&2
     exit 1
 fi
+
+export FAKE_INSPECT_FAIL=0
+printf 'Container postgis Running\n' >"$fixture_dir/dry-run.txt"
+: >"$fixture_dir/docker.log"
+"$repo_root/scripts/deploy_application.sh" \
+    --compose-file "$fixture_dir/compose.yml" \
+    --env-file "$fixture_dir/runtime.env" \
+    --migration-env-file "$fixture_dir/migration.env"
+grep -q -- '--env-from-file' "$fixture_dir/docker.log"
+grep -q -- 'migration.env' "$fixture_dir/docker.log"
+grep -q -- 'manage.py migrate --noinput' "$fixture_dir/docker.log"
+grep -q -- 'manage.py check_application_compatibility' "$fixture_dir/docker.log"
 
 printf 'Runtime start fail-closed fixtures passed\n'

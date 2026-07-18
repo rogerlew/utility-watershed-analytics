@@ -33,6 +33,8 @@ wait_for_file() {
 "$lock_script" --lock-file "$lock_file" --mode exclusive -- bash -c '
     scripts/with_operation_lock.sh --mode shared -- true
     scripts/with_operation_lock.sh --mode exclusive -- true
+    scripts/require_operation_lock.sh shared >/dev/null
+    scripts/require_operation_lock.sh exclusive >/dev/null
 '
 
 set +e
@@ -87,6 +89,16 @@ stale_status=$?
 set -e
 [[ "$stale_status" -ne 0 ]]
 
+set +e
+"$lock_script" --lock-file "$lock_file" --mode exclusive -- bash -c '
+    descriptor="$UWA_OPERATION_LOCK_FD"
+    eval "exec ${descriptor}>&-"
+    scripts/require_operation_lock.sh exclusive
+' >"$fixture_dir/lost.stdout" 2>"$fixture_dir/lost.stderr"
+lost_status=$?
+set -e
+[[ "$lost_status" -ne 0 ]]
+
 printf 'nested=passed\n'
 printf 'shared_to_exclusive_upgrade=rejected\n'
 printf 'exclusive_contention=rejected\n'
@@ -94,3 +106,4 @@ printf 'concurrent_shared=passed\n'
 printf 'cancellation_status=%s\n' "$cancel_status"
 printf 'post_cancellation_reacquire=passed\n'
 printf 'stale_descriptor=rejected\n'
+printf 'lost_descriptor=rejected\n'

@@ -9,6 +9,7 @@ repo_root="$(cd -- "$script_dir/.." && pwd)"
 compose_file="${UWA_COMPOSE_FILE:-$repo_root/compose.prod.yml}"
 project_name="${UWA_COMPOSE_PROJECT:-utility-watershed-analytics}"
 environment_file="${UWA_RUNTIME_ENV_FILE:-/etc/utility-watershed-analytics/runtime.env}"
+migration_environment_file="${UWA_MIGRATION_ENV_FILE:-/etc/utility-watershed-analytics/migration.env}"
 healthcheck_url="${DEPLOY_HEALTHCHECK_URL:-}"
 
 usage() {
@@ -23,6 +24,7 @@ Options:
   --compose-file PATH
   --project-name NAME
   --env-file PATH
+  --migration-env-file PATH
   --healthcheck-url HTTPS_URL
   -h, --help
 EOF
@@ -51,6 +53,11 @@ while (($# > 0)); do
             environment_file="$2"
             shift 2
             ;;
+        --migration-env-file)
+            (($# >= 2)) || die "--migration-env-file requires a value"
+            migration_environment_file="$2"
+            shift 2
+            ;;
         --healthcheck-url)
             (($# >= 2)) || die "--healthcheck-url requires a value"
             healthcheck_url="$2"
@@ -72,6 +79,7 @@ if [[ -z "${UWA_OPERATION_LOCK_FD:-}" ]]; then
 fi
 [[ "${UWA_OPERATION_LOCK_MODE:-}" == "exclusive" ]] \
     || die "Application deployment requires an exclusive operations lock"
+"$script_dir/require_operation_lock.sh" exclusive >/dev/null
 
 for required_command in awk basename curl dirname docker grep id mktemp python3 rm stat; do
     command -v "$required_command" >/dev/null 2>&1 \
@@ -81,12 +89,20 @@ done
     || die "Database identity helper is unavailable"
 [[ -x "$script_dir/check_runtime_environment.sh" ]] \
     || die "Runtime environment checker is unavailable"
+[[ -x "$script_dir/check_database_credential_file.sh" ]] \
+    || die "Database credential checker is unavailable"
 [[ -f "$compose_file" && -r "$compose_file" ]] \
     || die "Compose file is unavailable: $compose_file"
 [[ -f "$environment_file" && -r "$environment_file" ]] \
     || die "Runtime environment file is unavailable: $environment_file"
+[[ -f "$migration_environment_file" && -r "$migration_environment_file" ]] \
+    || die "Migration environment file is unavailable: $migration_environment_file"
 "$script_dir/check_runtime_environment.sh" \
     --env-file "$environment_file" \
+    --expected-uid "$(id -u)"
+"$script_dir/check_database_credential_file.sh" \
+    --credential-file "$migration_environment_file" \
+    --expected-user uwa_migration_login \
     --expected-uid "$(id -u)"
 if [[ -n "$healthcheck_url" ]]; then
     [[ "$healthcheck_url" == https://* ]] \
@@ -140,9 +156,14 @@ if grep -Eiq '(postgis|(^|[[:space:]])db([[:space:]]|$)).*(create|recreate|remov
 fi
 
 "${compose[@]}" build server frontend-build
+"$script_dir/require_operation_lock.sh" exclusive >/dev/null
 "${compose[@]}" run --rm --no-deps \
+    --env-from-file "$migration_environment_file" \
     --entrypoint python server manage.py migrate --noinput
+"${compose[@]}" run --rm --no-deps \
+    --entrypoint python server manage.py check_application_compatibility
 "${compose[@]}" run --rm --no-deps frontend-build
+"$script_dir/require_operation_lock.sh" exclusive >/dev/null
 "${compose[@]}" up --detach --no-deps --pull never server caddy
 
 "$script_dir/database_identity.sh" assert \
