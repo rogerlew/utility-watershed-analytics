@@ -90,6 +90,12 @@ it to this table after its required external assets have been verified.
 No declared capability is ready for release activation until its immutable
 asset index and project-controlled durable copy have also been verified.
 
+DB19 implements the synthetic preparation and validation mechanics in the
+[RHESSys artifact preparation contract](database-rhessys-artifact-tooling-contract.md).
+It did not inspect or copy any real inventory asset, so every pending durable
+copy and activation statement in this table remains unchanged. DB30 owns the
+real locked descriptors and `/wc1` publication.
+
 ### Mill Creek re-vendoring acceptance criteria
 
 Before switching the application from `mdobre-invincible-scarab` to

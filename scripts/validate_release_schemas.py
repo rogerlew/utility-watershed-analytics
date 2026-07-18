@@ -173,6 +173,17 @@ def validate_release_manifest(document: dict[str, Any]) -> None:
 
 def validate_rhessys_capability_index(document: dict[str, Any]) -> None:
     require_unique(
+        (item["key"] for item in document["scenarios"]),
+        "duplicate-scenario-key",
+        "RHESSys scenario key",
+    )
+    for item in document["scenarios"]:
+        require_unique(
+            item["variables"],
+            "duplicate-scenario-variable",
+            f"RHESSys {item['key']} scenario variable",
+        )
+    require_unique(
         (item["role"] for item in document["spatial_inputs"]),
         "duplicate-spatial-role",
         "RHESSys spatial input role",
@@ -183,10 +194,55 @@ def validate_rhessys_capability_index(document: dict[str, Any]) -> None:
         "RHESSys parquet role",
     )
     for item in document["parquets"]:
+        require_unique(
+            (column["name"] for column in item["columns"]),
+            "duplicate-parquet-column",
+            f"RHESSys {item['role']} parquet column",
+        )
+        column_names = {column["name"] for column in item["columns"]}
+        require(
+            {item["spatial_id_field"], "year", *(variable["name"] for variable in item["variables"])}
+            <= column_names,
+            "missing-parquet-column",
+            f"RHESSys {item['role']} parquet lacks a declared identity, year, or variable column",
+        )
         require(
             item["year_range"][0] <= item["year_range"][1],
             "invalid-year-range",
             f"RHESSys {item['role']} year_range is reversed",
+        )
+    if document["mode"] in {"precomputed", "both"}:
+        require_unique(
+            (f"{item['scenario']}:{item['variable']}" for item in document["geotiffs"]),
+            "duplicate-geotiff-pair",
+            "RHESSys GeoTIFF scenario and variable pair",
+        )
+        expected = {
+            (scenario["key"], variable)
+            for scenario in document["scenarios"]
+            for variable in scenario["variables"]
+        }
+        observed = {(item["scenario"], item["variable"]) for item in document["geotiffs"]}
+        require(
+            observed == expected,
+            "incomplete-scenario-assets",
+            "RHESSys GeoTIFF assets do not exactly cover declared scenarios",
+        )
+    if document["mode"] in {"dynamic", "both"}:
+        expected_variables = {
+            variable
+            for scenario in document["scenarios"]
+            for variable in scenario["variables"]
+        }
+        parquet_variables = {
+            variable["name"]
+            for parquet in document["parquets"]
+            for variable in parquet["variables"]
+        }
+        require(
+            expected_variables <= parquet_variables,
+            "missing-dynamic-variable",
+            "RHESSys dynamic scenario variable is absent from Parquet metadata",
         )
 
 

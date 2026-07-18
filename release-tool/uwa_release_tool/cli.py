@@ -12,7 +12,7 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Any, TextIO
 
-from . import artifacts, sources
+from . import artifacts, rhessys, sources
 
 __version__ = "0.1.0"
 
@@ -193,12 +193,28 @@ def prepare_command(arguments: argparse.Namespace) -> dict[str, Any]:
     )
     client = artifacts.ArtifactClient(arguments.store_namespace, arguments.cache_root)
     try:
-        result = sources.prepare_sources(
-            descriptor,
-            client=client,
-            artifact_base_uri=arguments.artifact_base_uri,
-            replay_receipt=receipt,
-        )
+        if descriptor.get("kind") == "rhessys-capability":
+            result = rhessys.prepare_capability(
+                descriptor,
+                client=client,
+                artifact_base_uri=arguments.artifact_base_uri,
+                replay_receipt=receipt,
+            )
+        else:
+            result = sources.prepare_sources(
+                descriptor,
+                client=client,
+                artifact_base_uri=arguments.artifact_base_uri,
+                replay_receipt=receipt,
+            )
+    except rhessys.RhessysDescriptorError as error:
+        raise CommandError(ExitCode.CONTRACT, "rhessys_descriptor_invalid", str(error)) from error
+    except rhessys.RhessysFormatError as error:
+        raise CommandError(ExitCode.CONTRACT, "rhessys_format_invalid", str(error)) from error
+    except rhessys.RhessysIntegrityError as error:
+        raise CommandError(ExitCode.INTEGRITY, "rhessys_integrity_failed", str(error)) from error
+    except rhessys.RhessysFetchError as error:
+        raise CommandError(ExitCode.INPUT, "rhessys_fetch_failed", str(error)) from error
     except sources.SourceDescriptorError as error:
         raise CommandError(ExitCode.CONTRACT, "source_descriptor_invalid", str(error)) from error
     except sources.SourceMembershipError as error:

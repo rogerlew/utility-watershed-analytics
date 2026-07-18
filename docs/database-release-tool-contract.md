@@ -16,7 +16,7 @@ The operator entry point is `data-release` in the image and
 
 | Command | DB11 behavior | Successor owner |
 | --- | --- | --- |
-| `prepare` | DB17 resolves reviewed standalone/batch inputs, publishes verified immutable artifacts, and emits an exact member index plus replay receipt. | DB18–DB19 extend enrichment and RHESSys preparation. |
+| `prepare` | DB17 resolves reviewed standalone/batch inputs; DB18 adds fixed NASA enrichment; DB19 prepares reviewed RHESSys assets and immutable capability indexes. | DB20 consumes prepared artifacts. |
 | `validate` | Verify a regular JSON object and optional exact SHA-256. | DB21 extends domain validation. |
 | `plan` | Fatal `command_unavailable`. | DB22 |
 | `build` | Fatal `command_unavailable`. | DB20 |
@@ -127,6 +127,16 @@ sha256:cd7db4255485d6767ca6fd02fa52d35735afe564284a359de0dc9d9ef18ae355
 
 This extension is defined by the
 [NASA enrichment contract](database-nasa-202606-enrichment-contract.md).
+
+DB19 adds closed `rhessys-capability` descriptors, bounded Parquet/GeoTIFF
+inspection, exact scenarios and physical schemas, immutable DB12 publication,
+and receipt-only replay. The extension is defined by the
+[RHESSys artifact preparation contract](database-rhessys-artifact-tooling-contract.md).
+Its accepted forest1 double-build and audit produced local image ID:
+
+```text
+sha256:14fd35b2cbfeac308cd796e466af1acf59c29f5e70ddea72cfa950a057217b42
+```
 
 ## 6. Runtime boundary
 

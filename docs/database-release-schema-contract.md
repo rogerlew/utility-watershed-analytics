@@ -70,6 +70,12 @@ RHESSys mode controls required asset families:
 - `precomputed` requires at least one GeoTIFF asset; and
 - `both` requires all three families.
 
+DB19 completes the architecture-required scenario/variable matrix and flat
+Parquet physical column schema in the RHESSys index. Scenario keys, variables,
+columns, spatial roles, Parquet roles, and GeoTIFF scenario/variable pairs are
+unique. Precomputed and combined modes require exact GeoTIFF coverage of the
+declared matrix. These fields participate in DB09 capability fingerprints.
+
 Transformation records pin every input, the output, code commit, configuration
 hash, join keys, field authority decisions, and counts. Field decisions are
 unique and outputs cannot reuse an input checksum. Validation reports use

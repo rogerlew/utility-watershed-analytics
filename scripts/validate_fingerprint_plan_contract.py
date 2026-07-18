@@ -288,9 +288,13 @@ def reordered_documents(documents: dict[str, dict[str, Any]]) -> dict[str, dict[
     reordered["artifact"]["uri"] = "https://mirror.example.test/identical/artifact.json"
     reordered["run"]["aliases"].reverse()
     reordered["capability"]["spatial_inputs"].reverse()
+    reordered["capability"]["scenarios"].reverse()
+    for scenario in reordered["capability"]["scenarios"]:
+        scenario["variables"].reverse()
     reordered["capability"]["parquets"].reverse()
     reordered["capability"]["geotiffs"].reverse()
     for parquet in reordered["capability"]["parquets"]:
+        parquet["columns"].reverse()
         parquet["variables"].reverse()
         parquet["artifact"]["uri"] = "https://mirror.example.test/identical/basin.parquet"
     reordered["watershed-domain"]["runs"].reverse()

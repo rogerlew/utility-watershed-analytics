@@ -151,6 +151,11 @@ packages DB01 through DB05 are complete:
   target membership, order, run IDs, geometry, and other fields; exact approved
   values, conflicts, unmatched counts, DB08 provenance, and immutable replay
   passed synthetic unit, schema, forest1, and reproducible image proof.
+- [DB19](work-packages/20260718-db19-rhessys-artifact-tooling/package.md) is
+  `EXECUTED-COMPLETE`: closed dynamic/precomputed descriptors, exact scenario
+  coverage, Parquet footer schemas, GeoTIFF metadata/sample reads, geometry
+  compatibility, immutable local publication, removal difference, and replay
+  passed synthetic unit, schema, forest1, and reproducible image proof.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -164,8 +169,8 @@ DB04 is repository-complete but not deployed to production. The S1 contract
 freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
 artifact-client foundations, DB13 stable identity expansion, and DB14 domain
 integrity, DB15 release-ledger foundations, DB16 staging/recovery, DB17 strict
-source preparation, and DB18 NASA enrichment are complete. DB19 is the next
-recommended package.
+source preparation, DB18 NASA enrichment, and DB19 RHESSys artifact tooling are
+complete. DB19A is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

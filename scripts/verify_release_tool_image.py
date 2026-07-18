@@ -99,6 +99,7 @@ def audit_export(image: str) -> dict[str, int]:
                 "opt/release-tool/uwa_release_tool/artifacts.py",
                 "opt/release-tool/uwa_release_tool/cli.py",
                 "opt/release-tool/uwa_release_tool/enrichment.py",
+                "opt/release-tool/uwa_release_tool/rhessys.py",
                 "opt/release-tool/uwa_release_tool/sources.py",
             }
             if not required.issubset(set(names)):
@@ -219,9 +220,27 @@ def verify_invocation(image_id: str) -> dict[str, Any]:
     )
     if enrichment_import.stdout.strip() != "WWS_Code":
         raise ImageVerificationError("NASA enrichment module import failed")
+    rhessys_import = run_command(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--read-only",
+            "--network",
+            "none",
+            "--entrypoint",
+            "python3",
+            image_id,
+            "-c",
+            "from uwa_release_tool.rhessys import removed_capabilities; print(removed_capabilities(['a'], []))",
+        ]
+    )
+    if rhessys_import.stdout.strip() != "['a']":
+        raise ImageVerificationError("RHESSys preparation module import failed")
     return {
         "artifact_module_imported": True,
         "enrichment_module_imported": True,
+        "rhessys_module_imported": True,
         "source_module_imported": True,
         "input_sha256": digest,
         "wrong_digest_exit": 11,

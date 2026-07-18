@@ -104,6 +104,11 @@ def normalize_artifact(document: dict[str, Any]) -> dict[str, Any]:
 
 
 def normalize_capability(document: dict[str, Any]) -> dict[str, Any]:
+    scenarios = [
+        {"key": item["key"], "variables": sorted(item["variables"])}
+        for item in document["scenarios"]
+    ]
+    scenarios.sort(key=lambda item: item["key"])
     spatial_inputs = [
         {
             "role": item["role"],
@@ -119,6 +124,7 @@ def normalize_capability(document: dict[str, Any]) -> dict[str, Any]:
             "role": item["role"],
             "artifact": artifact_content(item["artifact"]),
             "spatial_id_field": item["spatial_id_field"],
+            "columns": sorted(item["columns"], key=lambda column: column["name"]),
             "variables": sorted(item["variables"], key=lambda variable: variable["name"]),
             "year_range": item["year_range"],
             "required_for_activation": item["required_for_activation"],
@@ -158,6 +164,7 @@ def normalize_capability(document: dict[str, Any]) -> dict[str, Any]:
         "mode": document["mode"],
         "durable_base_uri": document["durable_base_uri"],
         "geometry_revision": document["geometry_revision"],
+        "scenarios": scenarios,
         "spatial_inputs": spatial_inputs,
         "parquets": parquets,
         "geotiffs": geotiffs,

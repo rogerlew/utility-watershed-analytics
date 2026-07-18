@@ -146,6 +146,49 @@ class ReleaseToolCliTests(unittest.TestCase):
             self.assertEqual(index_path.read_bytes(), first.index_bytes)
             self.assertEqual(output_receipt.read_bytes(), first.receipt_bytes)
 
+    def test_prepare_routes_rhessys_descriptor_and_replay(self):
+        from test_rhessys import ARTIFACT_BASE, MappingFetcher, fixture
+        from uwa_release_tool import artifacts, rhessys
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            descriptor, mapping = fixture()
+            descriptor_path = root / "descriptor.json"
+            descriptor_path.write_text(json.dumps(descriptor), encoding="utf-8")
+            store = root / "store"
+            first = rhessys.prepare_capability(
+                descriptor,
+                client=artifacts.ArtifactClient(store, root / "first-cache"),
+                artifact_base_uri=ARTIFACT_BASE,
+                fetcher=MappingFetcher(mapping),
+            )
+            receipt_path = root / "input-receipt.json"
+            receipt_path.write_bytes(first.receipt_bytes)
+            index_path = root / "output" / "index.json"
+            output_receipt = root / "output" / "receipt.json"
+            exit_code, output, errors = self.invoke(
+                "prepare",
+                "--descriptor",
+                str(descriptor_path),
+                "--store-namespace",
+                str(store),
+                "--cache-root",
+                str(root / "replay-cache"),
+                "--artifact-base-uri",
+                ARTIFACT_BASE,
+                "--output-index",
+                str(index_path),
+                "--output-receipt",
+                str(output_receipt),
+                "--replay-receipt",
+                str(receipt_path),
+            )
+            self.assertEqual(exit_code, cli.ExitCode.OK)
+            self.assertFalse(errors)
+            self.assertTrue(output[-1]["replayed"])
+            self.assertEqual(index_path.read_bytes(), first.index_bytes)
+            self.assertEqual(output_receipt.read_bytes(), first.receipt_bytes)
+
     def test_unknown_command_is_structured_usage_error(self):
         exit_code, output, errors = self.invoke("unknown")
         self.assertEqual(exit_code, cli.ExitCode.USAGE)

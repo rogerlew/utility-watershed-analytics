@@ -14,6 +14,8 @@ on:
       - 'scripts/tests/test_accept_source_preparation.py'
       - 'scripts/accept_nasa_enrichment.py'
       - 'scripts/tests/test_accept_nasa_enrichment.py'
+      - 'scripts/accept_rhessys_artifacts.py'
+      - 'scripts/tests/test_accept_rhessys_artifacts.py'
       - '.github/workflows/release-tool-ci.yml'
   workflow_call:
 
@@ -38,6 +40,7 @@ jobs:
           PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_accept_artifact_client
           PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_accept_source_preparation
           PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_accept_nasa_enrichment
+          PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_accept_rhessys_artifacts
 
       - name: Build reproducibly and audit image
         run: scripts/build_release_tool_image.sh uwa-release-tool:ci

@@ -6,6 +6,9 @@
   "mode": "both",
   "durable_base_uri": "https://artifacts.example.test/rhessys/example-north/",
   "geometry_revision": "8888888888888888888888888888888888888888888888888888888888888888",
+  "scenarios": [
+    {"key": "burned", "variables": ["streamflow"]}
+  ],
   "spatial_inputs": [
     {
       "role": "worldfile",
@@ -30,6 +33,11 @@
         "verified": true
       },
       "spatial_id_field": "basin_id",
+      "columns": [
+        {"name": "basin_id", "physical_type": "INT64"},
+        {"name": "year", "physical_type": "INT32"},
+        {"name": "streamflow", "physical_type": "DOUBLE"}
+      ],
       "variables": [
         {"name": "streamflow", "units": "mm"}
       ],
@@ -47,7 +55,7 @@
         "verified": true
       },
       "scenario": "burned",
-      "variable": "precipitation",
+      "variable": "streamflow",
       "crs": "EPSG:4326",
       "bounds": [-117.2, 46.1, -116.8, 46.4],
       "dimensions": [512, 512],
