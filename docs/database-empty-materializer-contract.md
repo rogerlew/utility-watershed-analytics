@@ -72,6 +72,10 @@ immutable run state, and logical watershed identity.
   Source fields are normalized through the existing serving-field map; the
   staged payload contains serving field names only.
 - Each boundary contains exactly one valid non-empty EPSG:4326 multipolygon.
+  A DB21A legacy export may additionally carry exact main/simplified EWKB in
+  reserved feature properties so source-independent inverse reconstruction
+  preserves the existing serving bytes; ordinary source artifacts remain
+  unchanged.
 - Subcatchment and channel features are iterated through GDAL and normalized to
   valid EPSG:4326 multipolygons. Typed business keys and attempt-scoped database
   uniqueness reject absent, malformed, or duplicate entities.

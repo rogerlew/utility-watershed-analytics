@@ -172,6 +172,12 @@ packages DB01 through DB05 are complete:
   report validation now wraps the DB20 clean build. Two independent disposable
   builds produced byte-identical bounded domain/capability fingerprints, while
   unsafe artifacts and invalid geometry failed before acceptance.
+- [DB21A](work-packages/20260718-db21a-legacy-base-tooling/package.md) is
+  `EXECUTED-COMPLETE`: reviewed stable identities, DB20-compatible
+  content-addressed legacy export, source-independent exact rebuild, and
+  transactional adoption/rollback preserve every pre-existing domain row while
+  changing only ledger, pointer, attempt, and reviewed bootstrap capability
+  state.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -187,8 +193,9 @@ artifact-client foundations, DB13 stable identity expansion, and DB14 domain
 integrity, DB15 release-ledger foundations, DB16 staging/recovery, DB17 strict
 source preparation, DB18 NASA enrichment, DB19 RHESSys artifact tooling, and
 DB19A materialized capability runtime integration, DB20 strict empty-build
-materialization, and DB21 clean-build validation/reproducibility are complete.
-DB21A legacy-base export and adoption tooling is the next recommended package.
+materialization, DB21 clean-build validation/reproducibility, and DB21A
+legacy-base export/adoption tooling are complete. DB22 base-aware planning and
+exact inverse generation is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 
@@ -622,31 +629,6 @@ Suggested slug: `db19a-capability-runtime-integration`
   eligibility and scenarios come from the API; TTL-managed upstream
   unavailability does not break an accepted durable capability. Tests exercise
   both sides of the atomic adoption transition.
-
-#### DB21A — Legacy-base export and adoption tooling
-
-Suggested slug: `db21a-legacy-base-tooling`
-
-- **Depends on:** DB09, DB12, DB14, DB15, DB20, DB21.
-- **Deliver:** canonical export of populated watershed-domain rows and exact
-  membership into immutable, content-addressed rebuild artifacts; assignment
-  of reviewed stable identities; a baseline manifest and fingerprint; and a
-  guarded adoption command that can register an unmanaged populated database
-  without changing existing watershed, child, or non-watershed rows. The
-  command may insert only the exact reviewed capability-bootstrap set atomically
-  with adoption, and those rows are part of the baseline fingerprint. A paired
-  rollback command must assert that exact adopted baseline is active, remove
-  only its reviewed capability-bootstrap rows, and restore `EMPTY` plus the
-  bounded legacy fallback without changing pre-existing rows.
-- **Prove:** export then rebuild a production-shaped legacy fixture to the same
-  domain fingerprint; adoption succeeds only when the singleton is `EMPTY`,
-  serving state is populated, schema/contracts match, and the recomputed
-  fingerprint equals the reviewed baseline; every mismatch fails with no
-  ledger, capability, watershed, child, or non-watershed mutation. Exported
-  artifacts must be sufficient for the first exact inverse even when an
-  upstream source no longer exists.
-- **Boundary:** this package implements and tests the mechanism. Capturing and
-  adopting the actual production base is DB30A and requires separate authority.
 
 ### Wave 3 — Reconcile an existing database atomically
 

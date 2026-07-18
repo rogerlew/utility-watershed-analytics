@@ -10,7 +10,7 @@ from typing import Any, Mapping
 
 import pyarrow.parquet as parquet
 from django.contrib.gis.gdal import DataSource
-from django.contrib.gis.geos import MultiPolygon, Polygon
+from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
 from django.db import transaction
 
 from server.watershed.domain_mutations import (
@@ -228,6 +228,26 @@ def _normalized_geometry(feature, role):
     return geometry
 
 
+def _exported_exact_geometry(feature, role, fallback):
+    exported_ewkb = _get_feature_field(feature, "DB21A_GeometryEWKB")
+    if not exported_ewkb:
+        return fallback
+    try:
+        geometry = GEOSGeometry(bytes.fromhex(exported_ewkb))
+        geometry.srid = 4326
+    except Exception as error:
+        raise MaterializationError(
+            f"{role} exported geometry cannot be normalized."
+        ) from error
+    if isinstance(geometry, Polygon):
+        geometry = MultiPolygon(geometry)
+    if not isinstance(geometry, MultiPolygon) or geometry.empty or not geometry.valid:
+        raise MaterializationError(
+            f"{role} exported geometry must be a valid non-empty multipolygon."
+        )
+    return geometry
+
+
 def _watershed_record(member, metadata, artifact):
     source, layer = _open_single_layer(artifact)
     features = iter(layer)
@@ -235,7 +255,31 @@ def _watershed_record(member, metadata, artifact):
         feature = next(features)
     except StopIteration as error:
         raise MaterializationError("Boundary artifact is empty.") from error
-    geometry = _normalized_geometry(feature, "boundary")
+    geometry = _exported_exact_geometry(
+        feature,
+        "boundary",
+        _normalized_geometry(feature, "boundary"),
+    )
+    simplified_geometry = None
+    simplified_ewkb = _get_feature_field(feature, "DB21A_SimplifiedEWKB")
+    if simplified_ewkb:
+        try:
+            simplified_geometry = GEOSGeometry(bytes.fromhex(simplified_ewkb))
+            simplified_geometry.srid = 4326
+        except Exception as error:
+            raise MaterializationError(
+                "Boundary simplified geometry cannot be normalized."
+            ) from error
+        if isinstance(simplified_geometry, Polygon):
+            simplified_geometry = MultiPolygon(simplified_geometry)
+        if (
+            not isinstance(simplified_geometry, MultiPolygon)
+            or simplified_geometry.empty
+            or not simplified_geometry.valid
+        ):
+            raise MaterializationError(
+                "Boundary simplified geometry must be a valid non-empty multipolygon."
+            )
     try:
         next(features)
     except StopIteration:
@@ -250,6 +294,7 @@ def _watershed_record(member, metadata, artifact):
         "source_fingerprint": member.run_state.run_fingerprint,
         "runid": member.run_state.runid,
         "geom": geometry,
+        "simplified_geom": simplified_geometry,
         "metadata": metadata,
     }
 
@@ -285,7 +330,11 @@ def _child_records(member, artifact, *, model):
                 else member.run_state.channel_fingerprint
             ),
             **values,
-            "geom": _normalized_geometry(feature, role),
+            "geom": _exported_exact_geometry(
+                feature,
+                role,
+                _normalized_geometry(feature, role),
+            ),
             "attributes": {},
         }
     artifact.assert_unchanged()
