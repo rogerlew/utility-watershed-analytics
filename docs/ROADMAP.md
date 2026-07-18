@@ -196,7 +196,7 @@ DB19A materialized capability runtime integration, DB20 strict empty-build
 materialization, DB21 clean-build validation/reproducibility, and DB21A
 legacy-base export/adoption tooling are complete. DB22 base-aware planning and
 exact inverse generation is complete; DB23 atomic desired-state reconciliation
-is the next recommended package.
+is complete; DB24 reconciler resilience is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

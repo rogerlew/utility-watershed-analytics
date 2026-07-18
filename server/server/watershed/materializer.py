@@ -15,8 +15,11 @@ from django.db import transaction
 
 from server.watershed.domain_mutations import (
     EmptyBaseApplyResult,
+    ReconciliationResult,
     apply_staged_empty_base,
+    apply_staged_release,
 )
+from server.watershed.fingerprint_contract import canonical_sha256
 from server.watershed.loaders.writers import (
     CHANNEL_MAPPING,
     HILLSLOPES_FIELD_MAP,
@@ -120,6 +123,12 @@ class VerifiedArtifact:
 class EmptyBuildResult:
     staging: LoadResult
     applied: EmptyBaseApplyResult
+
+
+@dataclass(frozen=True)
+class ReconciledBuildResult:
+    staging: LoadResult
+    applied: ReconciliationResult
 
 
 def _stat_signature(stat_result):
@@ -665,3 +674,38 @@ def build_and_activate_empty_release(
             raise
         raise MaterializationError(str(error) or type(error).__name__) from error
     return EmptyBuildResult(staging=staging_result, applied=applied_result)
+
+
+def reconcile_and_activate_release(
+    attempt,
+    members,
+    forward_plan,
+    *,
+    budget: SpaceBudget,
+    observed_available_bytes,
+    batch_size=1000,
+):
+    staging_result = stage_locked_release(
+        attempt,
+        members,
+        budget=budget,
+        observed_available_bytes=observed_available_bytes,
+        batch_size=batch_size,
+    )
+    attempt = transition_attempt(
+        attempt,
+        DataReleaseAttempt.Status.APPLYING,
+        actual_plan_sha256=canonical_sha256(forward_plan),
+    )
+    try:
+        applied_result = apply_staged_release(
+            attempt,
+            forward_plan,
+            batch_size=batch_size,
+        )
+    except Exception as error:
+        _fail_attempt(attempt, "reconcile-apply", error)
+        if isinstance(error, MaterializationError):
+            raise
+        raise MaterializationError(str(error) or type(error).__name__) from error
+    return ReconciledBuildResult(staging_result, applied_result)
