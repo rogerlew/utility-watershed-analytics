@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firewisewatersheds.org/schemas/data-release/v1/plans/exact-inverse-plan.schema.json",
+  "title": "Exact inverse deployment plan",
+  "allOf": [
+    {"$ref": "deployment-plan.schema.json"},
+    {
+      "required": ["inverse_of_plan_sha256"],
+      "properties": {
+        "plan_kind": {"const": "exact-inverse"},
+        "base": {"$ref": "deployment-plan.schema.json#/$defs/releaseState"}
+      }
+    }
+  ]
+}

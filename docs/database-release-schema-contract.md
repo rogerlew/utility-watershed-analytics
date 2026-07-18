@@ -101,9 +101,10 @@ the suite fail until coverage is reconciled.
 
 ## 6. Successor boundaries
 
-DB09 may add canonical fingerprints and base-specific forward, inverse, and
-empty-build plan contracts while referencing these version-1 records. DB10 may
+DB09 defines canonical fingerprints and base-specific forward, inverse, and
+empty-build plans in the accepted
+[fingerprint and plan contract](database-fingerprint-plan-contract.md). DB10 may
 select a project-controlled artifact provider and retention/security policy.
 Neither successor may weaken immutable verification, exact membership,
-identity, removal, or credential boundaries without a new reviewed contract
-version.
+identity, removal, replay, or credential boundaries without a new reviewed
+contract version.

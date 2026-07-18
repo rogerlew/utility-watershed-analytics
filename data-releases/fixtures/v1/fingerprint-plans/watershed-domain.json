@@ -1,0 +1,18 @@
+{
+  "runs": [
+    {
+      "collection_key": "example-collection",
+      "watershed_key": "example-south",
+      "runid": "illustrative/south",
+      "run_fingerprint": "9191919191919191919191919191919191919191919191919191919191919191",
+      "capability_fingerprint": null
+    },
+    {
+      "collection_key": "example-collection",
+      "watershed_key": "example-north",
+      "runid": "illustrative/north",
+      "run_fingerprint": "5eccdea91114222750a1aa694f72dc16bbf2caa17034d5cb767fb30f1b1fc4e4",
+      "capability_fingerprint": "8305c713fbe77f300797360faae8ce95d6b5b9db1b45fab514bb233392496037"
+    }
+  ]
+}

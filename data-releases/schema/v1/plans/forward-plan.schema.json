@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firewisewatersheds.org/schemas/data-release/v1/plans/forward-plan.schema.json",
+  "title": "Forward deployment plan",
+  "allOf": [
+    {"$ref": "deployment-plan.schema.json"},
+    {
+      "properties": {
+        "plan_kind": {"const": "forward"},
+        "base": {"$ref": "deployment-plan.schema.json#/$defs/releaseState"}
+      }
+    },
+    {"not": {"required": ["inverse_of_plan_sha256"]}}
+  ]
+}

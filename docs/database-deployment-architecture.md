@@ -229,6 +229,11 @@ data-releases/
       rhessys-capability-index.schema.json
       transformation-lineage.schema.json
       validation-report.schema.json
+      plans/
+        deployment-plan.schema.json
+        forward-plan.schema.json
+        exact-inverse-plan.schema.json
+        empty-build-plan.schema.json
   fixtures/
     v1/
       cases.json
@@ -277,6 +282,12 @@ Plans are stored and reviewed separately, keyed by at least:
 - materializer image digest; and
 - fingerprint-algorithm version.
 
+DB09 freezes these coordinates and the exact action vocabulary in the
+[fingerprint and plan contract](database-fingerprint-plan-contract.md). A
+populated state pins release ID, exact manifest SHA-256, semantic release
+fingerprint, and watershed-domain fingerprint. `EMPTY` is the only special base
+and is restricted to reconstruction proof.
+
 CI should produce three plans where applicable:
 
 - a forward production plan from the expected active release;
@@ -288,6 +299,11 @@ authorization cannot use globs. A large collection replacement may reference a
 hashed exact removal-set artifact derived from the reviewed base manifest. The
 apply transaction must assert that the active base release matches the plan;
 otherwise it refuses to mutate the database.
+
+The assertion compares the complete base state before artifact fetch or
+staging. Exact inverse plans swap base and target, mirror before/after run state,
+and negate row deltas; empty-build plans contain additions only and never
+authorize clearing a populated database.
 
 ### 8.4 Exact batch membership
 
@@ -446,11 +462,13 @@ the human-approved source of inventory decisions. Once Phase 1 is operational,
 the accepted release manifest becomes the executable authority and the
 inventory document should be generated from it or checked against it in CI.
 
-Fingerprint canonicalization must be specified and versioned. It should sort
-records by stable identity, normalize scalar and null representations, encode
-geometry in a defined CRS and binary form, and exclude database IDs, timestamps,
-and other volatile values. A fingerprint-algorithm change is itself a data
-contract change.
+DB09 specifies version-1 canonicalization in the
+[fingerprint and plan contract](database-fingerprint-plan-contract.md). It
+normalizes Unicode and exact decimals, sorts set-like records by stable
+identity, fingerprints already canonical CRS-qualified geometry content, and
+excludes database IDs, timestamps, attempts, and other volatile values. A
+fingerprint-algorithm change requires a new fingerprint version and coordinated
+data-contract review.
 
 ### 9.3 Integrity constraints
 

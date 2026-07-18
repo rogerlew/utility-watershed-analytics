@@ -97,6 +97,10 @@ packages DB01 through DB05 are complete:
   `EXECUTED-COMPLETE`: seven version-1 release/index schemas, seven positive
   fixtures, nine negative cases, bounded semantic validation, and the reusable
   data-contract CI gate passed without production access.
+- [DB09](work-packages/20260717-db09-fingerprint-plan-contract/package.md) is
+  `EXECUTED-COMPLETE`: five versioned semantic fingerprint subjects, golden and
+  mutation proof, and strict forward, exact-inverse, and empty-build plan
+  contracts passed with exact wrong-base replay rejection.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -106,8 +110,8 @@ canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
-DB04 is repository-complete but not deployed to production. DB08 is complete;
-DB09 is the next unblocked contract package.
+DB04 is repository-complete but not deployed to production. DB09 is complete;
+DB10 is the next contract package, and DB11 is now unblocked.
 
 ## Execution environments and Wave 0 readiness
 

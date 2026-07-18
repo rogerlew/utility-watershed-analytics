@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firewisewatersheds.org/schemas/data-release/v1/plans/deployment-plan.schema.json",
+  "title": "Base-specific deployment plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_kind",
+    "plan_id",
+    "fingerprint_version",
+    "data_contract",
+    "identity_contract",
+    "supported_migration",
+    "materializer",
+    "base",
+    "target",
+    "actions",
+    "expected_row_delta"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "plan_kind": {"enum": ["forward", "exact-inverse", "empty-build"]},
+    "plan_id": {"$ref": "#/$defs/key"},
+    "fingerprint_version": {"const": 1},
+    "data_contract": {"const": 1},
+    "identity_contract": {"const": 1},
+    "supported_migration": {
+      "type": "string",
+      "pattern": "^watershed\\.[0-9]{4}_[a-z0-9_]+$"
+    },
+    "materializer": {"$ref": "#/$defs/materializer"},
+    "base": {"$ref": "#/$defs/baseState"},
+    "target": {"$ref": "#/$defs/releaseState"},
+    "actions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/action"}
+    },
+    "expected_row_delta": {"$ref": "#/$defs/rowDelta"},
+    "inverse_of_plan_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 96
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "materializer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image_digest", "git_commit"],
+      "properties": {
+        "image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "git_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      }
+    },
+    "emptyState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"const": "EMPTY"}
+      }
+    },
+    "releaseState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "release_id",
+        "manifest_sha256",
+        "release_fingerprint",
+        "domain_fingerprint"
+      ],
+      "properties": {
+        "kind": {"const": "RELEASE"},
+        "release_id": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\.[1-9][0-9]*$"
+        },
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "release_fingerprint": {"$ref": "#/$defs/sha256"},
+        "domain_fingerprint": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "baseState": {
+      "oneOf": [
+        {"$ref": "#/$defs/emptyState"},
+        {"$ref": "#/$defs/releaseState"}
+      ]
+    },
+    "runState": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["runid", "run_fingerprint", "capability_fingerprint"],
+      "properties": {
+        "runid": {"type": "string", "minLength": 1, "maxLength": 255},
+        "run_fingerprint": {"$ref": "#/$defs/sha256"},
+        "capability_fingerprint": {
+          "oneOf": [
+            {"$ref": "#/$defs/sha256"},
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "rowDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["watersheds", "subcatchments", "channels"],
+      "properties": {
+        "watersheds": {"type": "integer"},
+        "subcatchments": {"type": "integer"},
+        "channels": {"type": "integer"}
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "watershed_key",
+        "operation",
+        "before",
+        "after",
+        "change_channels",
+        "row_delta"
+      ],
+      "properties": {
+        "watershed_key": {"$ref": "#/$defs/key"},
+        "operation": {"enum": ["add", "remove", "change", "retain"]},
+        "before": {"$ref": "#/$defs/runState"},
+        "after": {"$ref": "#/$defs/runState"},
+        "change_channels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["identity", "metadata", "geometry", "children", "capability"]
+          }
+        },
+        "row_delta": {"$ref": "#/$defs/rowDelta"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"operation": {"const": "add"}}, "required": ["operation"]},
+          "then": {
+            "properties": {
+              "before": {"type": "null"},
+              "after": {"type": "object"},
+              "change_channels": {"minItems": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"operation": {"const": "remove"}}, "required": ["operation"]},
+          "then": {
+            "properties": {
+              "before": {"type": "object"},
+              "after": {"type": "null"},
+              "change_channels": {"minItems": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"operation": {"const": "change"}}, "required": ["operation"]},
+          "then": {
+            "properties": {
+              "before": {"type": "object"},
+              "after": {"type": "object"},
+              "change_channels": {"minItems": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"operation": {"const": "retain"}}, "required": ["operation"]},
+          "then": {
+            "properties": {
+              "before": {"type": "object"},
+              "after": {"type": "object"},
+              "change_channels": {"maxItems": 0}
+            }
+          }
+        }
+      ]
+    }
+  }
+}
