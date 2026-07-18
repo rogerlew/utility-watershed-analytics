@@ -342,6 +342,13 @@ For the NASA successor batch, the new batch's run IDs and geometries remain
 authoritative while approved metadata is joined from the WWS source. Historical
 source run IDs must never overwrite successor run IDs.
 
+DB18 implements this one fixed `WWS_Code` join in the code-only preparer. It
+checksum-pins the enrichment source, preserves target membership/order/run IDs/
+geometry, rejects conflicts, records both unmatched sides and ignored source
+authority differences, and publishes DB08-valid report and lineage artifacts.
+The exact behavior and real-input boundary are in the
+[NASA enrichment contract](database-nasa-202606-enrichment-contract.md).
+
 ### 8.6 RHESSys representation
 
 RHESSys capability must be declared per mandatory watershed key and exact run

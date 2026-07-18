@@ -118,6 +118,16 @@ sha256:8332c517002e819ead3dbaf2480fe479209175d0365ad5e92010f854c08e89ce
 The command behavior is frozen in the
 [source preparation contract](database-source-preparation-contract.md).
 
+DB18 adds the fixed NASA 202606 enrichment module to `prepare`. Its accepted
+forest1 double-build and audit produced local image ID:
+
+```text
+sha256:cd7db4255485d6767ca6fd02fa52d35735afe564284a359de0dc9d9ef18ae355
+```
+
+This extension is defined by the
+[NASA enrichment contract](database-nasa-202606-enrichment-contract.md).
+
 ## 6. Runtime boundary
 
 The accepted proof invokes the image by immutable ID with:

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, BinaryIO
 from urllib.parse import quote, urlparse
 
+from . import enrichment
 from .artifacts import ArtifactClient, PublishResult
 
 
@@ -176,6 +177,53 @@ def _member_descriptor(value: Any, *, standalone: bool) -> dict[str, Any]:
     return member
 
 
+def _enrichment_descriptor(value: Any, collection_key: str, members: list[dict[str, Any]]) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise SourceDescriptorError("enrichment must be an object")
+    _require_exact_keys(
+        value,
+        required={
+            "type",
+            "source_url",
+            "source_sha256",
+            "source_bytes",
+            "code_git_commit",
+            "validator_image_digest",
+        },
+        label="enrichment",
+    )
+    if value["type"] != "nasa-202606-wws-code":
+        raise SourceDescriptorError("enrichment type is unsupported")
+    if collection_key != "nasa-roses" or any(
+        not member["runid"].startswith(enrichment.TARGET_RUNID_PREFIX) for member in members
+    ):
+        raise SourceDescriptorError("NASA enrichment requires the NASA 202606 collection")
+    source_sha256 = _require_string(value["source_sha256"], "source_sha256", maximum=64)
+    if not re.fullmatch(r"[a-f0-9]{64}", source_sha256):
+        raise SourceDescriptorError("enrichment source_sha256 is invalid")
+    source_bytes = value["source_bytes"]
+    if not isinstance(source_bytes, int) or isinstance(source_bytes, bool) or source_bytes <= 0:
+        raise SourceDescriptorError("enrichment source_bytes must be positive")
+    code_git_commit = _require_string(value["code_git_commit"], "code_git_commit", maximum=40)
+    if not re.fullmatch(r"[a-f0-9]{40}", code_git_commit):
+        raise SourceDescriptorError("enrichment code_git_commit is invalid")
+    validator_image_digest = _require_string(
+        value["validator_image_digest"],
+        "validator_image_digest",
+        maximum=71,
+    )
+    if not re.fullmatch(r"sha256:[a-f0-9]{64}", validator_image_digest):
+        raise SourceDescriptorError("enrichment validator_image_digest is invalid")
+    return {
+        "type": "nasa-202606-wws-code",
+        "source_url": _safe_https_uri(value["source_url"], "enrichment source_url"),
+        "source_sha256": source_sha256,
+        "source_bytes": source_bytes,
+        "code_git_commit": code_git_commit,
+        "validator_image_digest": validator_image_digest,
+    }
+
+
 def validate_descriptor(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise SourceDescriptorError("descriptor root must be an object")
@@ -191,6 +239,7 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
     kind = value.get("kind")
     if kind == "batch":
         required = common | {"master_url", "source_templates"}
+        optional.add("enrichment")
     elif kind == "standalone":
         required = common
     else:
@@ -243,6 +292,12 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
                 raise SourceDescriptorError("each source template must contain {runid} exactly once")
             normalized_templates[role] = template
         descriptor["source_templates"] = normalized_templates
+        if "enrichment" in value:
+            descriptor["enrichment"] = _enrichment_descriptor(
+                value["enrichment"],
+                collection_key,
+                members,
+            )
     if "authentication" in value:
         authentication = value["authentication"]
         if not isinstance(authentication, dict):
@@ -263,6 +318,10 @@ def source_requests(descriptor: dict[str, Any]) -> list[SourceRequest]:
     requests = []
     if descriptor["kind"] == "batch":
         requests.append(SourceRequest("master", None, descriptor["master_url"]))
+        if "enrichment" in descriptor:
+            requests.append(
+                SourceRequest("enrichment", None, descriptor["enrichment"]["source_url"])
+            )
         for member in descriptor["members"]:
             escaped_runid = quote(member["runid"], safe=";-._~")
             for role in BATCH_TEMPLATE_ROLES:
@@ -524,9 +583,151 @@ def _fetch_sources(
 
 
 def _source_media_type(role: str) -> str:
-    if role == "master" or role in GEOJSON_ROLES:
+    if role in {"master", "enrichment"} or role in GEOJSON_ROLES:
         return "application/geo+json"
     return "application/vnd.apache.parquet"
+
+
+def _publish_enrichment_artifacts(
+    *,
+    client: ArtifactClient,
+    root: Path,
+    artifact_base_uri: str,
+    descriptor: dict[str, Any],
+    requests: list[SourceRequest],
+    published_sources: dict[tuple[str, str, str], PublishResult],
+    target_document: dict[str, Any],
+    source_document: dict[str, Any],
+    result: enrichment.NasaEnrichmentResult,
+) -> dict[str, Any]:
+    master_request = next(request for request in requests if request.role == "master")
+    enrichment_request = next(request for request in requests if request.role == "enrichment")
+    target_artifact = published_sources[master_request.key]
+    source_artifact = published_sources[enrichment_request.key]
+    enriched_artifact = _publish_bytes(
+        client,
+        root,
+        "nasa-202606-enriched-master.geojson",
+        canonical_json(result.document),
+    )
+    if enriched_artifact.digest in {target_artifact.digest, source_artifact.digest}:
+        raise SourceIntegrityError("enrichment output reuses an input artifact")
+    target_count = len(target_document["features"])
+    source_runid_count = sum(
+        "runid" in feature["properties"] for feature in source_document["features"]
+    )
+    enrichment_config = descriptor["enrichment"]
+    validation_report = {
+        "schema_version": 1,
+        "report_id": "nasa-202606-enrichment",
+        "subject": {"type": "transformation", "id": enrichment.TRANSFORMATION_KEY},
+        "validator": {
+            "git_commit": enrichment_config["code_git_commit"],
+            "image_digest": enrichment_config["validator_image_digest"],
+        },
+        "started_at": descriptor["created_at"],
+        "completed_at": descriptor["created_at"],
+        "status": "passed",
+        "checks": [
+            {"code": "matched", "status": "passed", "count": result.matched},
+            {
+                "code": "target-unmatched",
+                "status": "passed",
+                "count": result.target_unmatched,
+            },
+            {
+                "code": "source-unmatched",
+                "status": "passed",
+                "count": result.source_unmatched,
+            },
+            {
+                "code": "duplicate-join-key",
+                "status": "passed",
+                "count": result.duplicate,
+            },
+            {"code": "preserved-membership", "status": "passed", "count": target_count},
+            {"code": "preserved-runids", "status": "passed", "count": target_count},
+            {"code": "preserved-geometry", "status": "passed", "count": target_count},
+            {
+                "code": "source-runids-ignored",
+                "status": "passed",
+                "count": source_runid_count,
+            },
+            {
+                "code": "source-geometry-ignored",
+                "status": "passed",
+                "count": len(source_document["features"]),
+            },
+            {
+                "code": "source-runid-differences",
+                "status": "passed",
+                "count": result.source_runid_differences,
+            },
+            {
+                "code": "source-geometry-differences",
+                "status": "passed",
+                "count": result.source_geometry_differences,
+            },
+        ],
+        "summary": "NASA 202606 WWS_Code enrichment preserved target authority.",
+    }
+    report_artifact = _publish_bytes(
+        client,
+        root,
+        "nasa-202606-validation-report.json",
+        canonical_json(validation_report),
+    )
+    lineage = {
+        "schema_version": 1,
+        "transformation_key": enrichment.TRANSFORMATION_KEY,
+        "name": enrichment.TRANSFORMATION_NAME,
+        "version": enrichment.TRANSFORMATION_VERSION,
+        "code_git_commit": enrichment_config["code_git_commit"],
+        "configuration_sha256": enrichment.configuration_sha256(),
+        "join_keys": [enrichment.JOIN_KEY],
+        "inputs": [
+            _artifact_reference(
+                artifact_base_uri,
+                target_artifact,
+                "application/geo+json",
+            ),
+            _artifact_reference(
+                artifact_base_uri,
+                source_artifact,
+                "application/geo+json",
+            ),
+        ],
+        "output": _artifact_reference(
+            artifact_base_uri,
+            enriched_artifact,
+            "application/geo+json",
+        ),
+        "field_decisions": enrichment.lineage_field_decisions(
+            target_artifact.digest,
+            source_artifact.digest,
+        ),
+        "counts": {
+            "matched": result.matched,
+            "unmatched": result.unmatched,
+            "duplicate": result.duplicate,
+        },
+        "validation_report": _artifact_reference(
+            artifact_base_uri,
+            report_artifact,
+            "application/json",
+        ),
+    }
+    lineage_artifact = _publish_bytes(
+        client,
+        root,
+        "nasa-202606-transformation-lineage.json",
+        canonical_json(lineage),
+    )
+    return _artifact_reference(
+        artifact_base_uri,
+        lineage_artifact,
+        "application/json",
+    )
 
 
 def prepare_sources(
@@ -557,18 +758,44 @@ def prepare_sources(
             paths = _load_replay_sources(requests, replay_receipt, client, root, digest)
 
         master_features = None
+        target_master_document = None
+        enrichment_source_document = None
+        enrichment_result = None
         if descriptor["kind"] == "batch":
-            master_request = requests[0]
-            master_document, _ = parse_feature_collection(
+            master_request = next(request for request in requests if request.role == "master")
+            target_master_document, _ = parse_feature_collection(
                 paths[master_request.key].read_bytes(),
                 label="batch master",
             )
+            master_document = target_master_document
+            if "enrichment" in descriptor:
+                enrichment_request = next(
+                    request for request in requests if request.role == "enrichment"
+                )
+                enrichment_content = paths[enrichment_request.key].read_bytes()
+                enrichment_config = descriptor["enrichment"]
+                if len(enrichment_content) != enrichment_config["source_bytes"]:
+                    raise SourceIntegrityError("enrichment source byte count differs")
+                if sha256_bytes(enrichment_content) != enrichment_config["source_sha256"]:
+                    raise SourceIntegrityError("enrichment source SHA-256 differs")
+                enrichment_source_document, _ = parse_feature_collection(
+                    enrichment_content,
+                    label="NASA enrichment source",
+                )
+                try:
+                    enrichment_result = enrichment.enrich_nasa_202606(
+                        target_master_document,
+                        enrichment_source_document,
+                    )
+                except enrichment.NasaEnrichmentError as error:
+                    raise SourceFormatError(f"NASA enrichment failed: {error.code}") from error
+                master_document = enrichment_result.document
             master_features = _batch_features(master_document, descriptor["members"])
 
         parsed_geojson = {}
         for request in requests:
             content = paths[request.key].read_bytes()
-            if request.role == "master":
+            if request.role in {"master", "enrichment"}:
                 continue
             if request.role in GEOJSON_ROLES:
                 parsed_geojson[request.key] = parse_feature_collection(
@@ -592,6 +819,20 @@ def prepare_sources(
                     "bytes": published.byte_count,
                     "media_type": _source_media_type(request.role),
                 }
+            )
+
+        transformation_lineage_reference = None
+        if enrichment_result is not None:
+            transformation_lineage_reference = _publish_enrichment_artifacts(
+                client=client,
+                root=root,
+                artifact_base_uri=artifact_base_uri,
+                descriptor=descriptor,
+                requests=requests,
+                published_sources=published_sources,
+                target_document=target_master_document,
+                source_document=enrichment_source_document,
+                result=enrichment_result,
             )
 
         index_members = []
@@ -670,21 +911,22 @@ def prepare_sources(
                     document, _ = parsed_geojson[request.key]
                     counts[role] = len(document["features"])
 
-            index_members.append(
-                {
-                    "watershed_key": member["watershed_key"],
-                    "runid": runid,
-                    "display_name": member["display_name"],
-                    "aliases": member["aliases"],
-                    "artifacts": artifacts,
-                    "expected": {
-                        "watersheds": 1,
-                        "subcatchments": counts["subcatchments"],
-                        "channels": counts["channels"],
-                        "bounds": _bounds(boundary_pairs),
-                    },
-                }
-            )
+            index_member = {
+                "watershed_key": member["watershed_key"],
+                "runid": runid,
+                "display_name": member["display_name"],
+                "aliases": member["aliases"],
+                "artifacts": artifacts,
+                "expected": {
+                    "watersheds": 1,
+                    "subcatchments": counts["subcatchments"],
+                    "channels": counts["channels"],
+                    "bounds": _bounds(boundary_pairs),
+                },
+            }
+            if transformation_lineage_reference is not None:
+                index_member["transformation_lineage"] = transformation_lineage_reference
+            index_members.append(index_member)
 
         index = {
             "schema_version": 1,

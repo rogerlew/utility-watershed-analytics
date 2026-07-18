@@ -107,3 +107,9 @@ counts and artifact hashes through DB11's stable JSON event envelope.
 DB17 does not change the legacy runtime loader. NASA enrichment, RHESSys
 indexes, materialization, full validation, planning, database mutation,
 rollback, and production orchestration remain successor work.
+
+DB18 now adds one closed batch-descriptor extension for the inventory-defined
+NASA 202606 `WWS_Code` transform. It checksum-pins the enrichment input,
+preserves target membership/run IDs/geometry, and publishes DB08 report and
+lineage artifacts as defined by the
+[NASA enrichment contract](database-nasa-202606-enrichment-contract.md).

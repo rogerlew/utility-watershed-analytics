@@ -169,6 +169,12 @@ The enriched resource is accepted only when:
    `--dry-run` output is not sufficient validation; and
 6. the observed production snapshot below is updated after the final load.
 
+DB18 implements and synthetically proves the fixed transformation and immutable
+provenance mechanics in the
+[NASA enrichment contract](database-nasa-202606-enrichment-contract.md). It did
+not fetch either real input or update this observed snapshot. DB30 remains the
+owner of real locked membership and artifacts.
+
 ## Observed production snapshot
 
 Read-only inspection of `wepp3` on 2026-07-16 found:

@@ -146,6 +146,11 @@ packages DB01 through DB05 are complete:
   membership, required-source and format failures, immutable local publication,
   DB08 index generation, and credential-free receipt replay passed unit,
   schema, real-forest1 temporary acceptance, and reproducible image proof.
+- [DB18](work-packages/20260717-db18-nasa-202606-enrichment/package.md) is
+  `EXECUTED-COMPLETE`: the fixed checksum-pinned `WWS_Code` transform preserves
+  target membership, order, run IDs, geometry, and other fields; exact approved
+  values, conflicts, unmatched counts, DB08 provenance, and immutable replay
+  passed synthetic unit, schema, forest1, and reproducible image proof.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -158,8 +163,9 @@ anonymous source remains held and prune-prohibited. Temporary sudo was removed.
 DB04 is repository-complete but not deployed to production. The S1 contract
 freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
 artifact-client foundations, DB13 stable identity expansion, and DB14 domain
-integrity, DB15 release-ledger foundations, DB16 staging/recovery, and DB17
-strict source preparation are complete. DB18 is the next recommended package.
+integrity, DB15 release-ledger foundations, DB16 staging/recovery, DB17 strict
+source preparation, and DB18 NASA enrichment are complete. DB19 is the next
+recommended package.
 
 ## Execution environments and Wave 0 readiness
 
