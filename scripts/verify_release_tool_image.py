@@ -98,6 +98,7 @@ def audit_export(image: str) -> dict[str, int]:
                 "opt/release-tool/uwa_release_tool/__main__.py",
                 "opt/release-tool/uwa_release_tool/artifacts.py",
                 "opt/release-tool/uwa_release_tool/cli.py",
+                "opt/release-tool/uwa_release_tool/sources.py",
             }
             if not required.issubset(set(names)):
                 raise ImageVerificationError("release-tool package is incomplete in image")
@@ -183,8 +184,26 @@ def verify_invocation(image_id: str) -> dict[str, Any]:
     )
     if artifact_import.stdout.strip() != "0" * 64:
         raise ImageVerificationError("artifact client module import failed")
+    source_import = run_command(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--read-only",
+            "--network",
+            "none",
+            "--entrypoint",
+            "python3",
+            image_id,
+            "-c",
+            "from uwa_release_tool.sources import canonical_json; print(canonical_json({'ok': True}).decode(), end='')",
+        ]
+    )
+    if source_import.stdout.strip() != '{"ok":true}':
+        raise ImageVerificationError("source preparation module import failed")
     return {
         "artifact_module_imported": True,
+        "source_module_imported": True,
         "input_sha256": digest,
         "wrong_digest_exit": 11,
         "unavailable_exit": 20,

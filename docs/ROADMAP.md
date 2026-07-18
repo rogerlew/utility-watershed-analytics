@@ -141,6 +141,11 @@ packages DB01 through DB05 are complete:
   capacity preflight, bounded chunk loading and heartbeat, crash residue,
   planning/staging/applying expiry, diagnostic retention, cleanup failure/retry,
   and active-serving preservation passed isolated integration and scale proof.
+- [DB17](work-packages/20260717-db17-source-resolution-indexes/package.md) is
+  `EXECUTED-COMPLETE`: strict standalone and batch preparation, exact reviewed
+  membership, required-source and format failures, immutable local publication,
+  DB08 index generation, and credential-free receipt replay passed unit,
+  schema, real-forest1 temporary acceptance, and reproducible image proof.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -153,8 +158,8 @@ anonymous source remains held and prune-prohibited. Temporary sudo was removed.
 DB04 is repository-complete but not deployed to production. The S1 contract
 freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
 artifact-client foundations, DB13 stable identity expansion, and DB14 domain
-integrity, DB15 release-ledger foundations, and DB16 staging/recovery are
-complete. DB17 is the next recommended package.
+integrity, DB15 release-ledger foundations, DB16 staging/recovery, and DB17
+strict source preparation are complete. DB18 is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

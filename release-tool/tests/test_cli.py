@@ -28,6 +28,7 @@ class ReleaseToolCliTests(unittest.TestCase):
         exit_code, output, errors = self.invoke("status")
         self.assertEqual(exit_code, cli.ExitCode.OK)
         self.assertFalse(errors)
+        self.assertEqual(output[-1]["commands"]["prepare"], True)
         self.assertEqual(output[-1]["commands"]["validate"], True)
         self.assertEqual(output[-1]["commands"]["apply"], False)
         self.assertEqual(output[-1]["exit_codes"]["20"], "command_unavailable")
@@ -95,11 +96,55 @@ class ReleaseToolCliTests(unittest.TestCase):
         self.assertEqual(errors[-1]["error_code"], "invalid_json_root")
 
     def test_successor_commands_are_fatal_and_distinct(self):
-        for command in {"prepare", "plan", "build", "apply", "rollback", "recover"}:
+        for command in {"plan", "build", "apply", "rollback", "recover"}:
             with self.subTest(command=command):
                 exit_code, _, errors = self.invoke(command)
                 self.assertEqual(exit_code, cli.ExitCode.COMMAND_UNAVAILABLE)
                 self.assertEqual(errors[-1]["error_code"], "command_unavailable")
+
+    def test_prepare_replays_verified_inputs_and_writes_new_outputs(self):
+        from test_sources import ARTIFACT_BASE, batch_descriptor, batch_mapping, MappingFetcher
+        from uwa_release_tool import artifacts, sources
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            descriptor = batch_descriptor()
+            descriptor_path = root / "descriptor.json"
+            descriptor_path.write_text(json.dumps(descriptor), encoding="utf-8")
+            store = root / "store"
+            first_client = artifacts.ArtifactClient(store, root / "first-cache")
+            first = sources.prepare_sources(
+                descriptor,
+                client=first_client,
+                artifact_base_uri=ARTIFACT_BASE,
+                fetcher=MappingFetcher(batch_mapping(descriptor)),
+            )
+            receipt_path = root / "input-receipt.json"
+            receipt_path.write_bytes(first.receipt_bytes)
+            index_path = root / "output" / "index.json"
+            output_receipt = root / "output" / "receipt.json"
+            exit_code, output, errors = self.invoke(
+                "prepare",
+                "--descriptor",
+                str(descriptor_path),
+                "--store-namespace",
+                str(store),
+                "--cache-root",
+                str(root / "replay-cache"),
+                "--artifact-base-uri",
+                ARTIFACT_BASE,
+                "--output-index",
+                str(index_path),
+                "--output-receipt",
+                str(output_receipt),
+                "--replay-receipt",
+                str(receipt_path),
+            )
+            self.assertEqual(exit_code, cli.ExitCode.OK)
+            self.assertFalse(errors)
+            self.assertTrue(output[-1]["replayed"])
+            self.assertEqual(index_path.read_bytes(), first.index_bytes)
+            self.assertEqual(output_receipt.read_bytes(), first.receipt_bytes)
 
     def test_unknown_command_is_structured_usage_error(self):
         exit_code, output, errors = self.invoke("unknown")

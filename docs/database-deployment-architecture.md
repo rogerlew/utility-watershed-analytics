@@ -648,6 +648,14 @@ Preparation may be rerun, but a published release ID is immutable. Any changed
 target artifact requires a new release ID. A newly encountered base state
 requires a new separately reviewed plan, not a mutation of the target release.
 
+DB17 implements the bounded source-resolution portion of steps 3–5 and 7–9 for
+watershed member indexes. The code-only `data-release prepare` command requires
+an explicit reviewed identity map, makes empty/missing/extra/duplicate members
+fatal, publishes through the forest1-backed DB12 client, and can reproduce the
+same index from an immutable receipt without upstream access. The accepted
+details and successor boundary are in the
+[source preparation contract](database-source-preparation-contract.md).
+
 ## 13. CI workflow
 
 A data-release pull request should run:

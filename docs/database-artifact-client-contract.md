@@ -123,3 +123,8 @@ sha256:da87d2eea21407fcc170b8928b29081be20f78501d0381e6ec6c86d0eebfff79
 ```
 
 This is local acceptance evidence, not a registry-published release digest.
+
+DB17 consumes this client for strict source publication and receipt replay as
+defined by the
+[source preparation contract](database-source-preparation-contract.md). It does
+not add store deletion, a provider, or a credential model.

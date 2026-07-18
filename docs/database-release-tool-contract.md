@@ -5,8 +5,9 @@ Status: accepted version 1 foundation
 Date: 2026-07-17
 
 DB11 freezes the command names, event envelope, exit codes, verified-input
-boundary, and reproducible image build. It does not implement release
-preparation, planning, materialization, database mutation, rollback, or recovery.
+boundary, and reproducible image build. DB17 now implements strict source
+preparation without implementing planning, materialization, database mutation,
+rollback, or recovery.
 
 ## 1. Commands
 
@@ -15,7 +16,7 @@ The operator entry point is `data-release` in the image and
 
 | Command | DB11 behavior | Successor owner |
 | --- | --- | --- |
-| `prepare` | Fatal `command_unavailable`. | DB17–DB19 |
+| `prepare` | DB17 resolves reviewed standalone/batch inputs, publishes verified immutable artifacts, and emits an exact member index plus replay receipt. | DB18–DB19 extend enrichment and RHESSys preparation. |
 | `validate` | Verify a regular JSON object and optional exact SHA-256. | DB21 extends domain validation. |
 | `plan` | Fatal `command_unavailable`. | DB22 |
 | `build` | Fatal `command_unavailable`. | DB20 |
@@ -106,6 +107,16 @@ creates manifests and plans that reference it.
 DB12 adds the artifact client to the same code-only package and therefore has a
 different accepted local image ID. Successor code changes are expected to change
 the image ID while preserving this build and audit contract.
+
+DB17 adds strict source preparation and receipt-only replay. Its accepted
+forest1 double-build and audit produced local image ID:
+
+```text
+sha256:8332c517002e819ead3dbaf2480fe479209175d0365ad5e92010f854c08e89ce
+```
+
+The command behavior is frozen in the
+[source preparation contract](database-source-preparation-contract.md).
 
 ## 6. Runtime boundary
 

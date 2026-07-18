@@ -10,6 +10,8 @@ on:
       - 'scripts/tests/test_verify_release_tool_image.py'
       - 'scripts/accept_artifact_client.py'
       - 'scripts/tests/test_accept_artifact_client.py'
+      - 'scripts/accept_source_preparation.py'
+      - 'scripts/tests/test_accept_source_preparation.py'
       - '.github/workflows/release-tool-ci.yml'
   workflow_call:
 
@@ -32,6 +34,7 @@ jobs:
           PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=release-tool python -m unittest discover -s release-tool/tests
           PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_verify_release_tool_image
           PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_accept_artifact_client
+          PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_accept_source_preparation
 
       - name: Build reproducibly and audit image
         run: scripts/build_release_tool_image.sh uwa-release-tool:ci

@@ -110,3 +110,8 @@ and recovery behavior in the accepted
 Neither successor may weaken immutable verification, exact membership,
 identity, removal, replay, or credential boundaries without a new reviewed
 contract version.
+
+DB17 now emits this exact version-1 member-index shape from reviewed source
+descriptors and immutable bytes. Its strict resolution and replay behavior is
+defined by the
+[source preparation contract](database-source-preparation-contract.md).

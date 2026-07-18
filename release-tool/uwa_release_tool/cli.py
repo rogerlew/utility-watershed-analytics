@@ -3,12 +3,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import stat
 import sys
+import tempfile
 from collections.abc import Callable, Sequence
 from enum import IntEnum
 from pathlib import Path
 from typing import Any, TextIO
+
+from . import artifacts, sources
 
 __version__ = "0.1.0"
 
@@ -90,7 +94,15 @@ def build_parser() -> StructuredArgumentParser:
 
     for command in COMMANDS:
         command_parser = subparsers.add_parser(command)
-        if command == "validate":
+        if command == "prepare":
+            command_parser.add_argument("--descriptor", required=True, type=Path)
+            command_parser.add_argument("--store-namespace", required=True, type=Path)
+            command_parser.add_argument("--cache-root", required=True, type=Path)
+            command_parser.add_argument("--artifact-base-uri", required=True)
+            command_parser.add_argument("--output-index", required=True, type=Path)
+            command_parser.add_argument("--output-receipt", required=True, type=Path)
+            command_parser.add_argument("--replay-receipt", type=Path)
+        elif command == "validate":
             command_parser.add_argument("--input", required=True, type=Path)
             command_parser.add_argument("--sha256", type=expected_sha256)
             command_parser.add_argument("--require-read-only", action="store_true")
@@ -137,9 +149,88 @@ def validate_command(arguments: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _read_json_object(path: Path) -> dict[str, Any]:
+    content = require_regular_input(path, False)
+    try:
+        document = json.loads(content)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise CommandError(ExitCode.CONTRACT, "invalid_json", "input is not valid UTF-8 JSON") from error
+    if not isinstance(document, dict):
+        raise CommandError(ExitCode.CONTRACT, "invalid_json_root", "input JSON root must be an object")
+    return document
+
+
+def _write_new_file(path: Path, content: bytes) -> None:
+    if path.exists() or path.is_symlink():
+        raise CommandError(ExitCode.STATE_CONFLICT, "output_exists", "output path already exists")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+        temporary = Path(temporary_name)
+        try:
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(content)
+                stream.flush()
+                os.fsync(stream.fileno())
+            temporary.chmod(0o644)
+            os.link(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+    except CommandError:
+        raise
+    except FileExistsError as error:
+        raise CommandError(ExitCode.STATE_CONFLICT, "output_exists", "output path already exists") from error
+    except OSError as error:
+        raise CommandError(ExitCode.INPUT, "output_unwritable", "output file cannot be written") from error
+
+
+def prepare_command(arguments: argparse.Namespace) -> dict[str, Any]:
+    descriptor = _read_json_object(arguments.descriptor)
+    receipt = (
+        _read_json_object(arguments.replay_receipt)
+        if arguments.replay_receipt is not None
+        else None
+    )
+    client = artifacts.ArtifactClient(arguments.store_namespace, arguments.cache_root)
+    try:
+        result = sources.prepare_sources(
+            descriptor,
+            client=client,
+            artifact_base_uri=arguments.artifact_base_uri,
+            replay_receipt=receipt,
+        )
+    except sources.SourceDescriptorError as error:
+        raise CommandError(ExitCode.CONTRACT, "source_descriptor_invalid", str(error)) from error
+    except sources.SourceMembershipError as error:
+        raise CommandError(ExitCode.CONTRACT, "source_membership_invalid", str(error)) from error
+    except sources.SourceFormatError as error:
+        raise CommandError(ExitCode.CONTRACT, "source_format_invalid", str(error)) from error
+    except sources.SourceIntegrityError as error:
+        raise CommandError(ExitCode.INTEGRITY, "source_integrity_failed", str(error)) from error
+    except sources.SourceFetchError as error:
+        raise CommandError(ExitCode.INPUT, "source_fetch_failed", str(error)) from error
+    except artifacts.ArtifactIntegrityError as error:
+        raise CommandError(ExitCode.INTEGRITY, "artifact_integrity_failed", str(error)) from error
+    except artifacts.ArtifactError as error:
+        raise CommandError(ExitCode.INPUT, "artifact_operation_failed", str(error)) from error
+    _write_new_file(arguments.output_index, result.index_bytes)
+    try:
+        _write_new_file(arguments.output_receipt, result.receipt_bytes)
+    except CommandError:
+        arguments.output_index.unlink(missing_ok=True)
+        raise
+    return {
+        "index_sha256": result.index_artifact.digest,
+        "receipt_sha256": result.receipt_artifact.digest,
+        "member_count": result.member_count,
+        "source_count": result.source_count,
+        "replayed": result.replayed,
+    }
+
+
 def status_command(arguments: argparse.Namespace) -> dict[str, Any]:
     del arguments
-    availability = {command: command in {"validate", "status"} for command in COMMANDS}
+    availability = {command: command in {"prepare", "validate", "status"} for command in COMMANDS}
     return {
         "commands": availability,
         "exit_codes": {str(code): name for code, name in sorted(EXIT_CODE_NAMES.items())},
@@ -158,7 +249,9 @@ CommandHandler = Callable[[argparse.Namespace], dict[str, Any]]
 COMMAND_HANDLERS: dict[str, CommandHandler] = {
     command: unavailable_command for command in COMMANDS
 }
-COMMAND_HANDLERS.update({"validate": validate_command, "status": status_command})
+COMMAND_HANDLERS.update(
+    {"prepare": prepare_command, "validate": validate_command, "status": status_command}
+)
 
 
 def command_hint(arguments: Sequence[str]) -> str:
