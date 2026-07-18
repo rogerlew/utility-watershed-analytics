@@ -1,4 +1,67 @@
+import uuid
+
 from django.contrib.gis.db import models
+from django.core.validators import RegexValidator
+
+
+stable_key_validator = RegexValidator(
+    regex=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    message="Use a lowercase ASCII kebab-case stable key.",
+)
+
+
+class WatershedCollection(models.Model):
+    key = models.CharField(
+        primary_key=True,
+        max_length=96,
+        validators=[stable_key_validator],
+    )
+
+
+class WatershedIdentity(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        RETIRED = "retired", "Retired"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    watershed_key = models.CharField(
+        max_length=96,
+        null=True,
+        blank=True,
+        unique=True,
+        validators=[stable_key_validator],
+    )
+    collection = models.ForeignKey(
+        WatershedCollection,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="watersheds",
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+    )
+
+
+class WatershedRunAlias(models.Model):
+    runid = models.CharField(primary_key=True, max_length=255)
+    watershed_identity = models.ForeignKey(
+        WatershedIdentity,
+        on_delete=models.PROTECT,
+        related_name="run_aliases",
+    )
+    is_current = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("watershed_identity",),
+                condition=models.Q(is_current=True),
+                name="watershed_one_current_run_alias",
+            ),
+        ]
 
 # Represents an individual watershed - the watershed properties and its geometry.
 # This is an auto-generated Django model module created by ogrinspect. 
@@ -27,12 +90,26 @@ class Watershed(models.Model):
     huc10_treat_types = models.TextField(null=True, blank=True)
     huc10_utility_count = models.IntegerField(null=True, blank=True)
     runid = models.CharField(primary_key=True, max_length=255)
+    logical_watershed = models.OneToOneField(
+        WatershedIdentity,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="current_watershed",
+    )
     geom = models.MultiPolygonField(srid=4326)
     simplified_geom = models.MultiPolygonField(srid=4326, null=True, blank=True)
 
 # This is based on an auto-generated Django model module created by ogrinspect.
 class Subcatchment(models.Model):
     watershed = models.ForeignKey(to=Watershed, on_delete=models.CASCADE)
+    logical_watershed = models.ForeignKey(
+        WatershedIdentity,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="subcatchments",
+    )
     topazid = models.IntegerField()
     weppid = models.IntegerField()
     geom = models.MultiPolygonField(srid=4326)
@@ -87,6 +164,13 @@ class Subcatchment(models.Model):
 # This is based on an auto-generated Django model module created by ogrinspect.
 class Channel(models.Model):
     watershed = models.ForeignKey(to=Watershed, on_delete=models.CASCADE)
+    logical_watershed = models.ForeignKey(
+        WatershedIdentity,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="channels",
+    )
     topazid = models.IntegerField()
     weppid = models.IntegerField()
     order = models.IntegerField()

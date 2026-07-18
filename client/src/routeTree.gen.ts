@@ -20,6 +20,7 @@ import { Route as AboutWatarRouteImport } from './routes/about/watar'
 import { Route as AboutScenariosRouteImport } from './routes/about/scenarios'
 import { Route as AboutSbsRouteImport } from './routes/about/sbs'
 import { Route as AboutRhessysRouteImport } from './routes/about/rhessys'
+import { Route as WatershedKeyWatershedKeyRouteImport } from './routes/watershed.key.$watershedKey'
 
 const TeamRoute = TeamRouteImport.update({
   id: '/team',
@@ -76,6 +77,12 @@ const AboutRhessysRoute = AboutRhessysRouteImport.update({
   path: '/rhessys',
   getParentRoute: () => AboutRoute,
 } as any)
+const WatershedKeyWatershedKeyRoute =
+  WatershedKeyWatershedKeyRouteImport.update({
+    id: '/watershed/key/$watershedKey',
+    path: '/watershed/key/$watershedKey',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/about/wepp-cloud': typeof AboutWeppCloudRoute
   '/watershed/$webcloudRunId': typeof WatershedWebcloudRunIdRoute
   '/about/': typeof AboutIndexRoute
+  '/watershed/key/$watershedKey': typeof WatershedKeyWatershedKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesByTo {
   '/about/wepp-cloud': typeof AboutWeppCloudRoute
   '/watershed/$webcloudRunId': typeof WatershedWebcloudRunIdRoute
   '/about': typeof AboutIndexRoute
+  '/watershed/key/$watershedKey': typeof WatershedKeyWatershedKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,6 +124,7 @@ export interface FileRoutesById {
   '/about/wepp-cloud': typeof AboutWeppCloudRoute
   '/watershed/$webcloudRunId': typeof WatershedWebcloudRunIdRoute
   '/about/': typeof AboutIndexRoute
+  '/watershed/key/$watershedKey': typeof WatershedKeyWatershedKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/about/wepp-cloud'
     | '/watershed/$webcloudRunId'
     | '/about/'
+    | '/watershed/key/$watershedKey'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/about/wepp-cloud'
     | '/watershed/$webcloudRunId'
     | '/about'
+    | '/watershed/key/$watershedKey'
   id:
     | '__root__'
     | '/'
@@ -155,6 +167,7 @@ export interface FileRouteTypes {
     | '/about/wepp-cloud'
     | '/watershed/$webcloudRunId'
     | '/about/'
+    | '/watershed/key/$watershedKey'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -162,6 +175,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRouteWithChildren
   TeamRoute: typeof TeamRoute
   WatershedWebcloudRunIdRoute: typeof WatershedWebcloudRunIdRoute
+  WatershedKeyWatershedKeyRoute: typeof WatershedKeyWatershedKeyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -243,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRhessysRouteImport
       parentRoute: typeof AboutRoute
     }
+    '/watershed/key/$watershedKey': {
+      id: '/watershed/key/$watershedKey'
+      path: '/watershed/key/$watershedKey'
+      fullPath: '/watershed/key/$watershedKey'
+      preLoaderRoute: typeof WatershedKeyWatershedKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -273,6 +294,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRouteWithChildren,
   TeamRoute: TeamRoute,
   WatershedWebcloudRunIdRoute: WatershedWebcloudRunIdRoute,
+  WatershedKeyWatershedKeyRoute: WatershedKeyWatershedKeyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

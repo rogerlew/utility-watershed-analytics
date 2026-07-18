@@ -1,7 +1,16 @@
 from rest_framework import viewsets
+from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
-from server.watershed.models import Watershed, Subcatchment, Channel
+from django.db.models import CharField, F, OuterRef, Subquery, Value
+from django.db.models.functions import Cast, Coalesce, Concat
+from server.watershed.models import (
+    Channel,
+    Subcatchment,
+    Watershed,
+    WatershedRunAlias,
+)
 from server.watershed.geojson import geojson_response, geojson_feature_response
+from server.watershed.identity import resolve_runid, resolve_watershed_key
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from server.watershed.schema_serializers import (
     WatershedFeatureCollectionSerializer,
@@ -30,6 +39,20 @@ class WatershedViewSet(viewsets.ReadOnlyModelViewSet):
         'huc10_pws_names',
     )
     serializer_class = SchemaPlaceholderSerializer
+
+    @staticmethod
+    def _with_identity_properties(queryset):
+        current_runid = WatershedRunAlias.objects.filter(
+            watershed_identity_id=OuterRef('logical_watershed_id'),
+            is_current=True,
+        ).values('runid')[:1]
+        return queryset.annotate(
+            watershed_key=F('logical_watershed__watershed_key'),
+            current_runid=Coalesce(
+                Subquery(current_runid, output_field=CharField()),
+                F('runid'),
+            ),
+        )
 
     # No logic changes, only decorating for documentation
     @extend_schema(
@@ -69,11 +92,36 @@ class WatershedViewSet(viewsets.ReadOnlyModelViewSet):
         """Gets the specified watershed with the original or simplified geometries (depending on simplified_geom query parameter)"""
         simplified = request.query_params.get('simplified_geom', '').lower() == 'true'
         geo_field = 'simplified_geom' if simplified else 'geom'
+        watershed = resolve_runid(kwargs['pk'])
+        queryset = self._with_identity_properties(
+            Watershed.objects.filter(pk=watershed.pk)
+        ).annotate(
+            route_id=Value(kwargs['pk'], output_field=CharField()),
+        )
         return geojson_feature_response(
-            Watershed.objects.filter(pk=kwargs['pk']),
+            queryset,
             geo_field=geo_field,
-            id_field='runid',
-            properties=self._properties,
+            id_field='route_id',
+            properties=self._properties + ('watershed_key', 'current_runid'),
+        )
+
+
+class WatershedByKeyDetailView(APIView):
+    def get(self, request, watershed_key):
+        simplified = request.query_params.get('simplified_geom', '').lower() == 'true'
+        geo_field = 'simplified_geom' if simplified else 'geom'
+        watershed = resolve_watershed_key(watershed_key)
+        queryset = WatershedViewSet._with_identity_properties(
+            Watershed.objects.filter(pk=watershed.pk)
+        ).annotate(
+            stable_id=Value(watershed_key, output_field=CharField())
+        )
+        return geojson_feature_response(
+            queryset,
+            geo_field=geo_field,
+            id_field='stable_id',
+            properties=WatershedViewSet._properties
+            + ('watershed_key', 'current_runid'),
         )
 
 class WatershedSubcatchmentListView(APIView):
@@ -88,10 +136,43 @@ class WatershedSubcatchmentListView(APIView):
         },
     )
     def get(self, request, runid):
-        qs = Subcatchment.objects.filter(watershed_id=runid)
+        try:
+            watershed = resolve_runid(runid)
+        except NotFound:
+            qs = Subcatchment.objects.none()
+        else:
+            qs = Subcatchment.objects.filter(watershed=watershed)
         return geojson_response(
             qs,
             geo_field='geom',
+            properties=(
+                'topazid',
+                'weppid',
+                'slope_scalar',
+                'length',
+                'width',
+                'aspect',
+                'hillslope_area',
+                'simple_texture',
+            ),
+        )
+
+
+class WatershedSubcatchmentByKeyListView(APIView):
+    def get(self, request, watershed_key):
+        watershed = resolve_watershed_key(watershed_key)
+        stable_id = Concat(
+            Value(f"subcatchment:{watershed_key}:"),
+            Cast('topazid', output_field=CharField()),
+            output_field=CharField(),
+        )
+        queryset = Subcatchment.objects.filter(watershed=watershed).annotate(
+            stable_id=stable_id
+        )
+        return geojson_response(
+            queryset,
+            geo_field='geom',
+            id_field='stable_id',
             properties=(
                 'topazid',
                 'weppid',
@@ -116,7 +197,12 @@ class WatershedChannelListView(APIView):
         },
     )
     def get(self, request, runid):
-        qs = Channel.objects.filter(watershed_id=runid)
+        try:
+            watershed = resolve_runid(runid)
+        except NotFound:
+            qs = Channel.objects.none()
+        else:
+            qs = Channel.objects.filter(watershed=watershed)
         return geojson_response(
             qs,
             geo_field='geom',
@@ -125,4 +211,27 @@ class WatershedChannelListView(APIView):
                 'weppid',
                 'order',
             ),
+        )
+
+
+class WatershedChannelByKeyListView(APIView):
+    def get(self, request, watershed_key):
+        watershed = resolve_watershed_key(watershed_key)
+        stable_id = Concat(
+            Value(f"channel:{watershed_key}:"),
+            Cast('topazid', output_field=CharField()),
+            Value(':'),
+            Cast('weppid', output_field=CharField()),
+            Value(':'),
+            Cast('order', output_field=CharField()),
+            output_field=CharField(),
+        )
+        queryset = Channel.objects.filter(watershed=watershed).annotate(
+            stable_id=stable_id
+        )
+        return geojson_response(
+            queryset,
+            geo_field='geom',
+            id_field='stable_id',
+            properties=('topazid', 'weppid', 'order'),
         )

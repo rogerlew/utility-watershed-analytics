@@ -51,6 +51,20 @@ export async function fetchWatershed(
   );
 }
 
+export async function fetchWatershedByKey(
+  watershedKey: string,
+): Promise<GeoJSON.Feature<GeoJSON.Geometry, WatershedProperties>> {
+  const url = API_ENDPOINTS.WATERSHED_BY_KEY(watershedKey);
+  const res = await fetch(url);
+  return checkResponse<GeoJSON.Feature<GeoJSON.Geometry, WatershedProperties>>(
+    res,
+    {
+      url,
+      prefix: "Watershed",
+    },
+  );
+}
+
 /**
  * Fetches subcatchment polygons for a given watershed.
  *

@@ -1,6 +1,13 @@
 from rest_framework import routers
 from django.urls import path, include
-from server.watershed.views import WatershedViewSet, WatershedSubcatchmentListView, WatershedChannelListView
+from server.watershed.views import (
+    WatershedByKeyDetailView,
+    WatershedChannelByKeyListView,
+    WatershedChannelListView,
+    WatershedSubcatchmentByKeyListView,
+    WatershedSubcatchmentListView,
+    WatershedViewSet,
+)
 from server.watershed.sbs_raster.views import SbsColormapView, SbsRasterTileView
 from server.watershed.rhessys_spatial.views import RhessysSpatialListView, RhessysSpatialTileView
 from server.watershed.rhessys_outputs.views import RhessysOutputListView, RhessysOutputTileView, RhessysOutputGeometryView
@@ -11,6 +18,21 @@ router.register('', WatershedViewSet, basename='watershed')
 
 # Make router routes accessible to project URL configuration
 urlpatterns = [
+    path(
+        'by-key/<str:watershed_key>/',
+        WatershedByKeyDetailView.as_view(),
+        name='watershed-by-key',
+    ),
+    path(
+        'by-key/<str:watershed_key>/subcatchments',
+        WatershedSubcatchmentByKeyListView.as_view(),
+        name='watershed-subcatchments-by-key',
+    ),
+    path(
+        'by-key/<str:watershed_key>/channels',
+        WatershedChannelByKeyListView.as_view(),
+        name='watershed-channels-by-key',
+    ),
     path('', include(router.urls)),
     path('<str:runid>/subcatchments', WatershedSubcatchmentListView.as_view(), name='watershed-subcatchments'),
     path('<str:runid>/channels', WatershedChannelListView.as_view(), name='watershed-channels'),

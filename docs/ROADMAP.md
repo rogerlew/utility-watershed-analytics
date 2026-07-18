@@ -120,6 +120,12 @@ packages DB01 through DB05 are complete:
   verification/recovery, concurrent fetch, typed failures, private paths,
   namespace isolation, and bounded retained/leased cache cleanup passed unit,
   real-forest1 temporary acceptance, and reproducible image proof.
+- [DB13](work-packages/20260717-db13-watershed-identity-migration/package.md) is
+  `EXECUTED-COMPLETE`: additive internal identities, reviewed stable keys,
+  permanent run aliases, dual child links, stable-key routes, validation, old
+  model compatibility, canonical browser redirects, replacement preservation,
+  and bounded rollback passed server/client and production-shaped isolated
+  PostGIS proof.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -130,8 +136,9 @@ safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
 DB04 is repository-complete but not deployed to production. The S1 contract
-freeze, DB10A local infrastructure acceptance, and DB11–DB12 release-tool and
-artifact-client foundations are complete. DB13 is the next recommended package.
+freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
+artifact-client foundations, and DB13 stable identity expansion are complete.
+DB14 is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

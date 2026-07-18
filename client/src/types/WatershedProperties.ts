@@ -4,6 +4,8 @@
  */
 export interface WatershedProperties {
   // Identifiers
+  watershed_key?: string | null;
+  current_runid?: string;
   pws_id: string;
   srcname: string;
   pws_name: string;

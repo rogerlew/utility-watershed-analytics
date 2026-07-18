@@ -8,6 +8,11 @@ describe("API_ENDPOINTS URL encoding", () => {
     expect(url).not.toContain("run with spaces");
   });
 
+  it("WATERSHED_BY_KEY encodes a stable key", () => {
+    const url = API_ENDPOINTS.WATERSHED_BY_KEY("stable key");
+    expect(url).toContain("/watershed/by-key/stable%20key/");
+  });
+
   it("SUBCATCHMENTS encodes id", () => {
     const url = API_ENDPOINTS.SUBCATCHMENTS("id#hash");
     expect(url).toContain("id%23hash");

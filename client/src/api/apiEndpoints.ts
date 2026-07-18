@@ -25,6 +25,9 @@ export const API_ENDPOINTS = {
   WATERSHEDS: `${API_BASE_URL}/watershed/`,
   // Get a single watershed or post-list by id
   WATERSHED: (id: string) => `${API_BASE_URL}/watershed/${e(id)}/`,
+  // Get a watershed by its stable project-controlled key
+  WATERSHED_BY_KEY: (watershedKey: string) =>
+    `${API_BASE_URL}/watershed/by-key/${e(watershedKey)}/`,
   // Subcatchments for a watershed
   SUBCATCHMENTS: (id: string) =>
     `${API_BASE_URL}/watershed/${e(id)}/subcatchments`,

@@ -525,6 +525,13 @@ IDs remain compatibility aliases. The DB08
 [release schema contract](database-release-schema-contract.md) encodes those
 decisions rather than deriving identity from source names or geometry.
 
+DB13 implements the additive relational and API compatibility shape in the
+[stable watershed identity migration](database-watershed-identity-migration.md).
+It introduces generated internal identities, nullable reviewed stable keys,
+permanent run aliases, and dual child links while retaining the legacy run-ID
+primary and foreign keys. The later contract step is intentionally deferred
+until complete reviewed key assignment and the dual-compatible rollout.
+
 ## 10. Change semantics
 
 | Change | Release representation | Reconciliation behavior |

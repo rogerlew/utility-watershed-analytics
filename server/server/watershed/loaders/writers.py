@@ -286,12 +286,14 @@ class DjangoDataWriter:
             elif isinstance(geom, MultiPolygon):
                 entities[entity_key]['polygons'].extend(list(geom))
         
+        watershed = Watershed.objects.only('logical_watershed_id').get(pk=associated_runid)
         instances = []
         for entity_key, entity_data in entities.items():
             kwargs = entity_data['attributes']
             polygons = entity_data['polygons']
             kwargs['geom'] = MultiPolygon(polygons) if len(polygons) > 1 else MultiPolygon(polygons[0])
             kwargs['watershed_id'] = associated_runid
+            kwargs['logical_watershed_id'] = watershed.logical_watershed_id
             instances.append(model_class(**kwargs))
         
         model_class.objects.bulk_create(instances)
