@@ -1,0 +1,145 @@
+{
+  "contract_version": 1,
+  "provider": {
+    "id": "backblaze-b2",
+    "api": "s3-compatible",
+    "transport": "https-only",
+    "region_policy": "assigned-us-region",
+    "endpoint_template": "https://s3.<assigned-us-region>.backblazeb2.com"
+  },
+  "ownership": {
+    "account": "project-controlled",
+    "account_mfa_required": true,
+    "offline_recovery_material_required": true,
+    "public_bucket_prohibited": true
+  },
+  "buckets": [
+    {
+      "environment": "test",
+      "name_pattern": "uwa-artifacts-test-<account-suffix>",
+      "private": true,
+      "object_lock_enabled_before_first_object": true
+    },
+    {
+      "environment": "production",
+      "name_pattern": "uwa-artifacts-prod-<account-suffix>",
+      "private": true,
+      "object_lock_enabled_before_first_object": true
+    }
+  ],
+  "encryption": {
+    "at_rest": "SSE-B2-AES256",
+    "default_bucket_encryption_required": true,
+    "customer_managed_sse_c": false,
+    "in_transit": "TLS"
+  },
+  "immutability": {
+    "mode": "COMPLIANCE",
+    "default_days": 365,
+    "governance_bypass_allowed": false,
+    "lifecycle_may_delete_locked_objects": false
+  },
+  "key_layout": {
+    "algorithm": "sha256",
+    "template": "v1/blobs/sha256/<first-two-hex>/<full-lowercase-sha256>",
+    "regex": "^v1/blobs/sha256/[a-f0-9]{2}/[a-f0-9]{64}$",
+    "mutable_alias_is_authority": false,
+    "overwrite_allowed": false
+  },
+  "roles": [
+    {
+      "role": "publisher",
+      "credential_location": "protected-preparation-environment",
+      "capabilities": ["listFiles", "readFiles", "writeFiles"],
+      "bucket_scoped": true,
+      "prefix_scoped": true,
+      "deployed_to_application": false
+    },
+    {
+      "role": "runtime-reader",
+      "credential_location": "protected-runtime-environment",
+      "capabilities": ["readFiles"],
+      "bucket_scoped": true,
+      "prefix_scoped": true,
+      "deployed_to_application": true
+    },
+    {
+      "role": "deployment-reader",
+      "credential_location": "protected-deployment-environment",
+      "capabilities": ["listFiles", "readFiles", "readFileRetentions", "readBucketRetentions"],
+      "bucket_scoped": true,
+      "prefix_scoped": true,
+      "deployed_to_application": false
+    },
+    {
+      "role": "retention-administrator",
+      "credential_location": "offline-operator-controlled",
+      "capabilities": ["listFiles", "readFiles", "writeFiles", "deleteFiles", "readFileRetentions", "writeFileRetentions", "readFileLegalHolds", "writeFileLegalHolds"],
+      "bucket_scoped": true,
+      "prefix_scoped": true,
+      "deployed_to_application": false
+    },
+    {
+      "role": "account-owner-break-glass",
+      "credential_location": "offline-account-recovery",
+      "capabilities": ["bucket-configuration", "encryption-configuration", "key-administration", "lock-configuration", "logging-configuration", "alert-configuration"],
+      "bucket_scoped": false,
+      "prefix_scoped": false,
+      "deployed_to_application": false
+    }
+  ],
+  "credential_environment": [
+    "UWA_ARTIFACT_ENDPOINT",
+    "UWA_ARTIFACT_BUCKET",
+    "UWA_ARTIFACT_REGION",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY"
+  ],
+  "publication": {
+    "streaming_multipart": true,
+    "temporary_visible_key_allowed": false,
+    "abort_failed_multipart": true,
+    "orphan_multipart_max_age_hours": 24,
+    "verify_sha256_before_upload": true,
+    "verify_sha256_after_upload": true,
+    "verify_size_and_media_type": true,
+    "existing_key_requires_full_verification": true,
+    "collision_response": "stop-and-preserve-both-outside-authoritative-prefix"
+  },
+  "retention": {
+    "minimum_releases": 3,
+    "required_release_roles": ["active", "rollback-1", "rollback-2"],
+    "retained_release_ttl": null,
+    "gc_schedule": "quarterly-manual",
+    "gc_preview_required": true,
+    "gc_exact_reachability_required": true,
+    "gc_requires_lock_expiry": true,
+    "gc_owner": "retention-administrator"
+  },
+  "cache": {
+    "root": "/var/cache/utility-watershed-analytics/artifacts/v1",
+    "verify_sha256_on_every_hit": true,
+    "download_to_unique_temporary_file": true,
+    "atomic_promote_after_verification": true,
+    "content_entry_mutation_allowed": false,
+    "concurrent_readers_allowed": true,
+    "evict_during_active_build": false,
+    "provider_is_authority": true
+  },
+  "recovery": {
+    "independent_mirror_root": "/wc1/utility-watershed-analytics-artifact-recovery/v1",
+    "mirror_host": "forest1",
+    "minimum_mirrored_releases": 3,
+    "verify_mirror_after_publication": true,
+    "provider_outage_behavior": "fail-closed-without-active-state-change",
+    "restore_owner": "account-owner-break-glass",
+    "quarterly_restore_drill_required": true
+  },
+  "logging_and_limits": {
+    "bucket_access_logs_required": true,
+    "event_notifications_required": true,
+    "storage_and_transaction_caps_required": true,
+    "anomaly_alerts_required": true,
+    "credentials_in_logs_prohibited": true
+  }
+}

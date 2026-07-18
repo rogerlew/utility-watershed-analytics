@@ -1,0 +1,77 @@
+{
+  "contract_version": 1,
+  "cases": [
+    {
+      "case_key": "partial-upload",
+      "prevention": "multipart completion is the only publication point and failed uploads are aborted",
+      "detection": "list incomplete multipart uploads older than 24 hours",
+      "response": "abort only the exact orphan upload and rerun from verified source bytes",
+      "owner": "publisher",
+      "db10a_proof": "interrupt multipart upload and prove no authoritative object appears"
+    },
+    {
+      "case_key": "hash-collision",
+      "prevention": "content key includes full lowercase SHA-256 and existing keys are never overwritten",
+      "detection": "existing object size metadata and downloaded bytes must all verify",
+      "response": "stop publication preserve both inputs outside the authoritative prefix and open an incident",
+      "owner": "publisher",
+      "db10a_proof": "precreate mismatched bytes at a claimed key and prove publication rejects"
+    },
+    {
+      "case_key": "stale-cache",
+      "prevention": "cache entries are immutable and SHA-256 is verified on every hit",
+      "detection": "a cache hit with mismatched size or digest fails verification",
+      "response": "quarantine the entry fetch to a new temporary file verify and atomically replace",
+      "owner": "deployment-reader",
+      "db10a_proof": "corrupt a cached byte and prove verified refetch without partial promotion"
+    },
+    {
+      "case_key": "revoked-credentials",
+      "prevention": "separate bucket-scoped role keys rotate independently and no master key is deployed",
+      "detection": "authenticated head/list/read probes fail and alert without exposing credentials",
+      "response": "stop the operation rotate only the affected role and rerun preflight",
+      "owner": "account-owner-break-glass",
+      "db10a_proof": "revoke and replace each test role while other roles remain usable"
+    },
+    {
+      "case_key": "provider-outage",
+      "prevention": "active plus two rollback releases have a verified independent forest1 mirror",
+      "detection": "bounded provider head/read probes fail before staging or activation",
+      "response": "leave active state unchanged serve verified local data where already present and restore provider objects from the mirror after recovery",
+      "owner": "account-owner-break-glass",
+      "db10a_proof": "block provider access and restore a retained test release from the independent mirror"
+    },
+    {
+      "case_key": "accidental-deletion",
+      "prevention": "publisher and readers cannot delete and every object has 365-day COMPLIANCE retention",
+      "detection": "delete denial access logs and event notifications identify the exact object and role",
+      "response": "preserve logs verify the retained object and rotate the responsible key if misuse occurred",
+      "owner": "retention-administrator",
+      "db10a_proof": "attempt deletion through publisher deployment and retention roles while locked"
+    },
+    {
+      "case_key": "restore-active-two-rollbacks",
+      "prevention": "retention reachability and independent mirror both require active rollback-1 and rollback-2",
+      "detection": "scheduled inventory compares provider and mirror hashes for all three releases",
+      "response": "restore exact missing blobs verify every hash rebuild release indexes and rerun plan preflight",
+      "owner": "account-owner-break-glass",
+      "db10a_proof": "restore all three retained test releases into a clean namespace and compare manifests and blob hashes"
+    },
+    {
+      "case_key": "compromised-publisher",
+      "prevention": "publisher is bucket and prefix scoped and lacks delete retention bucket key and logging capabilities",
+      "detection": "access logs event notifications caps and anomaly alerts identify abnormal writes",
+      "response": "revoke publisher preserve locked objects issue a replacement key and reject unreferenced uploads during GC review",
+      "owner": "account-owner-break-glass",
+      "db10a_proof": "prove publisher cannot delete shorten retention change bucket policy or read another environment"
+    },
+    {
+      "case_key": "lifecycle-misconfiguration",
+      "prevention": "retained releases have no TTL and COMPLIANCE lock takes precedence over deletion",
+      "detection": "configuration audit and retained-object inventory compare policy before GC",
+      "response": "disable the lifecycle rule preserve locked versions and restore missing unlocked blobs from mirror",
+      "owner": "retention-administrator",
+      "db10a_proof": "apply a short test lifecycle rule and prove retained locked objects survive"
+    }
+  ]
+}

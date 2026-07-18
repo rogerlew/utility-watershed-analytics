@@ -101,6 +101,11 @@ packages DB01 through DB05 are complete:
   `EXECUTED-COMPLETE`: five versioned semantic fingerprint subjects, golden and
   mutation proof, and strict forward, exact-inverse, and empty-build plan
   contracts passed with exact wrong-base replay rejection.
+- [DB10](work-packages/20260717-db10-artifact-store-contract/package.md) is
+  `EXECUTED-COMPLETE`: Backblaze B2 is selected for private S3-compatible
+  storage; encryption, Object Lock, five roles, active-plus-two retention,
+  content keys, cache/recovery, six artifact classes, and nine failure cases are
+  frozen and CI-validated without provisioning infrastructure.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -110,8 +115,9 @@ canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
-DB04 is repository-complete but not deployed to production. DB09 is complete;
-DB10 is the next contract package, and DB11 is now unblocked.
+DB04 is repository-complete but not deployed to production. The S1 contract
+freeze through DB10 is complete. DB10A infrastructure acceptance is the next
+storage gate, and DB11 remains unblocked for repository work.
 
 ## Execution environments and Wave 0 readiness
 

@@ -10,6 +10,8 @@ on:
       - 'scripts/release_fingerprints.py'
       - 'scripts/validate_fingerprint_plan_contract.py'
       - 'scripts/tests/test_fingerprint_plan_contract.py'
+      - 'scripts/validate_artifact_store_contract.py'
+      - 'scripts/tests/test_artifact_store_contract.py'
       - '.github/workflows/data-contract-ci.yml'
   workflow_call:
 
@@ -41,3 +43,9 @@ jobs:
 
       - name: Run fingerprint and plan tests
         run: PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_fingerprint_plan_contract
+
+      - name: Validate artifact-store contract
+        run: PYTHONDONTWRITEBYTECODE=1 python scripts/validate_artifact_store_contract.py
+
+      - name: Run artifact-store contract tests
+        run: PYTHONDONTWRITEBYTECODE=1 python -m unittest scripts.tests.test_artifact_store_contract

@@ -1,0 +1,59 @@
+{
+  "contract_version": 1,
+  "classes": [
+    {
+      "class_key": "release-control",
+      "members": ["release-manifest", "member-index", "compatibility-envelope", "deployment-plan", "transformation-lineage"],
+      "license_policy": "repository-license-and-source-provenance-required",
+      "sensitivity": "public",
+      "pii": "prohibited",
+      "residency": "united-states",
+      "retention": "active-plus-two-rollbacks-no-ttl"
+    },
+    {
+      "class_key": "watershed-vector",
+      "members": ["boundary", "subcatchments", "channels", "hillslopes"],
+      "license_policy": "upstream-license-and-attribution-required",
+      "sensitivity": "public",
+      "pii": "prohibited",
+      "residency": "united-states",
+      "retention": "active-plus-two-rollbacks-no-ttl"
+    },
+    {
+      "class_key": "thematic-tabular",
+      "members": ["metadata", "utility-enrichment", "soils", "landuse"],
+      "license_policy": "upstream-license-and-transformation-provenance-required",
+      "sensitivity": "public",
+      "pii": "prohibited",
+      "residency": "united-states",
+      "retention": "active-plus-two-rollbacks-no-ttl"
+    },
+    {
+      "class_key": "rhessys-input",
+      "members": ["spatial-input", "basin-parquet", "hillslope-parquet", "patch-parquet"],
+      "license_policy": "input-license-model-version-and-attribution-required",
+      "sensitivity": "public",
+      "pii": "prohibited",
+      "residency": "united-states",
+      "retention": "active-plus-two-rollbacks-no-ttl"
+    },
+    {
+      "class_key": "rhessys-output",
+      "members": ["scenario-geotiff", "derived-parquet"],
+      "license_policy": "derived-output-license-input-provenance-and-model-version-required",
+      "sensitivity": "public",
+      "pii": "prohibited",
+      "residency": "united-states",
+      "retention": "active-plus-two-rollbacks-no-ttl"
+    },
+    {
+      "class_key": "validation-evidence",
+      "members": ["validation-report", "build-report", "sanitized-check-summary"],
+      "license_policy": "repository-license-required",
+      "sensitivity": "public-sanitized",
+      "pii": "prohibited",
+      "residency": "united-states",
+      "retention": "active-plus-two-rollbacks-and-one-year"
+    }
+  ]
+}

@@ -103,8 +103,9 @@ the suite fail until coverage is reconciled.
 
 DB09 defines canonical fingerprints and base-specific forward, inverse, and
 empty-build plans in the accepted
-[fingerprint and plan contract](database-fingerprint-plan-contract.md). DB10 may
-select a project-controlled artifact provider and retention/security policy.
+[fingerprint and plan contract](database-fingerprint-plan-contract.md). DB10
+selects Backblaze B2 and freezes storage, retention, recovery, and role behavior
+in the accepted [artifact-store contract](database-artifact-store-contract.md).
 Neither successor may weaken immutable verification, exact membership,
 identity, removal, replay, or credential boundaries without a new reviewed
 contract version.

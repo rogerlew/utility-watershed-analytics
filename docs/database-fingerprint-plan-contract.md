@@ -8,7 +8,8 @@ This document defines the DB09 semantic fingerprint and base-specific plan
 contract. It builds on the
 [version-1 release schema contract](database-release-schema-contract.md) and
 does not authorize materialization, deployment, rollback, artifact-provider
-selection, or production access.
+provisioning, or production access. Provider behavior is separately frozen by
+the [artifact-store contract](database-artifact-store-contract.md).
 
 ## 1. Canonical bytes and digest
 

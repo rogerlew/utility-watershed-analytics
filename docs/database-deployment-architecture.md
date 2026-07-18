@@ -1020,6 +1020,12 @@ cutover must therefore:
 
 ### 19.2 Data artifacts
 
+DB10 selects Backblaze B2 and freezes the provider, role, immutability,
+retention, cache, governance, and recovery behavior in the
+[artifact-store contract](database-artifact-store-contract.md). DB10A must
+provision and accept separate test and production infrastructure before the
+selection is operational.
+
 - use off-host, project-controlled S3-compatible storage with encryption,
   versioning or object lock, content-addressed keys, and no TTL for retained
   releases;
@@ -1030,6 +1036,10 @@ cutover must therefore:
 - ensure TTL policies cannot remove accepted release artifacts.
 
 ### 19.3 Local cache
+
+Version 1 cache paths, hit verification, atomic promotion, concurrency, cleanup,
+and provider-outage behavior are defined by the
+[artifact-store contract](database-artifact-store-contract.md).
 
 - verify content on every cache hit;
 - download to a temporary file and atomically rename after verification;
