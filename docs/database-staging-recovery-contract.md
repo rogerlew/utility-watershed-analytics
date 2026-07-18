@@ -62,6 +62,13 @@ or its database connection fails. This is intentional diagnostic state, not
 serving state. The staging-state counts are updated in the same transaction as
 each successful chunk.
 
+DB20 exposes the same mechanism through `load_staging_model_rows` so one strict
+materializer can interleave bounded GeoJSON inserts with bounded Parquet
+attribute joins. `mark_staging_ready` is now the only explicit finalizer: it
+locks the attempt/state, marks all accepted attempt rows `validated`, and moves
+the state from `LOADING` to `READY`. The compatibility `load_staging_rows`
+wrapper retains its DB16 behavior by calling those two primitives.
+
 ## Recovery and cleanup
 
 DB15 remains the only attempt and lease authority. DB16 never grants takeover.
@@ -93,6 +100,8 @@ preserved serving counts and child IDs. Production migration and capacity
 claims require separate authority.
 
 DB16 does not decide exact source membership, transform artifacts, compare a
-reviewed plan, or mutate serving rows. DB17 owns strict source resolution; the
-later reconciler packages own staged validation, plan recomputation, activation,
-and cleanup orchestration through the release-tool command surface.
+reviewed plan, or mutate serving rows. DB17 owns strict source resolution. DB20
+now owns locked-artifact materialization, canonical READY rows, and the atomic
+EMPTY-base composition defined in
+`database-empty-materializer-contract.md`; later reconciler packages reuse the
+rows and mutation primitives for reviewed non-empty plans.

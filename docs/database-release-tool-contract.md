@@ -19,7 +19,7 @@ The operator entry point is `data-release` in the image and
 | `prepare` | DB17 resolves reviewed standalone/batch inputs; DB18 adds fixed NASA enrichment; DB19 prepares reviewed RHESSys assets and immutable capability indexes. | DB20 consumes prepared artifacts. |
 | `validate` | Verify a regular JSON object and optional exact SHA-256. | DB21 extends domain validation. |
 | `plan` | Fatal `command_unavailable`. | DB22 |
-| `build` | Fatal `command_unavailable`. | DB20 |
+| `build` | Fatal `command_unavailable` in the code-only preparation image. DB20 provides the server-image materializer API; command integration waits for reviewed validation and plan inputs rather than defining an interim format. | DB21, DB22, and the later deployment orchestrator |
 | `apply` | Fatal `command_unavailable`. | DB23 |
 | `rollback` | Fatal `command_unavailable`. | DB22–DB24 |
 | `recover` | Fatal `command_unavailable`. | DB23–DB24 |
@@ -137,6 +137,14 @@ Its accepted forest1 double-build and audit produced local image ID:
 ```text
 sha256:14fd35b2cbfeac308cd796e466af1acf59c29f5e70ddea72cfa950a057217b42
 ```
+
+DB20 implements the strict server-image clean-build path in
+`server.watershed.materializer` and freezes it in the
+[empty materializer contract](database-empty-materializer-contract.md). The
+preparation image intentionally remains database-free and continues to report
+`build` unavailable until DB21 validation and DB22 reviewed-plan coordinates
+provide a stable operator input; this avoids a second temporary writer or plan
+format.
 
 ## 6. Runtime boundary
 

@@ -134,7 +134,7 @@ def _next_batch(records, batch_size):
 
 
 @transaction.atomic
-def _heartbeat(attempt_id, lease_owner, lease_extension):
+def heartbeat_staging(attempt_id, lease_owner, lease_extension):
     attempt = DataReleaseAttempt.objects.select_for_update().get(pk=attempt_id)
     now = timezone.now()
     if (
@@ -169,7 +169,7 @@ def _load_model_batches(
             row = model(attempt=attempt, **values)
             row.full_clean(validate_unique=False, validate_constraints=False)
             rows.append(row)
-        _heartbeat(attempt.pk, attempt.lease_owner, lease_extension)
+        heartbeat_staging(attempt.pk, attempt.lease_owner, lease_extension)
         with transaction.atomic():
             model.objects.bulk_create(rows, batch_size=batch_size)
             DataReleaseStagingState.objects.filter(attempt=attempt).update(
@@ -178,6 +178,55 @@ def _load_model_batches(
         loaded += len(rows)
         maximum_batch = max(maximum_batch, len(rows))
     return loaded, maximum_batch
+
+
+def load_staging_model_rows(
+    attempt,
+    *,
+    model,
+    records,
+    batch_size=1000,
+    lease_extension=timedelta(minutes=30),
+):
+    if batch_size < 1:
+        raise ValueError("Batch size must be positive.")
+    row_spec = next(
+        (spec for spec in ROW_SPECS if spec[0] is model),
+        None,
+    )
+    if row_spec is None:
+        raise ValueError("Unsupported staging model.")
+    attempt = DataReleaseAttempt.objects.get(pk=attempt.pk)
+    state = DataReleaseStagingState.objects.get(attempt=attempt)
+    if state.status != DataReleaseStagingState.Status.LOADING:
+        raise StagingError("Rows require a loading staging state.")
+    if attempt.status != DataReleaseAttempt.Status.STAGING:
+        raise StagingError("Rows require a staging attempt.")
+    return _load_model_batches(
+        model=model,
+        counter_field=row_spec[1],
+        records=records,
+        attempt=attempt,
+        batch_size=batch_size,
+        lease_extension=lease_extension,
+    )
+
+
+@transaction.atomic
+def mark_staging_ready(attempt):
+    attempt = DataReleaseAttempt.objects.select_for_update().get(pk=attempt.pk)
+    state = DataReleaseStagingState.objects.select_for_update().get(attempt=attempt)
+    if attempt.status != DataReleaseAttempt.Status.STAGING:
+        raise StagingError("READY requires a staging attempt.")
+    if state.status != DataReleaseStagingState.Status.LOADING:
+        raise StagingError("READY requires a loading staging state.")
+    for model in STAGING_MODELS:
+        model.objects.filter(attempt=attempt).update(
+            validation_status=model.ValidationStatus.VALIDATED,
+        )
+    state.status = DataReleaseStagingState.Status.READY
+    state.save(update_fields=("status", "updated_at"))
+    return state
 
 
 def load_staging_rows(
@@ -190,32 +239,20 @@ def load_staging_rows(
     batch_size=1000,
     lease_extension=timedelta(minutes=30),
 ):
-    if batch_size < 1:
-        raise ValueError("Batch size must be positive.")
-    attempt = DataReleaseAttempt.objects.get(pk=attempt.pk)
-    state = DataReleaseStagingState.objects.get(attempt=attempt)
-    if state.status != DataReleaseStagingState.Status.LOADING:
-        raise StagingError("Rows require a loading staging state.")
-    if attempt.status != DataReleaseAttempt.Status.STAGING:
-        raise StagingError("Rows require a staging attempt.")
-
     totals = {}
     maximum_batch = 0
     record_sets = (watersheds, subcatchments, channels, capabilities)
     for (model, counter_field), records in zip(ROW_SPECS, record_sets, strict=True):
-        loaded, observed_batch = _load_model_batches(
+        loaded, observed_batch = load_staging_model_rows(
+            attempt,
             model=model,
-            counter_field=counter_field,
             records=records,
-            attempt=attempt,
             batch_size=batch_size,
             lease_extension=lease_extension,
         )
         totals[counter_field] = loaded
         maximum_batch = max(maximum_batch, observed_batch)
-    state.refresh_from_db()
-    state.status = DataReleaseStagingState.Status.READY
-    state.save(update_fields=("status", "updated_at"))
+    mark_staging_ready(attempt)
     return LoadResult(
         watershed_rows=totals["watershed_rows"],
         subcatchment_rows=totals["subcatchment_rows"],

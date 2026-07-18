@@ -2,7 +2,7 @@
 
 Status: Living — forward-only queue
 
-Last reconciled: 2026-07-17
+Last reconciled: 2026-07-18
 
 This document orders unfinished work. It is not a history and it does not, by
 itself, authorize execution or production mutation. Completed work moves to
@@ -161,6 +161,12 @@ packages DB01 through DB05 are complete:
   eligibility; exact observable `EMPTY` fallback switches off atomically in
   `ACTIVE`; declared durable catalog, tile, geometry, query, and download paths
   and API-driven client controls passed synthetic server/client proof.
+- [DB20](work-packages/20260718-db20-strict-empty-builder/package.md) is
+  `EXECUTED-COMPLETE`: checksum-locked ordinary artifacts now produce canonical
+  bounded attempt staging and one atomic EMPTY-base watershed, child, and
+  capability build. Multi-run mixed-source, deterministic replay, bad required
+  input, and late rollback proof passed disposable PostGIS without production
+  access.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -175,8 +181,8 @@ freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
 artifact-client foundations, DB13 stable identity expansion, and DB14 domain
 integrity, DB15 release-ledger foundations, DB16 staging/recovery, DB17 strict
 source preparation, DB18 NASA enrichment, DB19 RHESSys artifact tooling, and
-DB19A materialized capability runtime integration are complete. DB20 is the
-next recommended package.
+DB19A materialized capability runtime integration, and DB20 strict empty-build
+materialization are complete. DB21 is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 
@@ -610,22 +616,6 @@ Suggested slug: `db19a-capability-runtime-integration`
   eligibility and scenarios come from the API; TTL-managed upstream
   unavailability does not break an accepted durable capability. Tests exercise
   both sides of the atomic adoption transition.
-
-#### DB20 — Strict empty-database materializer
-
-Suggested slug: `db20-strict-empty-builder`
-
-- **Depends on:** DB12, DB14, DB16, DB17; use DB18 and DB19 fixtures where
-  relevant.
-- **Deliver:** refactor loader writers into a strict, bounded-memory
-  materializer that consumes only locked artifacts, always produces the same
-  canonical attempt-scoped staged rows, and applies them to an `EMPTY` base
-  through reusable mutation primitives; build all declared watershed and
-  capability state and fail the whole attempt on any required run or
-  validation error.
-- **Prove:** multi-run and mixed-source fixtures load exact expected rows and
-  relationships; one bad required input leaves no accepted partial build;
-  geometry and large-file paths remain bounded and deterministic.
 
 #### DB21 — Validation, fingerprint, and clean-build CI
 
