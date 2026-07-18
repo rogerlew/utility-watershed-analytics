@@ -10,11 +10,7 @@ import {
   fetchRhessysChoropleth,
   fetchRhessysGeometry,
 } from "../api/rhessysOutputsApi";
-
-import {
-  getPatchGeometryQueryScenario,
-  getPatchGeometryRevision,
-} from "../api/utils";
+import { useRhessysOutputsData } from "./useRhessysOutputsData";
 
 export function useRhessysChoroplethData() {
   const runId = useRunId();
@@ -28,6 +24,7 @@ export function useRhessysChoroplethData() {
   const variable = params.variable;
   const spatialScale = params.spatialScale ?? "hillslope";
   const year = params.year;
+  const { scenarios } = useRhessysOutputsData(runId);
 
   const shouldQuery = isActive && !!runId && !!scenario && !!variable && !!year;
 
@@ -52,23 +49,18 @@ export function useRhessysChoroplethData() {
     placeholderData: keepPreviousData,
   });
 
-  const patchGeometryRevision = getPatchGeometryRevision(
-    spatialScale,
-    scenario,
-  );
-  const geometryQueryScenario = getPatchGeometryQueryScenario(
-    patchGeometryRevision,
-  );
+  const geometryRevision =
+    scenarios.find((item) => item.id === scenario)?.geometry_revision ?? null;
 
   const { data: geometry, isLoading: geomLoading } = useQuery({
     queryKey: queryKeys.rhessysGeometry.byScale(
       runId ?? "",
       spatialScale,
-      patchGeometryRevision,
+      geometryRevision,
     ),
     queryFn: ({ signal }) =>
-      fetchRhessysGeometry(runId!, spatialScale, signal, geometryQueryScenario),
-    enabled: isActive && !!runId,
+      fetchRhessysGeometry(runId!, spatialScale, signal, scenario),
+    enabled: isActive && !!runId && !!scenario && !!geometryRevision,
     placeholderData: keepPreviousData,
   });
 

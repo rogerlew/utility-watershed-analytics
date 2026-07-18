@@ -8,8 +8,7 @@ import { useRhessysOutputsData } from "./useRhessysOutputsData";
 import { useRhessysChoroplethData } from "./useRhessysChoroplethData";
 import { getLayerParams } from "../layers/types";
 import { useRunId } from "./useRunId";
-import { GATE_CREEK_VARIABLES } from "../api/constants";
-import type { RhessysSpatialFile, SpatialScale } from "../api/types/rhessys";
+import type { RhessysSpatialFile } from "../api/types/rhessys";
 
 import type {
   ChoroplethLegendProps,
@@ -105,23 +104,16 @@ function buildOutputsLegend(
 }
 
 function buildGateCreekLegend(
-  variable: string | null | undefined,
-  spatialScale: string | null | undefined,
+  variable: RhessysOutputVariable | undefined,
   range: { min: number; max: number },
 ): ChoroplethLegendProps {
-  const scale: SpatialScale =
-    spatialScale === "hillslope" || spatialScale === "patch"
-      ? spatialScale
-      : "hillslope";
-  const gateCreekVars = GATE_CREEK_VARIABLES[scale] ?? [];
-  const gcVar = gateCreekVars.find((v) => v.id === variable);
   return {
-    title: gcVar?.label ?? variable ?? "RHESSys Output",
+    title: variable?.label ?? "RHESSys Output",
     data: {
       mode: "colormap",
       colormap: "viridis",
       range,
-      unit: gcVar?.units ?? "",
+      unit: variable?.units ?? "",
       percentile: false,
     },
   };
@@ -247,11 +239,7 @@ export function useChoroplethLegend(): ChoroplethLegendProps | null {
       {
         active: rhessysChoroplethActive && rhessysChoroplethRange != null,
         props: rhessysChoroplethRange
-          ? buildGateCreekLegend(
-              rhessysOutputsParams.variable,
-              rhessysOutputsParams.spatialScale,
-              rhessysChoroplethRange,
-            )
+          ? buildGateCreekLegend(selectedOutputVariable, rhessysChoroplethRange)
           : null,
       },
       {
@@ -280,8 +268,6 @@ export function useChoroplethLegend(): ChoroplethLegendProps | null {
     outputValueRanges,
     rhessysChoroplethActive,
     rhessysChoroplethRange,
-    rhessysOutputsParams.variable,
-    rhessysOutputsParams.spatialScale,
     landuseEffective,
     landuseLegendMap,
   ]);

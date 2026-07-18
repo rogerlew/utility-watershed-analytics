@@ -20,6 +20,9 @@ export const queryKeys = {
     all: ["channels"],
     byRun: (runId: string) => ["channels", runId],
   },
+  capabilities: {
+    byRun: (runId: string) => ["capabilities", runId],
+  },
   landuse: {
     undisturbed: (runId: string) => ["landuse-undisturbed", runId],
   },
@@ -60,17 +63,11 @@ export const queryKeys = {
     ) => ["rhessys-choropleth", runId, scenario, variable, spatialScale, year],
   },
   rhessysGeometry: {
-    /** `patchGeometryRevision`: null for hillslope; `"1985"` / `"2021"` for patch. */
     byScale: (
       runId: string,
       spatialScale: string,
-      patchGeometryRevision?: "1985" | "2021" | null,
-    ) => [
-      "rhessys-geometry",
-      runId,
-      spatialScale,
-      patchGeometryRevision ?? null,
-    ],
+      geometryRevision?: string | null,
+    ) => ["rhessys-geometry", runId, spatialScale, geometryRevision ?? null],
   },
   rhessysTimeSeries: {
     byParams: (

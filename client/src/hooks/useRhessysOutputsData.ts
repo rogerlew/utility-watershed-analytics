@@ -9,8 +9,6 @@ import type {
   RhessysOutputValueRange,
 } from "../api/types/rhessys";
 
-import { CHOROPLETH_RUN_IDS } from "../api/constants";
-
 export function useRhessysOutputsData(runId: string | null) {
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.rhessysOutputs.byRun(runId ?? ""),
@@ -24,8 +22,10 @@ export function useRhessysOutputsData(runId: string | null) {
     string,
     Record<string, RhessysOutputValueRange>
   > = data?.value_ranges ?? {};
-  const hasRasterData = !error && scenarios.length > 0;
-  const hasChoroplethData = CHOROPLETH_RUN_IDS.has(runId ?? "");
+  const hasRasterData =
+    !error && data?.capability?.supports_precomputed === true;
+  const hasChoroplethData =
+    !error && data?.capability?.supports_dynamic === true;
 
   return {
     scenarios,

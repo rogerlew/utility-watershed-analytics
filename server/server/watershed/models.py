@@ -782,6 +782,7 @@ class RunCapabilityQuerySet(models.QuerySet):
 class RunCapability(models.Model):
     class CapabilityType(models.TextChoices):
         RHESSYS = "rhessys", "RHESSys"
+        SBS = "sbs", "Soil burn severity"
 
     class Mode(models.TextChoices):
         DYNAMIC = "dynamic", "Dynamic"
@@ -822,7 +823,7 @@ class RunCapability(models.Model):
                 name="capability_run_type_uniq",
             ),
             models.CheckConstraint(
-                condition=models.Q(capability_type="rhessys"),
+                condition=models.Q(capability_type__in=("rhessys", "sbs")),
                 name="capability_type_valid",
             ),
             models.CheckConstraint(

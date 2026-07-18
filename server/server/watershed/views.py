@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import CharField, F, OuterRef, Subquery, Value
 from django.db.models.functions import Cast, Coalesce, Concat
@@ -11,6 +12,7 @@ from server.watershed.models import (
 )
 from server.watershed.geojson import geojson_response, geojson_feature_response
 from server.watershed.identity import resolve_runid, resolve_watershed_key
+from server.watershed.runtime_capabilities import capability_summary
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from server.watershed.schema_serializers import (
     WatershedFeatureCollectionSerializer,
@@ -123,6 +125,11 @@ class WatershedByKeyDetailView(APIView):
             properties=WatershedViewSet._properties
             + ('watershed_key', 'current_runid'),
         )
+
+
+class WatershedCapabilityView(APIView):
+    def get(self, request, runid):
+        return Response(capability_summary(runid))
 
 class WatershedSubcatchmentListView(APIView):
     """

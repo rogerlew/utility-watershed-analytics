@@ -11,12 +11,7 @@ import { useWatershed } from "../../contexts/WatershedContext";
 import { getLayerParams } from "../../layers/types";
 import { rhessysTimeSeriesOptions } from "../../api/rhessysOutputsApi";
 import { CoverageLineChart } from "../CoverageLineChart";
-
-import {
-  GATE_CREEK_SCENARIOS,
-  GATE_CREEK_VARIABLES,
-  type GateCreekVariable,
-} from "../../api/constants";
+import { useRhessysOutputsData } from "../../hooks/useRhessysOutputsData";
 
 const LINE_KEYS = [
   {
@@ -84,12 +79,18 @@ export const RhessysTimeSeries: React.FC = () => {
 
   const runId = useRunId();
   const params = getLayerParams(layerDesired, "rhessysOutputs");
+  const { scenarios, variables } = useRhessysOutputsData(runId);
 
   const spatialScale = params.spatialScale ?? "hillslope";
-  const effectiveScenario = params.scenario || GATE_CREEK_SCENARIOS[0].id;
-
-  const availableVariables: readonly GateCreekVariable[] =
-    GATE_CREEK_VARIABLES[spatialScale];
+  const effectiveScenario = params.scenario || scenarios[0]?.id || "";
+  const scenarioVariables = scenarios.find(
+    (scenario) => scenario.id === effectiveScenario,
+  )?.variables;
+  const availableVariables = variables.filter(
+    (variable) =>
+      (!scenarioVariables || scenarioVariables.includes(variable.id)) &&
+      variable.spatial_scales?.includes(spatialScale),
+  );
 
   const effectiveVariable = useMemo(() => {
     if (
@@ -98,7 +99,7 @@ export const RhessysTimeSeries: React.FC = () => {
     ) {
       return params.variable;
     }
-    return availableVariables[0].id;
+    return availableVariables[0]?.id ?? "";
   }, [params.variable, availableVariables]);
 
   const varMeta = availableVariables.find((v) => v.id === effectiveVariable);
@@ -165,7 +166,7 @@ export const RhessysTimeSeries: React.FC = () => {
               className={classes.select}
               MenuProps={{ style: { zIndex: 20000 } }}
             >
-              {GATE_CREEK_SCENARIOS.map((s) => (
+              {scenarios.map((s) => (
                 <MenuItem key={s.id} value={s.id}>
                   {s.label}
                 </MenuItem>

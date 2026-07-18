@@ -34,6 +34,14 @@ vi.mock("../api/rhessysOutputsApi", () => ({
     .mockResolvedValue({ scenarios: [], variables: [], value_ranges: {} }),
 }));
 
+vi.mock("../api/capabilitiesApi", () => ({
+  fetchCapabilities: vi.fn().mockResolvedValue({
+    state: "EMPTY",
+    rhessys: { available: false },
+    sbs: { available: true },
+  }),
+}));
+
 // Sample watershed data
 const mockWatershedData = {
   features: [

@@ -25,7 +25,8 @@ export type RhessysOutputVariable = {
   id: string;
   label: string;
   units: string;
-  filename: string;
+  filename?: string;
+  spatial_scales?: SpatialScale[];
 };
 
 export type RhessysOutputScenario = {
@@ -33,6 +34,9 @@ export type RhessysOutputScenario = {
   label: string;
   is_change: boolean;
   variables: string[];
+  description?: string;
+  year_range?: [number, number];
+  geometry_revision?: string;
 };
 
 export type RhessysOutputValueRange = {
@@ -44,6 +48,17 @@ export type RhessysOutputListResponse = {
   scenarios: RhessysOutputScenario[];
   variables: RhessysOutputVariable[];
   value_ranges?: Record<string, Record<string, RhessysOutputValueRange>>;
+  capability?: {
+    available: boolean;
+    source?: string;
+    mode?: "dynamic" | "precomputed" | "both";
+    supports_dynamic?: boolean;
+    supports_precomputed?: boolean;
+    index_uri?: string | null;
+    index_sha256?: string | null;
+    geometry_revision?: string | null;
+    access_policy?: string | null;
+  };
 };
 
 export type RhessysChoroplethRow = {

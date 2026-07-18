@@ -1,17 +1,14 @@
 import { queryOptions, keepPreviousData } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "./apiEndpoints";
 import { checkResponse } from "./errors";
-import { postQuery, toFiniteNumber } from "./utils";
+import { extractRows, toFiniteNumber } from "./utils";
 import { queryKeys } from "./queryKeys";
-
-import { getVariableMeta, resolveParquetConfig } from "./utils";
 
 import type {
   RhessysOutputListResponse,
   RhessysChoroplethRow,
   SpatialScale,
 } from "./types/rhessys";
-import type { QueryPayload } from "./types/query";
 
 export type RhessysTimeSeriesRow = {
   year: number;
@@ -44,7 +41,7 @@ export async function fetchRhessysOutputs(
 }
 
 /**
- * Query the WEPPcloud Query Engine for aggregated RHESSys data by spatial unit.
+ * Query the server-selected RHESSys dataset by semantic dimensions.
  *
  * Returns `{spatialId, value}` rows for choropleth rendering. Rows where
  * either field is non-finite are silently dropped.
@@ -66,31 +63,27 @@ export async function fetchRhessysChoropleth(opts: {
 }): Promise<RhessysChoroplethRow[]> {
   const { runId, scenario, variable, spatialScale, year, signal } = opts;
 
-  const varMeta = getVariableMeta(spatialScale, variable);
-  const source = varMeta?.source ?? "base";
-  const { datasetPath, idColumn } = resolveParquetConfig(
-    scenario,
-    spatialScale,
-    source,
-  );
-  const alias = "d";
-
-  const payload: QueryPayload = {
-    datasets: [{ alias, path: datasetPath }],
-    columns: [`${alias}.${idColumn} AS spatialId`],
-    filters: [{ column: `${alias}.year`, operator: "=", value: year }],
-    aggregations: [{ alias: "value", expression: `AVG(${alias}.${variable})` }],
-    group_by: [`${alias}.${idColumn}`],
-    order_by: [`${alias}.${idColumn}`],
-  };
+  const url = API_ENDPOINTS.RHESSYS_QUERY(runId);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind: "choropleth",
+      scenario,
+      variable,
+      spatial_scale: spatialScale,
+      year,
+    }),
+    signal,
+  });
 
   type RawRow = { spatialId?: number; spatialid?: number; value?: number };
-  const rawRows = await postQuery<RawRow>(
+  const document = await checkResponse(response, {
+    url,
     runId,
-    payload,
-    "RHESSys Choropleth",
-    signal,
-  );
+    prefix: "RHESSys Choropleth",
+  });
+  const rawRows = extractRows(document) as RawRow[];
 
   return rawRows
     .map((row) => ({
@@ -103,14 +96,12 @@ export async function fetchRhessysChoropleth(opts: {
 /**
  * Fetch the hillslope or patch GeoJSON geometry via the backend proxy.
  *
- * The backend proxies the request to WEPPcloud to avoid CORS issues.
- * For patch geometry, the `scenario` query parameter selects the GeoJSON asset
- * (omitted or non–2021 scenarios → 1985 patch IDs; S2 or S4b → 2021 patch IDs).
+ * The backend selects the exact capability-declared geometry asset.
  *
  * @param runId        - The `webcloud_run_id` of the watershed.
  * @param spatialScale - `"hillslope"` or `"patch"`.
  * @param signal       - {@link AbortSignal} for request cancellation.
- * @param scenario     - Optional; when `"S2"` or `"S4b"`, selects 2021 patch geometry.
+ * @param scenario     - Capability-declared scenario selecting the geometry revision.
  */
 export async function fetchRhessysGeometry(
   runId: string,
@@ -132,15 +123,7 @@ export async function fetchRhessysGeometry(
 }
 
 /**
- * Fetch time series data from the WEPPcloud Query Engine.
- *
- * - `hillslope` (default) → daily basin outputs, aggregated to monthly means:
- *   base hydrology uses `basin.daily.parquet`; growth variables use
- *   `grow_basin.daily.parquet`.
- * - `patch` → `patch.yearly.parquet` or `grow_patch.yearly.parquet`,
- *   aggregated across all patches per year.
- *
- * The variable's `source` field selects base vs grow parquet at both scales.
+ * Fetch a server-selected RHESSys time series by semantic dimensions.
  *
  * @param opts.runId        - The `webcloud_run_id` of the watershed.
  * @param opts.scenario     - RHESSys scenario id (e.g. `"S1"`).
@@ -158,36 +141,25 @@ export async function fetchRhessysTimeSeries(opts: {
   const { runId, scenario, variables, spatialScale, signal } = opts;
   const effectiveScale: SpatialScale = spatialScale ?? "hillslope";
   const isPatch = effectiveScale === "patch";
-
-  const varMeta = getVariableMeta(effectiveScale, variables[0]);
-  const source = varMeta?.source ?? "base";
-  const { datasetPath } = resolveParquetConfig(
-    scenario,
-    effectiveScale,
-    source,
-    "timeSeries",
-  );
-
-  const alias = isPatch ? "p" : "b";
-  const columns = isPatch
-    ? [`${alias}.year AS year`]
-    : [`${alias}.year AS year`, `${alias}.month AS month`];
-  const groupBy = isPatch
-    ? [`${alias}.year`]
-    : [`${alias}.year`, `${alias}.month`];
-
-  const payload: QueryPayload = {
-    datasets: [{ alias, path: datasetPath }],
-    columns,
-    aggregations: variables.map((v) => ({
-      alias: v,
-      expression: `AVG(${alias}.${v})`,
-    })),
-    group_by: groupBy,
-    order_by: groupBy,
-  };
-
-  const rawRows = await postQuery(runId, payload, "RHESSys TimeSeries", signal);
+  const url = API_ENDPOINTS.RHESSYS_QUERY(runId);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind: "time-series",
+      scenario,
+      variable: variables[0],
+      spatial_scale: effectiveScale,
+      year: null,
+    }),
+    signal,
+  });
+  const document = await checkResponse(response, {
+    url,
+    runId,
+    prefix: "RHESSys TimeSeries",
+  });
+  const rawRows = extractRows(document);
 
   return rawRows.map((r) => {
     const row = r as Record<string, unknown>;
@@ -235,7 +207,7 @@ export function rhessysTimeSeriesOptions({
         spatialScale,
         signal,
       }),
-    enabled: !!runId,
+    enabled: !!runId && !!scenario && !!variable,
     placeholderData: keepPreviousData,
     select: (rows: RhessysTimeSeriesRow[]): ChartPoint[] =>
       rows.map((row) => ({

@@ -30,11 +30,23 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiRespon
 from drf_spectacular.types import OpenApiTypes
 from rio_tiler.errors import TileOutsideBounds
 
+from server.watershed.legacy_runtime import (
+    LEGACY_DYNAMIC_SCENARIOS,
+    LEGACY_DYNAMIC_VARIABLES,
+    legacy_geometry_path,
+)
 from server.watershed.loaders.config import resolve_run_base_url
+from server.watershed.models import RunCapability
+from server.watershed.runtime_capabilities import (
+    RuntimeCapabilityError,
+    fetch_verified_artifact,
+    resolve_capability,
+)
 from .discovery import discover_output_maps, get_map_download_url
 from .schema_serializers import RhessysOutputListResponseSerializer
 from .registry import get_variable, is_change_scenario
 from .tile import get_tile_png
+from .query import RhessysQueryError, execute_legacy_query, execute_materialized_query
 
 
 def _build_transparent_png(width: int = 256, height: int = 256) -> bytes:
@@ -75,11 +87,95 @@ class RhessysOutputListView(APIView):
         },
     )
     def get(self, request, runid: str):
-        catalog = discover_output_maps(runid)
+        capability = resolve_capability(runid, RunCapability.CapabilityType.RHESSYS)
+        if not capability.available:
+            return Response(
+                {
+                    "scenarios": [],
+                    "variables": [],
+                    "value_ranges": {},
+                    "capability": {"available": False},
+                }
+            )
+        supports_dynamic = capability.mode in {
+            RunCapability.Mode.DYNAMIC,
+            RunCapability.Mode.BOTH,
+        }
+        supports_precomputed = capability.mode in {
+            RunCapability.Mode.PRECOMPUTED,
+            RunCapability.Mode.BOTH,
+        }
+        if capability.source == "materialized":
+            configuration = capability.configuration
+            value_ranges = {}
+            variable_scales = {
+                variable["id"]: set() for variable in configuration["variables"]
+            }
+            for parquet in configuration["parquets"]:
+                scale = "patch" if parquet["role"] == "patch" else "hillslope"
+                for variable in parquet["variables"]:
+                    variable_scales[variable["id"]].add(scale)
+            for item in configuration["geotiffs"]:
+                if item["value_range"] is not None:
+                    value_ranges.setdefault(item["scenario"], {})[item["variable"]] = item[
+                        "value_range"
+                    ]
+            catalog = {
+                "scenarios": configuration["scenarios"],
+                "variables": [
+                    {
+                        **variable,
+                        "spatial_scales": sorted(variable_scales[variable["id"]]),
+                    }
+                    for variable in configuration["variables"]
+                ],
+                "value_ranges": value_ranges,
+            }
+        elif supports_dynamic:
+            catalog = {
+                "scenarios": LEGACY_DYNAMIC_SCENARIOS,
+                "variables": LEGACY_DYNAMIC_VARIABLES,
+                "value_ranges": {},
+            }
+        else:
+            catalog = discover_output_maps(runid)
         if catalog is None:
-            return Response({"scenarios": [], "variables": [], "value_ranges": {}})
+            catalog = {"scenarios": [], "variables": [], "value_ranges": {}}
 
-        return Response(catalog)
+        return Response(
+            {
+                **catalog,
+                "capability": {
+                    "available": True,
+                    "source": capability.source,
+                    "mode": capability.mode,
+                    "supports_dynamic": supports_dynamic,
+                    "supports_precomputed": supports_precomputed,
+                    "index_uri": capability.index_uri,
+                    "index_sha256": capability.index_sha256,
+                    "geometry_revision": capability.geometry_revision,
+                    "access_policy": capability.access_policy,
+                },
+            }
+        )
+
+
+class RhessysOutputQueryView(APIView):
+    def post(self, request, runid: str):
+        capability = resolve_capability(runid, RunCapability.CapabilityType.RHESSYS)
+        if not capability.available or capability.mode not in {
+            RunCapability.Mode.DYNAMIC,
+            RunCapability.Mode.BOTH,
+        }:
+            raise NotFound("Dynamic RHESSys data is not enabled for this watershed.")
+        try:
+            if capability.source == "materialized":
+                rows = execute_materialized_query(capability, request.data)
+            else:
+                rows = execute_legacy_query(runid, request.data)
+        except RhessysQueryError as error:
+            raise NotFound(str(error))
+        return Response({"rows": rows})
 
 
 class RhessysOutputTileView(APIView):
@@ -105,12 +201,36 @@ class RhessysOutputTileView(APIView):
         x: int,
         y: int,
     ):
-        var_meta = get_variable(variable)
-        if not var_meta:
-            raise NotFound(f"Unknown RHESSys output variable: {variable}")
-
-        tif_url = get_map_download_url(runid, scenario, var_meta.filename)
-        change = is_change_scenario(scenario)
+        capability = resolve_capability(runid, RunCapability.CapabilityType.RHESSYS)
+        if not capability.available or capability.mode not in {
+            RunCapability.Mode.PRECOMPUTED,
+            RunCapability.Mode.BOTH,
+        }:
+            raise NotFound("RHESSys output maps are not enabled for this watershed.")
+        if capability.source == "materialized":
+            asset = next(
+                (
+                    item
+                    for item in capability.configuration["geotiffs"]
+                    if item["scenario"] == scenario and item["variable"] == variable
+                ),
+                None,
+            )
+            if asset is None:
+                raise NotFound("RHESSys output map is not declared.")
+            tif_url = asset["artifact"]["uri"]
+            scenario_meta = next(
+                item
+                for item in capability.configuration["scenarios"]
+                if item["id"] == scenario
+            )
+            change = scenario_meta["is_change"]
+        else:
+            var_meta = get_variable(variable)
+            if not var_meta:
+                raise NotFound(f"Unknown RHESSys output variable: {variable}")
+            tif_url = get_map_download_url(runid, scenario, var_meta.filename)
+            change = is_change_scenario(scenario)
 
         try:
             png_bytes = get_tile_png(tif_url, z, x, y, is_change=change)
@@ -125,18 +245,6 @@ class RhessysOutputTileView(APIView):
 
         return HttpResponse(png_bytes, content_type="image/png")
 
-
-_GEOMETRY_FILES = {
-    "hillslope": "rhessys/spatial_inputs_and_climates/masked_tol_1000cleaned_hillslop.geojson",
-    "patch": "rhessys/spatial_inputs_and_climates/masked_daymet_patchID_1985.geojson",
-}
-
-_PATCH_2021_SCENARIOS = {"S2", "S4b"}
-
-_PATCH_GEOMETRY_FILES = {
-    "1985": "rhessys/spatial_inputs_and_climates/masked_daymet_patchID_1985.geojson",
-    "2021": "rhessys/spatial_inputs_and_climates/masked_daymet_patchID_2021.geojson",
-}
 
 # In-memory cache: (runid, scale, geometry_revision) → reprojected GeoJSON bytes.
 # geometry_revision is None for hillslope; for patch it is "1985" or "2021" so
@@ -212,11 +320,9 @@ class RhessysOutputGeometryView(APIView):
                 name='scenario',
                 required=False,
                 type=str,
-                enum=['S1', 'S2', 'S4b'],
                 description=(
-                    'RHESSys scenario id; only affects patch geometry. '
-                    'S2 and S4b use 2021 patch IDs; S1, omitted, or other unknown '
-                    'values use 1985 patch IDs.'
+                    'Capability-declared RHESSys scenario id selecting the '
+                    'matching geometry revision.'
                 ),
             ),
         ],
@@ -228,37 +334,70 @@ class RhessysOutputGeometryView(APIView):
     )
     def get(self, request, runid: str, scale: str):
         scenario = request.query_params.get("scenario")
-
-        if scale == "patch" and scenario in _PATCH_2021_SCENARIOS:
-            geojson_path = _PATCH_GEOMETRY_FILES["2021"]
-            geometry_revision = "2021"
+        capability = resolve_capability(runid, RunCapability.CapabilityType.RHESSYS)
+        if not capability.available or capability.mode not in {
+            RunCapability.Mode.DYNAMIC,
+            RunCapability.Mode.BOTH,
+        }:
+            raise NotFound("RHESSys geometry is not enabled for this watershed.")
+        reference = None
+        source_crs = None
+        if capability.source == "materialized":
+            geometry = next(
+                (
+                    item
+                    for item in capability.configuration["geometries"]
+                    if item["scale"] == scale
+                    and (scenario is None or scenario in item["scenarios"])
+                ),
+                None,
+            )
+            if geometry is None:
+                raise NotFound("RHESSys geometry is not declared.")
+            geometry_revision = geometry["geometry_revision"]
+            reference = geometry["artifact"]
+            source_crs = geometry["source_crs"]
         else:
-            geojson_path = _GEOMETRY_FILES.get(scale)
-            geometry_revision = "1985" if scale == "patch" else None
-
-        if not geojson_path:
-            raise NotFound(f"Unknown spatial scale: {scale}. Use 'hillslope' or 'patch'.")
+            try:
+                geojson_path, geometry_revision = legacy_geometry_path(scale, scenario)
+            except KeyError:
+                raise NotFound(
+                    f"Unknown spatial scale: {scale}. Use 'hillslope' or 'patch'."
+                )
 
         cache_key = (runid, scale, geometry_revision)
         cached = _geometry_cache.get(cache_key)
         if cached is not None:
             return HttpResponse(cached, content_type="application/geo+json")
 
-        base = resolve_run_base_url(runid)
-        url = f"{base}/download/{geojson_path}"
-
-        try:
-            resp = requests.get(url, timeout=60)
-        except requests.RequestException as exc:
-            logger.warning("Failed to fetch geometry for runid=%s scale=%s: %s", runid, scale, exc)
-            raise NotFound("Failed to fetch geometry from WEPPcloud.")
-
-        if resp.status_code != 200:
-            raise NotFound(
-                f"Geometry not available for this watershed (upstream returned {resp.status_code})."
-            )
-
-        geojson = resp.json()
+        if reference is not None:
+            try:
+                geojson = json.loads(fetch_verified_artifact(reference))
+            except (RuntimeCapabilityError, UnicodeDecodeError, json.JSONDecodeError):
+                raise NotFound("Declared RHESSys geometry is unavailable or invalid.")
+            if source_crs != "EPSG:4326":
+                geojson["crs"] = {
+                    "type": "name",
+                    "properties": {"name": f"urn:ogc:def:crs:{source_crs.replace(':', '::')}"},
+                }
+        else:
+            base = resolve_run_base_url(runid)
+            url = f"{base}/download/{geojson_path}"
+            try:
+                resp = requests.get(url, timeout=60)
+            except requests.RequestException as exc:
+                logger.warning(
+                    "Failed to fetch geometry for runid=%s scale=%s: %s",
+                    runid,
+                    scale,
+                    exc,
+                )
+                raise NotFound("Failed to fetch geometry from WEPPcloud.")
+            if resp.status_code != 200:
+                raise NotFound(
+                    f"Geometry not available for this watershed (upstream returned {resp.status_code})."
+                )
+            geojson = resp.json()
         reprojected = _reproject_geojson(geojson)
         body = json.dumps(reprojected).encode("utf-8")
 

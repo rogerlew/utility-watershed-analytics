@@ -5,13 +5,6 @@ import {
   type RhessysOutputParams,
 } from "../../../layers/types";
 
-import {
-  GATE_CREEK_VARIABLES,
-  GATE_CREEK_SCENARIOS,
-  GATE_CREEK_YEAR_RANGE,
-  RHESSYS_OUTPUT_SCENARIO_DESCRIPTIONS,
-} from "../../../api/constants";
-
 import { useStyles } from "../watershedStyles";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
@@ -28,20 +21,17 @@ import type {
   RhessysOutputVariable,
 } from "../../../api/types/rhessys";
 
-const gateCreekYears = Array.from(
-  { length: GATE_CREEK_YEAR_RANGE.max - GATE_CREEK_YEAR_RANGE.min + 1 },
-  (_, i) => GATE_CREEK_YEAR_RANGE.min + i,
-);
-
 export function RhessysOutputsControls({
   scenarios,
   variables,
   isLoading,
+  hasRasterData,
   hasChoroplethData,
 }: {
   scenarios: RhessysOutputScenario[];
   variables: RhessysOutputVariable[];
   isLoading: boolean;
+  hasRasterData: boolean;
   hasChoroplethData: boolean;
 }) {
   const { classes } = useStyles();
@@ -55,14 +45,23 @@ export function RhessysOutputsControls({
   const params = getLayerParams(layerDesired, "rhessysOutputs");
   const selectedScenario = params.scenario ?? null;
   const selectedVariable = params.variable ?? null;
-  const selectedMode =
-    params.mode ?? (scenarios.length > 0 ? "raster" : "choropleth");
+  const selectedScenarioMeta = scenarios.find(
+    (scenario) => scenario.id === selectedScenario,
+  );
+  const selectedMode = params.mode ?? (hasRasterData ? "raster" : "choropleth");
   const selectedSpatialScale = (params.spatialScale ?? "hillslope") as
     | "hillslope"
     | "patch";
-  const selectedYear = params.year ?? 2000;
+  const [minimumYear, maximumYear] = selectedScenarioMeta?.year_range ?? [
+    2000, 2000,
+  ];
+  const selectedYear =
+    params.year != null &&
+    params.year >= minimumYear &&
+    params.year <= maximumYear
+      ? params.year
+      : minimumYear;
   const layerEnabled = effective.rhessysOutputs.enabled;
-  const hasRasterData = scenarios.length > 0;
 
   const availableVariables = useMemo(() => {
     const meta = scenarios.find((s) => s.id === selectedScenario);
@@ -71,10 +70,20 @@ export function RhessysOutputsControls({
       : variables;
   }, [scenarios, variables, selectedScenario]);
 
-  const choroplethVariables = useMemo(
-    () => GATE_CREEK_VARIABLES[selectedSpatialScale] ?? [],
-    [selectedSpatialScale],
-  );
+  const choroplethVariables = useMemo(() => {
+    const scenarioVariables = selectedScenarioMeta?.variables;
+    return variables.filter(
+      (variable) =>
+        (!scenarioVariables || scenarioVariables.includes(variable.id)) &&
+        variable.spatial_scales?.includes(selectedSpatialScale),
+    );
+  }, [selectedScenarioMeta, selectedSpatialScale, variables]);
+  const years = useMemo(() => {
+    return Array.from(
+      { length: maximumYear - minimumYear + 1 },
+      (_, index) => minimumYear + index,
+    );
+  }, [maximumYear, minimumYear]);
 
   const currentParams = useMemo(
     () => ({
@@ -114,7 +123,12 @@ export function RhessysOutputsControls({
       newScale: "hillslope" | "patch" | null,
     ) => {
       if (!newScale) return;
-      const vars = GATE_CREEK_VARIABLES[newScale];
+      const vars = variables.filter(
+        (variable) =>
+          (!selectedScenarioMeta ||
+            selectedScenarioMeta.variables.includes(variable.id)) &&
+          variable.spatial_scales?.includes(newScale),
+      );
       const nextVariable = vars.some((v) => v.id === selectedVariable)
         ? selectedVariable
         : (vars[0]?.id ?? null);
@@ -136,7 +150,14 @@ export function RhessysOutputsControls({
         }
       }
     },
-    [updateParams, dispatchLayerAction, layerEnabled, selectedVariable],
+    [
+      updateParams,
+      dispatchLayerAction,
+      layerEnabled,
+      selectedVariable,
+      selectedScenarioMeta,
+      variables,
+    ],
   );
 
   if (isLoading)
@@ -151,10 +172,7 @@ export function RhessysOutputsControls({
 
   // Pre-computed raster maps (Victoria + Mill Creek)
   if (hasRasterData && selectedMode !== "choropleth") {
-    const rasterDescription =
-      selectedScenario != null
-        ? RHESSYS_OUTPUT_SCENARIO_DESCRIPTIONS[selectedScenario]
-        : undefined;
+    const rasterDescription = selectedScenarioMeta?.description;
     return (
       <>
         <FormControl
@@ -176,9 +194,17 @@ export function RhessysOutputsControls({
             onChange={(e) => {
               const value = e.target.value;
               if (value === "none") return turnOff();
+              const scenario = scenarios.find((item) => item.id === value);
+              const nextVariables = variables.filter((variable) =>
+                scenario?.variables.includes(variable.id),
+              );
               updateParams({
                 scenario: value,
-                variable: selectedVariable || variables[0]?.id || null,
+                variable: nextVariables.some(
+                  (variable) => variable.id === selectedVariable,
+                )
+                  ? selectedVariable
+                  : (nextVariables[0]?.id ?? null),
                 mode: "raster",
                 spatialScale: null,
                 year: null,
@@ -255,10 +281,7 @@ export function RhessysOutputsControls({
     );
   }
 
-  // Dynamic choropleth (Gate Creek)
-  const selectedScenarioMeta = GATE_CREEK_SCENARIOS.find(
-    (s) => s.id === selectedScenario,
-  );
+  // Dynamic choropleth
   return (
     <>
       <FormControl
@@ -280,9 +303,20 @@ export function RhessysOutputsControls({
           onChange={(e) => {
             const value = e.target.value;
             if (value === "none") return turnOff();
+            const scenario = scenarios.find((item) => item.id === value);
+            const nextVariables = variables.filter(
+              (variable) =>
+                scenario?.variables.includes(variable.id) &&
+                variable.spatial_scales?.includes(selectedSpatialScale),
+            );
             updateParams({
               scenario: value,
-              variable: selectedVariable || choroplethVariables[0]?.id || null,
+              variable: nextVariables.some(
+                (variable) => variable.id === selectedVariable,
+              )
+                ? selectedVariable
+                : (nextVariables[0]?.id ?? null),
+              year: scenario?.year_range?.[0] ?? minimumYear,
               mode: "choropleth",
             });
           }}
@@ -292,7 +326,7 @@ export function RhessysOutputsControls({
           }}
         >
           <MenuItem value="none">None</MenuItem>
-          {GATE_CREEK_SCENARIOS.map((s) => (
+          {scenarios.map((s) => (
             <MenuItem key={s.id} value={s.id}>
               {s.label}
             </MenuItem>
@@ -385,7 +419,7 @@ export function RhessysOutputsControls({
                 PaperProps: { className: classes.rhessysOutputSelectPaper },
               }}
             >
-              {gateCreekYears.map((y) => (
+              {years.map((y) => (
                 <MenuItem key={y} value={String(y)}>
                   {y}
                 </MenuItem>

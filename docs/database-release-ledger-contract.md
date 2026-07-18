@@ -18,7 +18,7 @@ back up, or activate real data.
 | `DataReleaseAttempt` | Attributable operator/workflow execution, reviewed and actual plan hashes, timestamps, one bounded lease, backup/report references, and sanitized terminal failure. |
 | `DataRunState` | One release-scoped row per logical watershed and source run, with accepted fingerprints, counts, and validation state. |
 | `DataArtifactLineage` | Immutable content identity, durable HTTPS location, byte size, media type, and role for one release run. |
-| `RunCapability` | Release-scoped RHESSys mode, durable base/index locations, immutable index checksum, fingerprint, and public runtime configuration. |
+| `RunCapability` | Release-scoped RHESSys or SBS mode, durable base/index locations, immutable index checksum, fingerprint, and public runtime configuration. |
 
 All schema, data, identity, artifact, and fingerprint contract versions are
 exactly version 1. Release IDs use `YYYY-MM-DD.N`. Digests and materializer
@@ -83,8 +83,11 @@ RunCapability.objects.visible()
 That query joins through the singleton active pointer. The activation
 transaction therefore changes release status, pointer, and capability
 visibility atomically. Version 1 supports the accepted `rhessys` capability
-with `dynamic`, `precomputed`, or `both` mode. Runtime configuration must be
-public and rejects secret-bearing keys.
+with `dynamic`, `precomputed`, or `both` mode and the `sbs` capability with
+`precomputed` mode. Runtime configuration must be public and rejects
+secret-bearing keys. DB19A's
+[database capability runtime contract](database-capability-runtime-contract.md)
+defines exact state-first resolution and serving behavior.
 
 Durable serving and index references remain HTTPS values from the DB08
 capability contract. The operator-owned

@@ -28,6 +28,24 @@ describe("API_ENDPOINTS URL encoding", () => {
     expect(url).toContain("run%3Fquery");
   });
 
+  it("CAPABILITIES and SBS download stay on the application server", () => {
+    expect(API_ENDPOINTS.CAPABILITIES("run id")).toContain(
+      "/watershed/run%20id/capabilities",
+    );
+    expect(API_ENDPOINTS.SBS_TIFF_DOWNLOAD("run id")).toContain(
+      "/watershed/run%20id/sbs/download",
+    );
+    expect(API_ENDPOINTS.SBS_TIFF_DOWNLOAD("run id")).not.toContain(
+      "wepp.cloud/weppcloud/runs",
+    );
+  });
+
+  it("RHESSYS_QUERY encodes runId on the application server", () => {
+    const url = API_ENDPOINTS.RHESSYS_QUERY("run/id");
+    expect(url).toContain("/watershed/run%2Fid/rhessys/query");
+    expect(url).not.toContain("query-engine/runs");
+  });
+
   it("RHESSYS_SPATIAL_TILE encodes both runId and filename", () => {
     const url = API_ENDPOINTS.RHESSYS_SPATIAL_TILE("r 1", "file#2.tif");
     expect(url).toContain("r%201");

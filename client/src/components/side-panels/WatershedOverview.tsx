@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import { useWatershed } from "../../contexts/WatershedContext";
 import { useRhessysSpatialInputs } from "../../hooks/useRhessysSpatialInputs";
 import { useRhessysOutputs } from "../../hooks/useRhessysOutputs";
+import { useCapabilities } from "../../hooks/useCapabilities";
 import { scenariosSummaryOptions } from "../../api/scenarioApi";
 import { getLayerParams } from "../../layers/types";
 import { useStyles } from "./watershedStyles";
@@ -57,10 +58,13 @@ export default function WatershedOverview() {
     scenarios: rhessysOutputScenarios,
     variables: rhessysOutputVariables,
     isLoading: rhessysOutputsLoading,
+    hasData: hasRhessysRasterData,
     hasChoroplethData,
   } = useRhessysOutputs(runId);
 
   const { data: scenariosSummary } = useQuery(scenariosSummaryOptions(runId));
+  const { data: capabilities } = useCapabilities(runId);
+  const hasSbs = capabilities?.sbs.available === true;
 
   const watershed = useMemo(() => {
     if (!watersheds?.features || !runId) return null;
@@ -295,6 +299,7 @@ export default function WatershedOverview() {
                 scenarios={rhessysOutputScenarios}
                 variables={rhessysOutputVariables}
                 isLoading={rhessysOutputsLoading}
+                hasRasterData={hasRhessysRasterData}
                 hasChoroplethData={hasChoroplethData}
               />
             </div>
@@ -307,17 +312,19 @@ export default function WatershedOverview() {
             Watershed Data
           </Typography>
 
-          <div className={classes.layer}>
-            <Typography className={classes.layerTitle}>
-              Land Use (2025)
-            </Typography>
-            <Checkbox
-              checked={layerDesired.landuse.enabled}
-              onChange={(e) => toggleLayer(e.target.id, e.target.checked)}
-              className={classes.layerCheckbox}
-              slotProps={{ input: { id: "landuse" } }}
-            />
-          </div>
+          {hasSbs && (
+            <div className={classes.layer}>
+              <Typography className={classes.layerTitle}>
+                Land Use (2025)
+              </Typography>
+              <Checkbox
+                checked={layerDesired.landuse.enabled}
+                onChange={(e) => toggleLayer(e.target.id, e.target.checked)}
+                className={classes.layerCheckbox}
+                slotProps={{ input: { id: "landuse" } }}
+              />
+            </div>
+          )}
           <div className={classes.layer}>
             <Typography className={classes.layerTitle}>
               Vegetation Cover

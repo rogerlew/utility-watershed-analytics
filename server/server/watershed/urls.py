@@ -4,13 +4,14 @@ from server.watershed.views import (
     WatershedByKeyDetailView,
     WatershedChannelByKeyListView,
     WatershedChannelListView,
+    WatershedCapabilityView,
     WatershedSubcatchmentByKeyListView,
     WatershedSubcatchmentListView,
     WatershedViewSet,
 )
-from server.watershed.sbs_raster.views import SbsColormapView, SbsRasterTileView
+from server.watershed.sbs_raster.views import SbsColormapView, SbsRasterDownloadView, SbsRasterTileView
 from server.watershed.rhessys_spatial.views import RhessysSpatialListView, RhessysSpatialTileView
-from server.watershed.rhessys_outputs.views import RhessysOutputListView, RhessysOutputTileView, RhessysOutputGeometryView
+from server.watershed.rhessys_outputs.views import RhessysOutputListView, RhessysOutputTileView, RhessysOutputGeometryView, RhessysOutputQueryView
 
 # Use router to automatically manage API endpoints based on registered viewsets
 router = routers.DefaultRouter()
@@ -36,8 +37,10 @@ urlpatterns = [
     path('', include(router.urls)),
     path('<str:runid>/subcatchments', WatershedSubcatchmentListView.as_view(), name='watershed-subcatchments'),
     path('<str:runid>/channels', WatershedChannelListView.as_view(), name='watershed-channels'),
+    path('<str:runid>/capabilities', WatershedCapabilityView.as_view(), name='watershed-capabilities'),
     path('sbs/colormap', SbsColormapView.as_view(), name='sbs-colormap'),
     path('<str:runid>/sbs/tiles/<int:z>/<int:x>/<int:y>.png', SbsRasterTileView.as_view(), name='sbs-tile'),
+    path('<str:runid>/sbs/download', SbsRasterDownloadView.as_view(), name='sbs-download'),
     path('<str:runid>/rhessys/spatial-inputs', RhessysSpatialListView.as_view(), name='rhessys-spatial-list'),
     path(
         '<str:runid>/rhessys/spatial-inputs/<str:filename>/tiles/<int:z>/<int:x>/<int:y>.png',
@@ -45,6 +48,7 @@ urlpatterns = [
         name='rhessys-spatial-tile',
     ),
     path('<str:runid>/rhessys/outputs', RhessysOutputListView.as_view(), name='rhessys-outputs-list'),
+    path('<str:runid>/rhessys/query', RhessysOutputQueryView.as_view(), name='rhessys-query'),
     path(
         '<str:runid>/rhessys/outputs/<str:scenario>/<str:variable>/tiles/<int:z>/<int:x>/<int:y>.png',
         RhessysOutputTileView.as_view(),

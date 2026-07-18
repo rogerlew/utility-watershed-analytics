@@ -291,6 +291,7 @@ class StagedChannel(StagedRow):
 class StagedRunCapability(StagedRow):
     class CapabilityType(models.TextChoices):
         RHESSYS = "rhessys", "RHESSys"
+        SBS = "sbs", "Soil burn severity"
 
     class Mode(models.TextChoices):
         DYNAMIC = "dynamic", "Dynamic"
@@ -319,7 +320,7 @@ class StagedRunCapability(StagedRow):
                 name="stage_cap_attempt_type_uniq",
             ),
             models.CheckConstraint(
-                condition=models.Q(capability_type="rhessys"),
+                condition=models.Q(capability_type__in=("rhessys", "sbs")),
                 name="stage_cap_type_valid",
             ),
             models.CheckConstraint(

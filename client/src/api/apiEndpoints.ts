@@ -33,6 +33,8 @@ export const API_ENDPOINTS = {
     `${API_BASE_URL}/watershed/${e(id)}/subcatchments`,
   // Channels for a watershed
   CHANNELS: (id: string) => `${API_BASE_URL}/watershed/${e(id)}/channels`,
+  CAPABILITIES: (runId: string) =>
+    `${API_BASE_URL}/watershed/${e(runId)}/capabilities`,
   // Query engine endpoint for running queries against a run path.
   // batchPath is a multi-segment server path (e.g. "lt:watar/wepp/runs/foo"),
   // so individual segments are not encoded here.
@@ -45,6 +47,8 @@ export const API_ENDPOINTS = {
   // Replace {runId} with the watershed run ID before passing to TileLayer.
   SBS_TILE: (runId: string) =>
     `${API_BASE_URL}/watershed/${e(runId)}/sbs/tiles/{z}/{x}/{y}.png`,
+  SBS_TIFF_DOWNLOAD: (runId: string) =>
+    `${API_BASE_URL}/watershed/${e(runId)}/sbs/download`,
   // RHESSys spatial inputs — discover available GeoTIFFs for a watershed.
   RHESSYS_SPATIAL_LIST: (runId: string) =>
     `${API_BASE_URL}/watershed/${e(runId)}/rhessys/spatial-inputs`,
@@ -54,6 +58,8 @@ export const API_ENDPOINTS = {
   // RHESSys output maps — discover available scenarios and variables.
   RHESSYS_OUTPUTS_LIST: (runId: string) =>
     `${API_BASE_URL}/watershed/${e(runId)}/rhessys/outputs`,
+  RHESSYS_QUERY: (runId: string) =>
+    `${API_BASE_URL}/watershed/${e(runId)}/rhessys/query`,
   // RHESSys output map tile URL template for use as a Leaflet TileLayer.
   RHESSYS_OUTPUTS_TILE: (runId: string, scenario: string, variable: string) =>
     `${API_BASE_URL}/watershed/${e(runId)}/rhessys/outputs/${e(scenario)}/${e(variable)}/tiles/{z}/{x}/{y}.png`,
@@ -72,12 +78,4 @@ export const API_ENDPOINTS = {
   // WEPPcloud deval details report for a given watershed run.
   WEPP_DEVAL_DETAILS: (runId: string) =>
     `${WEPPCLOUD_BASE}/${e(runId)}/disturbed9002_wbt/report/deval_details/`,
-  // Direct download link for the SBS 4-class classified GeoTIFF.
-  // Uses the same disturbed sub-run base as WEPP_DASHBOARD.
-  SBS_TIFF_DOWNLOAD: (runId: string) => {
-    const runBase =
-      WEPP_DASHBOARD_RUN_BASE_OVERRIDES[runId] ??
-      DEFAULT_WEPP_DASHBOARD_RUN_BASE;
-    return `${WEPPCLOUD_BASE}/${e(runId)}/${runBase}/browse/disturbed/sbs_4class.tif`;
-  },
 };

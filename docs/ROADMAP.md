@@ -156,6 +156,11 @@ packages DB01 through DB05 are complete:
   coverage, Parquet footer schemas, GeoTIFF metadata/sample reads, geometry
   compatibility, immutable local publication, removal difference, and replay
   passed synthetic unit, schema, forest1, and reproducible image proof.
+- [DB19A](work-packages/20260718-db19a-capability-runtime-integration/package.md)
+  is `EXECUTED-COMPLETE`: one state-first resolver now owns RHESSys and SBS
+  eligibility; exact observable `EMPTY` fallback switches off atomically in
+  `ACTIVE`; declared durable catalog, tile, geometry, query, and download paths
+  and API-driven client controls passed synthetic server/client proof.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -169,8 +174,9 @@ DB04 is repository-complete but not deployed to production. The S1 contract
 freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
 artifact-client foundations, DB13 stable identity expansion, and DB14 domain
 integrity, DB15 release-ledger foundations, DB16 staging/recovery, DB17 strict
-source preparation, DB18 NASA enrichment, and DB19 RHESSys artifact tooling are
-complete. DB19A is the next recommended package.
+source preparation, DB18 NASA enrichment, DB19 RHESSys artifact tooling, and
+DB19A materialized capability runtime integration are complete. DB20 is the
+next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

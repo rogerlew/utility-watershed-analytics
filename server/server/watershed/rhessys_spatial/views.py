@@ -20,6 +20,8 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from rio_tiler.errors import TileOutsideBounds
 
+from server.watershed.models import RunCapability
+from server.watershed.runtime_capabilities import resolve_capability
 from .discovery import discover_spatial_inputs, get_download_url
 from .schema_serializers import RhessysSpatialListResponseSerializer
 from .registry import get_meta, get_render_range
@@ -46,9 +48,27 @@ class RhessysSpatialListView(APIView):
         },
     )
     def get(self, request, runid: str):
-        files = discover_spatial_inputs(runid)
+        capability = resolve_capability(runid, RunCapability.CapabilityType.RHESSYS)
+        if not capability.available or capability.mode not in {
+            RunCapability.Mode.DYNAMIC,
+            RunCapability.Mode.BOTH,
+        }:
+            return Response({"files": [], "capability": {"available": False}})
+        if capability.source == "materialized":
+            files = []
+            for item in capability.configuration["spatial_inputs"]:
+                render = item["render"]
+                files.append(
+                    {
+                        "filename": item["filename"],
+                        "name": item["title"],
+                        **render,
+                    }
+                )
+        else:
+            files = discover_spatial_inputs(runid)
         if files is None:
-            return Response({"files": []})
+            return Response({"files": [], "capability": {"available": True}})
 
         for f in files:
             if f["type"] == "categorical" and f.get("unique_values"):
@@ -62,7 +82,17 @@ class RhessysSpatialListView(APIView):
             else:
                 f["legend"] = None
 
-        return Response({"files": files})
+        return Response(
+            {
+                "files": files,
+                "capability": {
+                    "available": True,
+                    "source": capability.source,
+                    "mode": capability.mode,
+                    "geometry_revision": capability.geometry_revision,
+                },
+            }
+        )
 
 
 class RhessysSpatialTileView(APIView):
@@ -83,22 +113,47 @@ class RhessysSpatialTileView(APIView):
         },
     )
     def get(self, request, runid: str, filename: str, z: int, x: int, y: int):
-        tif_url = get_download_url(runid, filename)
-
-        meta = get_meta(filename)
-        if not meta:
-            raise NotFound(
-                "RHESSys spatial input is not registered in the legend registry."
+        capability = resolve_capability(runid, RunCapability.CapabilityType.RHESSYS)
+        if not capability.available or capability.mode not in {
+            RunCapability.Mode.DYNAMIC,
+            RunCapability.Mode.BOTH,
+        }:
+            raise NotFound("RHESSys spatial input is not enabled for this watershed.")
+        if capability.source == "materialized":
+            item = next(
+                (
+                    candidate
+                    for candidate in capability.configuration["spatial_inputs"]
+                    if candidate["filename"] == filename
+                ),
+                None,
             )
-
-        lo, hi = get_render_range(meta)
-        kwargs = dict(
-            data_type=meta.data_type,
-            min_val=lo,
-            max_val=hi,
-            unique_values=meta.unique_values,
-            reversed_colormap=meta.reversed_colormap,
-        )
+            if item is None:
+                raise NotFound("RHESSys spatial input is not declared.")
+            tif_url = item["artifact"]["uri"]
+            render = item["render"]
+            kwargs = dict(
+                data_type=render["type"],
+                min_val=render["min"] if render["min"] is not None else 0.0,
+                max_val=render["max"] if render["max"] is not None else 1.0,
+                unique_values=render["unique_values"],
+                reversed_colormap=render["reversed"],
+            )
+        else:
+            tif_url = get_download_url(runid, filename)
+            meta = get_meta(filename)
+            if not meta:
+                raise NotFound(
+                    "RHESSys spatial input is not registered in the legend registry."
+                )
+            lo, hi = get_render_range(meta)
+            kwargs = dict(
+                data_type=meta.data_type,
+                min_val=lo,
+                max_val=hi,
+                unique_values=meta.unique_values,
+                reversed_colormap=meta.reversed_colormap,
+            )
 
         try:
             png_bytes = get_tile_png(tif_url, z, x, y, **kwargs)
