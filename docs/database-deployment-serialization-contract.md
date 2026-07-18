@@ -113,3 +113,21 @@ complete only after the new credential authenticates, the previous credential
 fails, the expected permission probes pass, and the protected old secret is
 removed. Production provisioning and first rotation belong to DB27A or another
 explicitly authorized production package.
+
+## Durable data deployment
+
+DB26 implements the host-side consumer of this contract in
+`scripts/deploy_database.sh`. It holds the same exclusive descriptor for the
+whole attempt, reasserts it at backup/publication/activation/rollback
+boundaries, persists private atomic phase state, and resumes only with the
+same request and input hashes. The accepted phase order and systemd semantics
+are documented in the
+[database deployment orchestrator runbook](runbooks/database-deployment-orchestrator.md).
+
+The active no-op path performs exact serving verification but invokes neither
+backup nor activation. A changing release cannot activate until the DB25
+compatibility phase and verified encrypted publication on
+`forest1:/wc1/utility-watershed-analytics-db-backups` have passed. Post-pointer
+smoke/refresh failure invokes only the reviewed DB22 inverse. DB26 provides no
+production authority, phase-package installation, or protected workflow;
+those remain explicit later operations.

@@ -1,0 +1,28 @@
+[Unit]
+Description=Utility Watershed Analytics database deployment %i
+Documentation=file:/workdir/utility-watershed-analytics/docs/runbooks/database-deployment-orchestrator.md
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/utility-watershed-analytics/database-deployments/%i.json
+ConditionPathExists=/etc/utility-watershed-analytics/database-deployments/%i.sha256
+ConditionPathExists=/etc/utility-watershed-analytics/database-deployment.env
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/workdir/utility-watershed-analytics
+EnvironmentFile=/etc/utility-watershed-analytics/database-deployment.env
+ExecStart=/bin/sh -c 'exec /workdir/utility-watershed-analytics/scripts/deploy_database.sh --request /etc/utility-watershed-analytics/database-deployments/%i.json --request-sha256 "$(cat /etc/utility-watershed-analytics/database-deployments/%i.sha256)" --secret-file /etc/utility-watershed-analytics/database-deployment.env'
+Restart=no
+TimeoutStartSec=8h
+TimeoutStopSec=2m
+KillMode=mixed
+UMask=0077
+SuccessExitStatus=143
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+# Intentionally empty: deployments are explicit starts, never boot targets.

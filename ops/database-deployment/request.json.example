@@ -1,0 +1,28 @@
+{
+  "application_git_commit": "0000000000000000000000000000000000000000",
+  "expected_base_manifest": "EMPTY",
+  "inputs": {
+    "forward_plan": {
+      "path": "/srv/utility-watershed-analytics/releases/RELEASE/forward.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "inverse_plan": {
+      "path": "/srv/utility-watershed-analytics/releases/RELEASE/inverse.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "members": {
+      "path": "/srv/utility-watershed-analytics/releases/RELEASE/members.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "release": {
+      "path": "/srv/utility-watershed-analytics/releases/RELEASE/release.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "materializer_git_commit": "0000000000000000000000000000000000000000",
+  "operation_id": "release-operation-id",
+  "release_id": "RELEASE",
+  "schema_version": 1,
+  "tool_image": "registry.example/utility-watershed-analytics@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "tool_image_id": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+}
