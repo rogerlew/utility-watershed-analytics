@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "data_contract": 2,
+  "identity_contract": 1,
+  "artifact_contract": 1,
+  "supported_migrations": {
+    "minimum": "watershed.0001_initial",
+    "maximum": "watershed.0006_watershed_utility_metadata"
+  },
+  "materializer": {
+    "image_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "git_commit": "3333333333333333333333333333333333333333"
+  },
+  "toolchain": {
+    "postgres": "16.3",
+    "postgis": "3.4.2",
+    "gdal": "3.8.5"
+  }
+}

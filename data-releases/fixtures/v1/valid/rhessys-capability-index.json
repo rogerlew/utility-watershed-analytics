@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "collection_key": "example-collection",
+  "watershed_key": "example-north",
+  "runid": "illustrative/north",
+  "mode": "both",
+  "durable_base_uri": "https://artifacts.example.test/rhessys/example-north/",
+  "geometry_revision": "8888888888888888888888888888888888888888888888888888888888888888",
+  "spatial_inputs": [
+    {
+      "role": "worldfile",
+      "artifact": {
+        "uri": "https://artifacts.example.test/rhessys/example-north/worldfile.txt",
+        "sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+        "bytes": 256,
+        "media_type": "text/plain",
+        "verified": true
+      },
+      "required_for_activation": true
+    }
+  ],
+  "parquets": [
+    {
+      "role": "basin",
+      "artifact": {
+        "uri": "https://artifacts.example.test/rhessys/example-north/basin.parquet",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 8192,
+        "media_type": "application/vnd.apache.parquet",
+        "verified": true
+      },
+      "spatial_id_field": "basin_id",
+      "variables": [
+        {"name": "streamflow", "units": "mm"}
+      ],
+      "year_range": [1980, 2020],
+      "required_for_activation": true
+    }
+  ],
+  "geotiffs": [
+    {
+      "artifact": {
+        "uri": "https://artifacts.example.test/rhessys/example-north/burned-precip.tif",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "bytes": 16384,
+        "media_type": "image/tiff",
+        "verified": true
+      },
+      "scenario": "burned",
+      "variable": "precipitation",
+      "crs": "EPSG:4326",
+      "bounds": [-117.2, 46.1, -116.8, 46.4],
+      "dimensions": [512, 512],
+      "bands": 1,
+      "nodata": -9999,
+      "required_for_activation": false
+    }
+  ]
+}

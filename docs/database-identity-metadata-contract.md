@@ -247,6 +247,7 @@ Preparation rejects:
 - incomplete, cyclic, or key-reusing split/merge lineage; and
 - duplicate child business identities or Parquet join identities.
 
-The DB07 fixtures are decision examples, not DB08 release schemas. Their
-validator proves that every required scenario and field is covered and that
-expected conflicts reject deterministically.
+The DB07 fixtures remain decision examples rather than release instances. DB08
+encodes their accepted identity, authority, and conflict boundaries in the
+[version-1 release schema contract](database-release-schema-contract.md); both
+fixture suites remain independently validated.

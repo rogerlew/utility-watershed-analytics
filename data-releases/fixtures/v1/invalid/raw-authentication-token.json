@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "collection_key": "example-collection",
+  "source_revision": "illustrative-raw-auth",
+  "created_at": "2026-07-17T15:45:00Z",
+  "authentication": {
+    "token": "not-a-real-token"
+  },
+  "expected_member_count": 1,
+  "members": [
+    {
+      "watershed_key": "example-north",
+      "runid": "illustrative/north",
+      "display_name": "Example North",
+      "aliases": [],
+      "artifacts": {
+        "metadata": {"uri": "https://artifacts.example.test/raw-auth/metadata.json", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/json", "verified": true},
+        "boundary": {"uri": "https://artifacts.example.test/raw-auth/boundary.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "subcatchments": {"uri": "https://artifacts.example.test/raw-auth/subcatchments.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "channels": {"uri": "https://artifacts.example.test/raw-auth/channels.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "hillslopes": {"uri": "https://artifacts.example.test/raw-auth/hillslopes.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "soils": {"uri": "https://artifacts.example.test/raw-auth/soils.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "landuse": {"uri": "https://artifacts.example.test/raw-auth/landuse.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true}
+      },
+      "expected": {"watersheds": 1, "subcatchments": 1, "channels": 1, "bounds": [-117, 46, -116, 47]}
+    }
+  ]
+}

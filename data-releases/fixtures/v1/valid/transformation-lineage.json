@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "transformation_key": "example-metadata-join",
+  "name": "Illustrative metadata join",
+  "version": "1.0.0",
+  "code_git_commit": "3333333333333333333333333333333333333333",
+  "configuration_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+  "join_keys": ["runid"],
+  "inputs": [
+    {
+      "uri": "https://artifacts.example.test/inputs/example-source.parquet",
+      "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "bytes": 2048,
+      "media_type": "application/vnd.apache.parquet",
+      "verified": true
+    }
+  ],
+  "output": {
+    "uri": "https://artifacts.example.test/outputs/example-watersheds.parquet",
+    "sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+    "bytes": 4096,
+    "media_type": "application/vnd.apache.parquet",
+    "verified": true
+  },
+  "field_decisions": [
+    {
+      "field": "runid",
+      "authority": "source",
+      "source_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    {
+      "field": "area_km2",
+      "authority": "derived"
+    }
+  ],
+  "counts": {
+    "matched": 2,
+    "unmatched": 0,
+    "duplicate": 0
+  },
+  "validation_report": {
+    "uri": "https://artifacts.example.test/reports/example-transformation.json",
+    "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+    "bytes": 512,
+    "media_type": "application/json",
+    "verified": true
+  }
+}

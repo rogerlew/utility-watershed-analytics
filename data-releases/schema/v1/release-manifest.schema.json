@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firewisewatersheds.org/schemas/data-release/v1/release-manifest.schema.json",
+  "title": "Data release manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "release_id",
+    "created_at",
+    "compatibility",
+    "collections",
+    "expected_removals",
+    "lineage",
+    "validation_report"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "release_id": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\.[1-9][0-9]*$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "compatibility": {
+      "$ref": "compatibility-envelope.schema.json"
+    },
+    "collections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/collection"
+      }
+    },
+    "expected_removals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/removal"
+      }
+    },
+    "lineage": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/lineageEvent"
+      }
+    },
+    "validation_report": {
+      "$ref": "artifact-reference.schema.json"
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 96
+    },
+    "runid": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "secret_ref"
+      ],
+      "properties": {
+        "secret_ref": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{2,127}$"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "source_revision"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "batch",
+            "standalone"
+          ]
+        },
+        "source_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "authentication": {
+          "$ref": "#/$defs/authentication"
+        }
+      }
+    },
+    "collection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collection_key",
+        "display_name",
+        "source",
+        "member_index",
+        "expected_member_count",
+        "watershed_keys"
+      ],
+      "properties": {
+        "collection_key": {
+          "$ref": "#/$defs/key"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "member_index": {
+          "$ref": "artifact-reference.schema.json"
+        },
+        "expected_member_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "watershed_keys": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/key"
+          }
+        }
+      }
+    },
+    "removal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "watershed_key",
+        "reason",
+        "aliases"
+      ],
+      "properties": {
+        "watershed_key": {
+          "$ref": "#/$defs/key"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "aliases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/runid"
+          }
+        }
+      }
+    },
+    "lineageEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_key",
+        "kind",
+        "predecessors",
+        "successors",
+        "reviewed"
+      ],
+      "properties": {
+        "event_key": {
+          "$ref": "#/$defs/key"
+        },
+        "kind": {
+          "enum": [
+            "replacement",
+            "move",
+            "split",
+            "merge",
+            "removal"
+          ]
+        },
+        "predecessors": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/key"
+          }
+        },
+        "successors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/key"
+          }
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "replacement",
+                  "move"
+                ]
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "predecessors": {"maxItems": 1},
+              "successors": {"minItems": 1, "maxItems": 1}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {"const": "split"}
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "predecessors": {"minItems": 1, "maxItems": 1},
+              "successors": {"minItems": 2}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {"const": "merge"}
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "predecessors": {"minItems": 2},
+              "successors": {"minItems": 1, "maxItems": 1}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {"const": "removal"}
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "successors": {"maxItems": 0}
+            }
+          },
+          "else": {
+            "properties": {
+              "successors": {"minItems": 1}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

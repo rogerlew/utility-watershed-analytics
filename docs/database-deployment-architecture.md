@@ -216,17 +216,27 @@ advertised by the application.
 
 ### 8.1 Repository layout
 
-The proposed tracked layout is:
+The accepted DB08 layout and planned successor directories are:
 
 ```text
 data-releases/
   schema/
-    release-manifest.schema.json
-    batch-index.schema.json
-    rhessys-index.schema.json
+    v1/
+      artifact-reference.schema.json
+      batch-member-index.schema.json
+      compatibility-envelope.schema.json
+      release-manifest.schema.json
+      rhessys-capability-index.schema.json
+      transformation-lineage.schema.json
+      validation-report.schema.json
+  fixtures/
+    v1/
+      cases.json
+      valid/
+      invalid/
   releases/
     2026-07-16.1/
-      release.yaml
+      release.json
       batch-members.json
   plans/
     BASE_SHA--TARGET_SHA/
@@ -237,78 +247,22 @@ data-releases/
 ```
 
 Large source artifacts are stored in durable object storage, not in this
-directory. Tracked indexes remain small enough for code review.
+directory. DB08 schemas and fixtures are tracked now; real releases, indexes,
+and DB09 plans are added only by their successor packages.
 
 ### 8.2 Release manifest
 
-The exact schema will be formalized in JSON Schema. A representative structure
-is:
+DB08 formalizes the manifest and six supporting records in the
+[version-1 release schema contract](database-release-schema-contract.md). A
+manifest pins compatibility, exact collection membership and stable watershed
+keys, exact expected removals, reviewed identity lineage, and immutable
+validation evidence. Supporting indexes contain per-member artifacts, counts,
+bounds, transformation lineage, and RHESSys capability details.
 
-```yaml
-schema_version: 1
-release_id: 2026-07-16.1
-created_at: 2026-07-16T23:00:00Z
-
-compatibility:
-  data_contract: 1
-  schema_signature: "..."
-  supported_migrations:
-    minimum: watershed.0006_watershed_utility_metadata
-    maximum: watershed.0006_watershed_utility_metadata
-  materializer:
-    image_digest: sha256:...
-    git_commit: "..."
-    fingerprint_algorithm: 1
-  toolchain:
-    postgres: "..."
-    postgis: "..."
-    gdal: "..."
-
-collections:
-  - collection_key: gate-creek
-    display_name: Gate Creek
-    source:
-      kind: standalone
-      project_path: disturbed9002_wbt
-    member:
-      watershed_key: gate-creek
-      runid: aversive-forestry
-    boundary:
-      uri: https://artifacts.example/.../bound.geojson
-      sha256: "..."
-      bytes: 12345
-    per_run_index:
-      uri: https://artifacts.example/.../gate-creek-index.json
-      sha256: "..."
-    expected:
-      watersheds: 1
-      subcatchments: 123
-      channels: 45
-    rhessys:
-      mode: dynamic
-      index_uri: https://artifacts.example/.../rhessys-index.json
-      index_sha256: "..."
-
-  - collection_key: nasa-roses
-    display_name: NASA ROSES 202606 PSBS
-    source:
-      kind: batch
-      batch_id: nasa-roses-202606-psbs
-    master_geojson:
-      uri: https://artifacts.example/.../resources.enriched.geojson
-      sha256: "..."
-      bytes: 12345678
-    member_index:
-      path: batch-members.json
-      sha256: "..."
-    lineage:
-      replaces_source_revision: nasa-roses-2026-sbs
-      transformation: nasa_wws_enrichment_v1
-```
-
-The real manifest must contain only exact artifact locations and hashes. Every
-member, including every batch member, must have a mandatory `watershed_key`.
-The example URI, signatures, versions, and counts above are illustrative.
+Every artifact location is HTTPS, credential-free, checksum-pinned, sized,
+media-typed, and asserted verified. The checked-in examples under
+`data-releases/fixtures/v1/` are illustrative contract proof, not real release
+membership.
 
 ### 8.3 Base-specific deployment plans
 
@@ -549,8 +503,9 @@ DB07 freezes the version-1 decisions in the
 collection keys remain stable across source revisions; watershed keys remain
 stable across rename, replacement, and collection moves; split and merge
 successors receive new keys; retired keys are never reused; and historical run
-IDs remain compatibility aliases. DB08 schemas must encode those decisions
-rather than derive identity from source names or geometry.
+IDs remain compatibility aliases. The DB08
+[release schema contract](database-release-schema-contract.md) encodes those
+decisions rather than deriving identity from source names or geometry.
 
 ## 10. Change semantics
 
@@ -674,6 +629,11 @@ A data-release pull request should run:
 Authenticated production artifacts may require a protected CI environment or a
 deployment-time preflight. Lack of credentials must not convert required checks
 into warnings.
+
+DB08 implements the first gate for schemas and illustrative fixtures in
+`.github/workflows/data-contract-ci.yml`. Later packages extend that workflow
+with artifact access, materialization, fingerprint, smoke, and rollback gates
+as those capabilities become executable.
 
 ## 14. Deployment workflow
 
@@ -1113,7 +1073,8 @@ That runbook does not authorize production execution.
 
 ### Phase 1: release representation
 
-- define release, batch-index, and RHESSys-index schemas;
+- maintain the accepted version-1 release, member-index, artifact,
+  transformation, RHESSys, validation, and compatibility schemas;
 - create the first manifest from the authoritative inventory;
 - require distinct immutable collection and watershed keys;
 - define field-by-field metadata authority and exact child business keys;

@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firewisewatersheds.org/schemas/data-release/v1/rhessys-capability-index.schema.json",
+  "title": "RHESSys capability index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "collection_key",
+    "watershed_key",
+    "runid",
+    "mode",
+    "durable_base_uri",
+    "geometry_revision",
+    "spatial_inputs",
+    "parquets",
+    "geotiffs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "collection_key": {
+      "$ref": "#/$defs/key"
+    },
+    "watershed_key": {
+      "$ref": "#/$defs/key"
+    },
+    "runid": {
+      "$ref": "#/$defs/runid"
+    },
+    "mode": {
+      "enum": [
+        "dynamic",
+        "precomputed",
+        "both"
+      ]
+    },
+    "durable_base_uri": {
+      "$ref": "#/$defs/safeHttps"
+    },
+    "geometry_revision": {
+      "$ref": "#/$defs/sha256"
+    },
+    "spatial_inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "artifact",
+          "required_for_activation"
+        ],
+        "properties": {
+          "role": {
+            "$ref": "#/$defs/key"
+          },
+          "artifact": {
+            "$ref": "artifact-reference.schema.json"
+          },
+          "required_for_activation": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "parquets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/parquetAsset"
+      }
+    },
+    "geotiffs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/geotiffAsset"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "dynamic",
+              "both"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spatial_inputs": {
+            "minItems": 1
+          },
+          "parquets": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "precomputed",
+              "both"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "geotiffs": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 96
+    },
+    "runid": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "safeHttps": {
+      "type": "string",
+      "pattern": "^https://[A-Za-z0-9.-]+(?::[0-9]+)?/[^?#\\s]+$",
+      "maxLength": 2048
+    },
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "units"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+        },
+        "units": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "parquetAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "artifact",
+        "spatial_id_field",
+        "variables",
+        "year_range",
+        "required_for_activation"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "basin",
+            "hillslope",
+            "patch"
+          ]
+        },
+        "artifact": {
+          "$ref": "artifact-reference.schema.json"
+        },
+        "spatial_id_field": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+        },
+        "variables": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/variable"
+          }
+        },
+        "year_range": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "integer",
+              "minimum": 1800,
+              "maximum": 3000
+            },
+            {
+              "type": "integer",
+              "minimum": 1800,
+              "maximum": 3000
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "required_for_activation": {
+          "type": "boolean"
+        }
+      }
+    },
+    "geotiffAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "scenario",
+        "variable",
+        "crs",
+        "bounds",
+        "dimensions",
+        "bands",
+        "nodata",
+        "required_for_activation"
+      ],
+      "properties": {
+        "artifact": {
+          "$ref": "artifact-reference.schema.json"
+        },
+        "scenario": {
+          "$ref": "#/$defs/key"
+        },
+        "variable": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+        },
+        "crs": {
+          "type": "string",
+          "pattern": "^EPSG:[0-9]{4,6}$"
+        },
+        "bounds": {
+          "type": "array",
+          "prefixItems": [
+            {"type": "number"},
+            {"type": "number"},
+            {"type": "number"},
+            {"type": "number"}
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "dimensions": {
+          "type": "array",
+          "prefixItems": [
+            {"type": "integer", "minimum": 1},
+            {"type": "integer", "minimum": 1}
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "bands": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "nodata": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "required_for_activation": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

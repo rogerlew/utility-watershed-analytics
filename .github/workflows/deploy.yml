@@ -18,9 +18,13 @@ jobs:
     name: Reuse Client CI
     uses: ./.github/workflows/client-ci.yml
 
+  contract-ci:
+    name: Reuse Data Contract CI
+    uses: ./.github/workflows/data-contract-ci.yml
+
   deploy:
     name: Deploy
-    needs: [server-ci, client-ci]
+    needs: [server-ci, client-ci, contract-ci]
     runs-on: [self-hosted, Linux, X64, deploy]
     environment: production
     steps:

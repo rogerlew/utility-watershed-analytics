@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firewisewatersheds.org/schemas/data-release/v1/transformation-lineage.schema.json",
+  "title": "Transformation lineage record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "transformation_key",
+    "name",
+    "version",
+    "code_git_commit",
+    "configuration_sha256",
+    "join_keys",
+    "inputs",
+    "output",
+    "field_decisions",
+    "counts",
+    "validation_report"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "transformation_key": {
+      "$ref": "#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+(?:\\.[0-9]+){0,2}$"
+    },
+    "code_git_commit": {
+      "$ref": "#/$defs/gitCommit"
+    },
+    "configuration_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "join_keys": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "artifact-reference.schema.json"
+      }
+    },
+    "output": {
+      "$ref": "artifact-reference.schema.json"
+    },
+    "field_decisions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "authority"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "pattern": "^[a-z_][a-z0-9_]{0,63}$"
+          },
+          "authority": {
+            "enum": [
+              "target",
+              "source",
+              "derived",
+              "explicit_null"
+            ]
+          },
+          "source_sha256": {
+            "$ref": "#/$defs/sha256"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "authority": {
+                  "enum": [
+                    "target",
+                    "source"
+                  ]
+                }
+              },
+              "required": [
+                "authority"
+              ]
+            },
+            "then": {
+              "required": [
+                "source_sha256"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "source_sha256"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "matched",
+        "unmatched",
+        "duplicate"
+      ],
+      "properties": {
+        "matched": {
+          "$ref": "#/$defs/count"
+        },
+        "unmatched": {
+          "$ref": "#/$defs/count"
+        },
+        "duplicate": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "validation_report": {
+      "$ref": "artifact-reference.schema.json"
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 96
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

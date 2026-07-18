@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "collection_key": "example-collection",
+  "watershed_key": "example-north",
+  "runid": "illustrative/north",
+  "mode": "precomputed",
+  "durable_base_uri": "https://artifacts.example.test/rhessys/example-north/",
+  "geometry_revision": "8888888888888888888888888888888888888888888888888888888888888888",
+  "spatial_inputs": [],
+  "parquets": [],
+  "geotiffs": []
+}

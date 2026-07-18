@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "valid": [
+    {"schema": "artifact-reference.schema.json", "instance": "valid/artifact-reference.json"},
+    {"schema": "batch-member-index.schema.json", "instance": "valid/batch-member-index.json"},
+    {"schema": "compatibility-envelope.schema.json", "instance": "valid/compatibility-envelope.json"},
+    {"schema": "release-manifest.schema.json", "instance": "valid/release-manifest.json"},
+    {"schema": "rhessys-capability-index.schema.json", "instance": "valid/rhessys-capability-index.json"},
+    {"schema": "transformation-lineage.schema.json", "instance": "valid/transformation-lineage.json"},
+    {"schema": "validation-report.schema.json", "instance": "valid/validation-report.json"}
+  ],
+  "invalid": [
+    {"schema": "batch-member-index.schema.json", "instance": "invalid/duplicate-watershed-key.json", "phase": "semantic", "code": "duplicate-watershed-key"},
+    {"schema": "release-manifest.schema.json", "instance": "invalid/duplicate-collection-key.json", "phase": "semantic", "code": "duplicate-collection-key"},
+    {"schema": "release-manifest.schema.json", "instance": "invalid/wildcard-removal.json", "phase": "structural", "code": "pattern"},
+    {"schema": "release-manifest.schema.json", "instance": "invalid/target-overlapping-removal.json", "phase": "semantic", "code": "target-overlapping-removal"},
+    {"schema": "artifact-reference.schema.json", "instance": "invalid/unverified-artifact.json", "phase": "structural", "code": "required"},
+    {"schema": "rhessys-capability-index.schema.json", "instance": "invalid/missing-rhessys-assets.json", "phase": "structural", "code": "minItems"},
+    {"schema": "compatibility-envelope.schema.json", "instance": "invalid/incompatible-version.json", "phase": "structural", "code": "const"},
+    {"schema": "artifact-reference.schema.json", "instance": "invalid/credential-bearing-uri.json", "phase": "structural", "code": "pattern"},
+    {"schema": "batch-member-index.schema.json", "instance": "invalid/raw-authentication-token.json", "phase": "structural", "code": "additionalProperties"}
+  ]
+}

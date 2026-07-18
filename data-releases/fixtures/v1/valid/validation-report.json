@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "report_id": "example-release-validation",
+  "subject": {
+    "type": "release",
+    "id": "2026-07-17.1"
+  },
+  "validator": {
+    "git_commit": "3333333333333333333333333333333333333333",
+    "image_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "started_at": "2026-07-17T16:00:00Z",
+  "completed_at": "2026-07-17T16:01:00Z",
+  "status": "passed",
+  "checks": [
+    {
+      "code": "exact-membership",
+      "status": "passed",
+      "count": 2,
+      "summary": "Illustrative members matched the index."
+    },
+    {
+      "code": "verified-artifacts",
+      "status": "passed",
+      "count": 14
+    }
+  ],
+  "summary": "Illustrative DB08 fixture only; not a production validation result."
+}

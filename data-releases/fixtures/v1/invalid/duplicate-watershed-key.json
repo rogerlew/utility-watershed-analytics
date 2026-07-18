@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "collection_key": "example-collection",
+  "source_revision": "illustrative-duplicate",
+  "created_at": "2026-07-17T15:45:00Z",
+  "expected_member_count": 2,
+  "members": [
+    {
+      "watershed_key": "example-north",
+      "runid": "illustrative/north-a",
+      "display_name": "Example North A",
+      "aliases": [],
+      "artifacts": {
+        "metadata": {"uri": "https://artifacts.example.test/duplicate/metadata.json", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/json", "verified": true},
+        "boundary": {"uri": "https://artifacts.example.test/duplicate/boundary.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "subcatchments": {"uri": "https://artifacts.example.test/duplicate/subcatchments.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "channels": {"uri": "https://artifacts.example.test/duplicate/channels.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "hillslopes": {"uri": "https://artifacts.example.test/duplicate/hillslopes.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "soils": {"uri": "https://artifacts.example.test/duplicate/soils.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "landuse": {"uri": "https://artifacts.example.test/duplicate/landuse.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true}
+      },
+      "expected": {"watersheds": 1, "subcatchments": 1, "channels": 1, "bounds": [-117, 46, -116, 47]}
+    },
+    {
+      "watershed_key": "example-north",
+      "runid": "illustrative/north-b",
+      "display_name": "Example North B",
+      "aliases": [],
+      "artifacts": {
+        "metadata": {"uri": "https://artifacts.example.test/duplicate/metadata.json", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/json", "verified": true},
+        "boundary": {"uri": "https://artifacts.example.test/duplicate/boundary.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "subcatchments": {"uri": "https://artifacts.example.test/duplicate/subcatchments.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "channels": {"uri": "https://artifacts.example.test/duplicate/channels.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "hillslopes": {"uri": "https://artifacts.example.test/duplicate/hillslopes.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "soils": {"uri": "https://artifacts.example.test/duplicate/soils.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true},
+        "landuse": {"uri": "https://artifacts.example.test/duplicate/landuse.geojson", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "bytes": 128, "media_type": "application/geo+json", "verified": true}
+      },
+      "expected": {"watersheds": 1, "subcatchments": 1, "channels": 1, "bounds": [-117, 46, -116, 47]}
+    }
+  ]
+}

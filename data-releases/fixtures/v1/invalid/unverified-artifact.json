@@ -1,0 +1,6 @@
+{
+  "uri": "https://artifacts.example.test/releases/example/unverified.json",
+  "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "bytes": 128,
+  "media_type": "application/json"
+}
