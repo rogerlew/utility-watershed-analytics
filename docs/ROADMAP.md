@@ -126,6 +126,11 @@ packages DB01 through DB05 are complete:
   model compatibility, canonical browser redirects, replacement preservation,
   and bounded rollback passed server/client and production-shaped isolated
   PostGIS proof.
+- [DB14](work-packages/20260717-db14-domain-integrity-constraints/package.md) is
+  `EXECUTED-COMPLETE`: compatibility and partial logical child keys, stable-key
+  and status checks, fail-closed Topaz joins, exact three-table rebuild
+  ownership, negative fixtures, and production-shaped migration/rollback and
+  lock measurement passed in isolated PostGIS.
 
 The reviewed DB02/DB03 changes and DB03A safe workflow are published to the
 fork's `main`. The fork-owned `wepp3` runner is online and idle; the old
@@ -137,8 +142,8 @@ verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
 DB04 is repository-complete but not deployed to production. The S1 contract
 freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
-artifact-client foundations, and DB13 stable identity expansion are complete.
-DB14 is the next recommended package.
+artifact-client foundations, DB13 stable identity expansion, and DB14 domain
+integrity are complete. DB15 is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

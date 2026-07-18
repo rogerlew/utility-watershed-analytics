@@ -396,10 +396,17 @@ sufficient.
 Soil, land-use, and hillslope properties remain denormalized onto
 `watershed_subcatchment` unless a separate schema change is approved.
 
-Only these explicitly declared watershed-domain and capability tables are
-owned by data reconciliation. Every other Django table is persistent by
-default. Before any non-owned table is allowed to reference a reconciled row,
-its stable identity, deletion behavior, and rollback semantics must be
+DB14 freezes current data-reconciliation ownership to exactly the three
+serving tables above, with raw delete order channel, subcatchment, watershed.
+Collection, logical watershed identity, and run-alias tables are persistent;
+their references are protected. The executable boundary and enforced child
+keys are defined in the
+[watershed domain integrity contract](database-domain-integrity-contract.md).
+
+Future capability and release-ledger tables must declare their own ownership
+before reconciliation may mutate them. Every other Django table is persistent
+by default. Before any non-owned table is allowed to reference a reconciled
+row, its stable identity, deletion behavior, and rollback semantics must be
 specified; a data release must not cascade-delete user-owned state.
 
 ### 9.2 Release ledger

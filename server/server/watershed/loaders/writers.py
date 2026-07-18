@@ -21,6 +21,10 @@ from .protocols import DataWriter
 logger = logging.getLogger("watershed.loader")
 
 
+class JoinIdentityError(ValueError):
+    pass
+
+
 # Field mappings for parquet data
 HILLSLOPES_FIELD_MAP = [
     ('slope_scalar', 'slope_scalar', float),
@@ -311,22 +315,18 @@ class DjangoDataWriter:
         field_maps = {}
         
         if hillslopes is not None:
-            topaz_col = self._find_topaz_column(hillslopes)
-            if topaz_col:
-                dataframes['hillslopes'] = hillslopes.set_index(topaz_col)
-                field_maps['hillslopes'] = HILLSLOPES_FIELD_MAP
+            dataframes['hillslopes'] = self._validated_topaz_index(
+                hillslopes, 'hillslopes'
+            )
+            field_maps['hillslopes'] = HILLSLOPES_FIELD_MAP
         
         if soils is not None:
-            topaz_col = self._find_topaz_column(soils)
-            if topaz_col:
-                dataframes['soils'] = soils.set_index(topaz_col)
-                field_maps['soils'] = SOILS_FIELD_MAP
+            dataframes['soils'] = self._validated_topaz_index(soils, 'soils')
+            field_maps['soils'] = SOILS_FIELD_MAP
         
         if landuse is not None:
-            topaz_col = self._find_topaz_column(landuse)
-            if topaz_col:
-                dataframes['landuse'] = landuse.set_index(topaz_col)
-                field_maps['landuse'] = LANDUSE_FIELD_MAP
+            dataframes['landuse'] = self._validated_topaz_index(landuse, 'landuse')
+            field_maps['landuse'] = LANDUSE_FIELD_MAP
         
         if not dataframes:
             return 0
@@ -367,6 +367,25 @@ class DjangoDataWriter:
             if name in df.columns:
                 return name
         return None
+
+    def _validated_topaz_index(
+        self,
+        dataframe: pd.DataFrame,
+        artifact_name: str,
+    ) -> pd.DataFrame:
+        topaz_column = self._find_topaz_column(dataframe)
+        if topaz_column is None:
+            raise JoinIdentityError(f"{artifact_name}: missing Topaz join column")
+        null_rows = int(dataframe[topaz_column].isna().sum())
+        duplicate_rows = int(
+            dataframe[topaz_column].duplicated(keep=False).sum()
+        )
+        if null_rows or duplicate_rows:
+            raise JoinIdentityError(
+                f"{artifact_name}: invalid Topaz join identity "
+                f"(null_rows={null_rows}, duplicate_rows={duplicate_rows})"
+            )
+        return dataframe.set_index(topaz_column)
     
     def _apply_field_mapping(self, obj, row: pd.Series, field_map: list) -> bool:
         """Apply field mapping from parquet row to model object."""

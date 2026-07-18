@@ -1,6 +1,6 @@
 # Database Domain and Identity Audit
 
-Status: DB06 complete with accepted aggregate production evidence
+Status: DB06 evidence accepted; DB13/DB14 schema updates reconciled
 
 Date: 2026-07-16
 
@@ -108,9 +108,9 @@ These 37 tables are extension-owned and are never watershed release members:
 
 | Entity | Database primary key | Current business key | Database-enforced | Current source/load key |
 | --- | --- | --- | --- | --- |
-| Watershed | `runid` | `runid` | Yes, primary key | GeoJSON `properties.runid` or configured standalone `runid` |
-| Subcatchment | Surrogate `id` | `(watershed_id, topazid)` | No | Writer merges GeoJSON by `(topazid, weppid)` within one run |
-| Channel | Surrogate `id` | `(watershed_id, topazid, weppid, order)` | No | Writer merges GeoJSON by `(topazid, weppid, order)` within one run |
+| Watershed | `runid` | Legacy `runid`; DB13 logical identity | Yes | GeoJSON `properties.runid` or configured standalone `runid` |
+| Subcatchment | Surrogate `id` | `(watershed_id, topazid)` and non-null `(logical_watershed_id, topazid)` | Yes | Writer merges GeoJSON by `(topazid, weppid)` within one run |
+| Channel | Surrogate `id` | `(watershed_id, topazid, weppid, order)` and non-null `(logical_watershed_id, topazid, weppid, order)` | Yes | Writer merges GeoJSON by `(topazid, weppid, order)` within one run |
 
 `runid` is a source revision identifier, not a stable project-owned watershed
 identity. It is nevertheless the current database primary key and compatibility
@@ -124,10 +124,12 @@ create both but Parquet enrichment and the client cannot distinguish them
 reliably. DB07 must not silently redefine this key; accepted data must first
 prove whether that case exists.
 
-The development catalog has foreign keys from both child tables to
-`watershed_watershed.runid`. Django declares `on_delete=CASCADE`, and PostgreSQL
-enforces the references. No unique constraint enforces either child business
-key. The loader management command also has a global `--force` path that
+The catalog has foreign keys from both child tables to
+`watershed_watershed.runid` and additive DB13 links to logical identity.
+Django declares `on_delete=CASCADE` for the serving parent and `PROTECT` for
+persistent logical identity. PostgreSQL enforces the references. DB14 enforces
+both compatibility child keys and partial logical keys while logical links are
+nullable. The loader management command also has a global `--force` path that
 explicitly deletes channels, subcatchments, and watersheds inside one
 transaction. Persistent, observability, and extension tables are outside that
 deletion boundary.
@@ -165,11 +167,10 @@ The server loader enriches subcatchments per `runid` from three Parquet classes:
 | `soils/soils.parquet` | Same | `Subcatchment.topazid` | At most one row per `topazid` within the run |
 | `landuse/landuse.parquet` | Same | `Subcatchment.topazid` | At most one row per `topazid` within the run/scenario |
 
-The loader currently calls `set_index(topaz_column)` and then `loc[topazid]`.
-It does not reject duplicate index values before mapping fields. Duplicate
-Parquet identities can therefore return a DataFrame where one row is expected
-and produce ambiguous or failing enrichment. DB08 schemas must reject them;
-DB07 must keep the join key explicit.
+DB14 now validates the selected Topaz column before indexing. A missing column,
+null identity, or duplicate identity rejects the whole Parquet input with
+aggregate counts rather than selecting an ambiguous row. DB08 schemas also
+encode the same join contract.
 
 Client-side query-engine consumers add more current compatibility keys:
 
@@ -220,7 +221,7 @@ the actual response contract explicit.
 DB09 will define canonical fingerprints. DB06 establishes the current inputs
 that must be represented rather than relying on table names alone:
 
-1. applied watershed migrations `0001` through `0006`;
+1. applied watershed migrations through `0008_domain_integrity_constraints`;
 2. table and column names, database field types, nullability, primary-key and
    unique flags;
 3. geometry type and SRID for every domain geometry column;
@@ -256,12 +257,13 @@ The command:
 - warns when child keys lack database constraints or all domain tables are
   empty.
 
-On `forest1`, the command passed with zero rows and zero duplicate/orphan groups,
-while correctly warning that child keys are not database-enforced and empty
-tables cannot establish clean production data. Tests prove the command detects
-duplicate subcatchment and channel keys and issues no DDL or data-mutation query.
-On `wepp3`, the same reviewed implementation passed against non-empty data with
-zero duplicate groups and zero orphans. Child business keys remain unconstrained.
+On `forest1`, the original DB06 command passed with zero rows and zero
+duplicate/orphan groups while correctly warning that the pre-DB14 child keys
+were not database-enforced. On `wepp3`, that reviewed implementation passed
+against non-empty data with zero duplicate groups and zero orphans. DB14 audit
+contract version 2 reports both compatibility and logical keys and recognizes
+their database constraints. Production remains at its separately managed
+deployment state until a later package authorizes migration application.
 
 ## DB07 inputs and resolution
 

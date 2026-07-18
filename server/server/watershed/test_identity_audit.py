@@ -3,8 +3,7 @@ from io import StringIO
 
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.management import call_command
-from django.core.management.base import CommandError
-from django.db import connection
+from django.db import IntegrityError, connection, transaction
 from django.test import TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 
@@ -64,7 +63,12 @@ class DomainIdentityAuditTests(TransactionTestCase):
             subcatchment["business_key"],
             ["watershed_id", "topazid"],
         )
-        self.assertFalse(subcatchment["business_key_database_enforced"])
+        self.assertTrue(subcatchment["business_key_database_enforced"])
+        self.assertEqual(
+            subcatchment["logical_business_key"],
+            ["logical_watershed_id", "topazid"],
+        )
+        self.assertTrue(subcatchment["logical_business_key_database_enforced"])
         self.assertEqual(subcatchment["foreign_key"]["on_delete"], "CASCADE")
         self.assertTrue(subcatchment["foreign_key"]["database_enforced"])
 
@@ -73,18 +77,36 @@ class DomainIdentityAuditTests(TransactionTestCase):
             channel["business_key"],
             ["watershed_id", "topazid", "weppid", "order"],
         )
-        self.assertFalse(channel["business_key_database_enforced"])
+        self.assertTrue(channel["business_key_database_enforced"])
+        self.assertEqual(
+            channel["logical_business_key"],
+            ["logical_watershed_id", "topazid", "weppid", "order"],
+        )
+        self.assertTrue(channel["logical_business_key_database_enforced"])
 
-    def test_duplicate_business_keys_are_violations(self):
+    def test_duplicate_business_keys_are_database_rejected(self):
         watershed = self.create_watershed()
-        for weppid in (10, 11):
+        Subcatchment.objects.create(
+            watershed=watershed,
+            topazid=1,
+            weppid=10,
+            geom=test_geometry(),
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
             Subcatchment.objects.create(
                 watershed=watershed,
                 topazid=1,
-                weppid=weppid,
+                weppid=11,
                 geom=test_geometry(),
             )
-        for _ in range(2):
+        Channel.objects.create(
+            watershed=watershed,
+            topazid=2,
+            weppid=20,
+            order=1,
+            geom=test_geometry(),
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
             Channel.objects.create(
                 watershed=watershed,
                 topazid=2,
@@ -95,17 +117,16 @@ class DomainIdentityAuditTests(TransactionTestCase):
 
         report = self.run_audit()
 
-        self.assertEqual(report["status"], "failed")
+        self.assertEqual(report["status"], "passed")
         self.assertEqual(
             report["tables"]["subcatchment"]["duplicate_business_key"],
-            {"groups": 1, "rows": 2},
+            {"groups": 0, "rows": 0},
         )
         self.assertEqual(
             report["tables"]["channel"]["duplicate_business_key"],
-            {"groups": 1, "rows": 2},
+            {"groups": 0, "rows": 0},
         )
-        with self.assertRaises(CommandError):
-            self.run_audit(fail_on_violations=True)
+        self.run_audit(fail_on_violations=True)
 
     def test_audit_executes_no_data_definition_or_mutation_queries(self):
         with CaptureQueriesContext(connection) as queries:

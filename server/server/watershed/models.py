@@ -17,6 +17,14 @@ class WatershedCollection(models.Model):
         validators=[stable_key_validator],
     )
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(key__regex=r"^[a-z0-9]+(?:-[a-z0-9]+)*$"),
+                name="collection_key_format",
+            ),
+        ]
+
 
 class WatershedIdentity(models.Model):
     class Status(models.TextChoices):
@@ -43,6 +51,23 @@ class WatershedIdentity(models.Model):
         choices=Status.choices,
         default=Status.ACTIVE,
     )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(watershed_key__isnull=True)
+                    | models.Q(
+                        watershed_key__regex=r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                    )
+                ),
+                name="watershed_key_format",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=("active", "retired")),
+                name="watershed_identity_status_valid",
+            ),
+        ]
 
 
 class WatershedRunAlias(models.Model):
@@ -161,6 +186,19 @@ class Subcatchment(models.Model):
     rilcov_override = models.FloatField(null=True, blank=True)
     disturbed_class = models.CharField(max_length=100, null=True, blank=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("watershed", "topazid"),
+                name="subcatchment_run_topaz_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("logical_watershed", "topazid"),
+                condition=models.Q(logical_watershed__isnull=False),
+                name="subcatchment_logical_topaz_uniq",
+            ),
+        ]
+
 # This is based on an auto-generated Django model module created by ogrinspect.
 class Channel(models.Model):
     watershed = models.ForeignKey(to=Watershed, on_delete=models.CASCADE)
@@ -175,3 +213,16 @@ class Channel(models.Model):
     weppid = models.IntegerField()
     order = models.IntegerField()
     geom = models.MultiPolygonField(srid=4326)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("watershed", "topazid", "weppid", "order"),
+                name="channel_run_topaz_wepp_order_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("logical_watershed", "topazid", "weppid", "order"),
+                condition=models.Q(logical_watershed__isnull=False),
+                name="channel_logical_topaz_wepp_order_uniq",
+            ),
+        ]

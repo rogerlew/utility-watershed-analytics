@@ -9,7 +9,7 @@ from django.db.models import Count
 from server.watershed.models import Channel, Subcatchment, Watershed
 
 
-AUDIT_CONTRACT_VERSION = 1
+AUDIT_CONTRACT_VERSION = 2
 
 IDENTITY_SPECS = (
     {
@@ -23,6 +23,7 @@ IDENTITY_SPECS = (
         "name": "subcatchment",
         "model": Subcatchment,
         "business_key": ("watershed_id", "topazid"),
+        "logical_business_key": ("logical_watershed_id", "topazid"),
         "source_key": ("watershed_id", "topazid", "weppid"),
         "public_identity": (
             "GeoJSON feature.id is a volatile database id; topazid is the "
@@ -33,6 +34,12 @@ IDENTITY_SPECS = (
         "name": "channel",
         "model": Channel,
         "business_key": ("watershed_id", "topazid", "weppid", "order"),
+        "logical_business_key": (
+            "logical_watershed_id",
+            "topazid",
+            "weppid",
+            "order",
+        ),
         "source_key": ("watershed_id", "topazid", "weppid", "order"),
         "public_identity": (
             "GeoJSON feature.id is a volatile database id; topazid, weppid, "
@@ -72,9 +79,16 @@ def _key_is_enforced(
     )
 
 
-def _duplicate_summary(model, key: tuple[str, ...]) -> dict[str, int]:
+def _duplicate_summary(
+    model,
+    key: tuple[str, ...],
+    exclude_null_first: bool = False,
+) -> dict[str, int]:
+    queryset = model.objects
+    if exclude_null_first:
+        queryset = queryset.exclude(**{key[0]: None})
     duplicate_counts = list(
-        model.objects.values(*key)
+        queryset.values(*key)
         .annotate(rows=Count("pk"))
         .filter(rows__gt=1)
         .values_list("rows", flat=True)
@@ -130,7 +144,7 @@ def _table_report(spec: dict[str, Any]) -> dict[str, Any]:
     model = spec["model"]
     business_key = spec["business_key"]
     constraints = _database_constraints(model)
-    return {
+    report = {
         "business_key": list(business_key),
         "business_key_database_enforced": _key_is_enforced(
             constraints,
@@ -145,6 +159,19 @@ def _table_report(spec: dict[str, Any]) -> dict[str, Any]:
         "source_key": list(spec["source_key"]),
         "table": model._meta.db_table,
     }
+    logical_business_key = spec.get("logical_business_key")
+    if logical_business_key:
+        report["logical_business_key"] = list(logical_business_key)
+        report["logical_business_key_database_enforced"] = _key_is_enforced(
+            constraints,
+            logical_business_key,
+        )
+        report["duplicate_logical_business_key"] = _duplicate_summary(
+            model,
+            logical_business_key,
+            exclude_null_first=True,
+        )
+    return report
 
 
 def build_identity_audit_report() -> dict[str, Any]:
@@ -171,12 +198,25 @@ def build_identity_audit_report() -> dict[str, Any]:
             violations.append(
                 f"{name}: {foreign_key['orphan_rows']} orphan row(s)"
             )
+        logical_duplicates = table.get("duplicate_logical_business_key", {}).get(
+            "groups", 0
+        )
+        if logical_duplicates:
+            violations.append(
+                f"{name}: {logical_duplicates} duplicate logical-key group(s)"
+            )
 
     warnings = [
         f"{name}: business key is not enforced by a database constraint"
         for name, table in tables.items()
         if not table["business_key_database_enforced"]
     ]
+    warnings.extend(
+        f"{name}: logical business key is not enforced by a database constraint"
+        for name, table in tables.items()
+        if table.get("logical_business_key")
+        and not table["logical_business_key_database_enforced"]
+    )
     if all(table["row_count"] == 0 for table in tables.values()):
         warnings.append(
             "watershed-domain tables are empty; absence of dirty data is not established"
