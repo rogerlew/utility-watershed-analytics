@@ -841,7 +841,7 @@ Suggested slug: `db30a-production-legacy-base-adoption`
 
 - **Depends on:** DB01, DB10A, DB21A, DB27A, DB28, and explicit production
   release-metadata/capability mutation authority.
-- **Deliver:** under the shared lock and after a fresh verified encrypted
+- **Deliver:** under the exclusive lock and after a fresh verified encrypted
   off-host backup, capture exact current production membership and canonical
   normalized watershed-domain rows as immutable artifacts; assign the reviewed
   stable identities; produce and retain the legacy baseline manifest,
@@ -866,11 +866,40 @@ Suggested slug: `db30a-production-legacy-base-adoption`
   produced, terminate on hold rather than substituting backup-only rollback
   silently.
 
+**Execution result:** DB30A captured and independently restored the exact
+production base, assigned all reviewed identities, exported and rebuilt the
+same manifest/fingerprints, and passed the isolated adopt/rollback/re-adopt
+cycle. Production adoption passed database and in-process API validation, but
+the required real materialized Gate Creek query failed closed because the
+declared public artifact URI returned frontend HTML rather than the retained
+checksum-addressed object. The rehearsed rollback restored coherent `EMPTY`
+and verified legacy fallback without changing serving rows. DB30A is held only
+on public serving of the existing operator-owned artifact namespace.
+
+#### DB30B — Self-hosted public artifact serving
+
+Suggested slug: `db30b-self-hosted-public-artifact-serving`
+
+- **Depends on:** DB10A, DB28, DB30A's retained exact baseline, and explicit
+  production configuration/deployment authority.
+- **Deliver:** expose the existing read-only content-addressed production
+  namespace retained under operator-owned `forest1:/wc1` at the public URI
+  already declared by the reviewed DB30A manifest. Do not select or introduce
+  an external storage provider.
+- **Prove:** independent public reads of the exact manifest and representative
+  TIFF and Parquet objects match reviewed sizes, media types, and SHA-256;
+  Gate Creek materialized query and Sooke capability reads succeed; a fresh
+  verified backup exists; and the retained DB30A manifest is re-adopted without
+  changing serving-domain fingerprints or non-release state.
+- **Failure rule:** remove or disable only the new serving route, execute the
+  rehearsed DB30A rollback if adoption occurred, prove coherent `EMPTY` and
+  legacy fallback, and hold.
+
 #### DB31 — First target manifest and clean build
 
 Suggested slug: `db31-first-release-candidate`
 
-- **Depends on:** DB21, DB22, DB28, DB29, DB30, DB30A.
+- **Depends on:** DB21, DB22, DB28, DB29, DB30, DB30A, DB30B.
 - **Deliver:** the complete desired-state manifest retaining Gate Creek and
   Victoria, replacing Mill Creek with `some-oligopoly`, replacing
   `nasa-roses-2026-sbs` with `nasa-roses-202606-psbs`, adding Bremerton, and

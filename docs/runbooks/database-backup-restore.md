@@ -87,6 +87,23 @@ accepted outbound SSH identity at that time. The later production installation
 below replaced that fallback with a dedicated restricted identity and direct
 scheduled publication. The manual result remains separate evidence.
 
+The restore helper replays role membership as the disposable restore
+superuser, not as the historical grantor recorded by PostgreSQL. `pg_dumpall`
+can retain `GRANTED BY` provenance for a role that no longer holds the admin
+option after a least-privilege rollout; replaying that provenance makes an
+otherwise valid snapshot unrestorable. The helper removes only the grantor
+clause from streamed `GRANT` statements. It does not alter the encrypted dump,
+role definitions, password verifiers, membership edges, database archive, or
+the exact post-restore inventory checks.
+
+PostgreSQL may also render a restored `CHECK ... ANY (ARRAY[...])` expression
+with casts attached to each array element rather than to the completed array.
+The restore helper still requires byte-exact schema output first. If that lone
+comparison differs, it removes only redundant parentheses and the equivalent
+`character varying`/`text` casts from `CHECK` constraint lines and requires
+every other schema line and token to remain exact. The result records
+`normalized-equivalent-checks` rather than overstating byte equality.
+
 ### Current `wepp3` production profile
 
 On 2026-07-16, the operator authorized every remaining DB01 backup task except

@@ -14,8 +14,12 @@ authority.
 `assign_reviewed_identities` is an explicit prerequisite, not part of adoption.
 Its reviewed mapping must cover every current run exactly once, use unique
 stable collection/watershed keys, and declare the complete alias set. It creates
-or reuses only exact matching identities/aliases and assigns the watershed and
-both child tables atomically. Any conflict rolls the entire assignment back.
+or reuses identities/aliases and assigns the watershed and both child tables
+atomically. Migration-generated provisional identities may be rekeyed in place
+only when they are one-to-one with the exact serving membership, contain no
+alias outside the reviewed set, and retain the serving run as their current
+alias. This preserves their UUID and every domain link while adding the reviewed
+successor/history aliases. Any conflict rolls the entire assignment back.
 
 Once exported, adoption requires those exact identities and current aliases;
 it never changes a watershed, subcatchment, channel, identity, or alias.
@@ -64,7 +68,8 @@ DB21 fingerprints matched the pre-export base.
 
 `adopt_legacy_base` and the `adopt_legacy_base` Django management command require:
 
-- coherent `EMPTY` with populated serving rows and no existing release ledger;
+- coherent `EMPTY` with populated serving rows and either no release ledger or
+  one exact validated retained ledger for the reviewed rolled-back baseline;
 - exact baseline/serving run membership and already-reviewed identities;
 - supported version-1 contracts and the applied current watershed migration;
 - every immutable object at its reviewed size and SHA-256; and
@@ -88,6 +93,14 @@ review and later plans. The DB19A bounded legacy fallback is observable again
 because the active state is `EMPTY`.
 
 No rollback proceeds after domain, capability, pointer, or manifest drift.
+
+An exact retained ledger may be re-adopted without deleting immutable history.
+The operation re-verifies the manifest, release/run/lineage rows, identities,
+aliases, serving and capability fingerprints, and absence of conflicting
+capabilities before recreating only the reviewed capability rows, recording a
+new attributable attempt, and activating the retained release. Any drift fails
+closed; a retained ledger is never treated as generic permission to replace or
+repair metadata.
 
 ## Authority boundary
 

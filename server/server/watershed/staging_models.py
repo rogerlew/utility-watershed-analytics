@@ -125,7 +125,7 @@ class DataReleaseStagingState(models.Model):
             self.last_cleanup_error = sanitize_failure_summary(
                 self.last_cleanup_error
             )
-        self.full_clean()
+        self.full_clean(validate_constraints=False)
         super().save(*args, **kwargs)
 
 

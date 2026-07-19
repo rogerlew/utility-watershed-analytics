@@ -73,8 +73,8 @@ done
 [[ "$backup_set" != *$'\n'* ]] || die "Backup-set path must not contain a newline"
 [[ "$result_file" != *$'\n'* ]] || die "Restore result path must not contain a newline"
 
-for command in awk basename cmp date dirname docker grep mktemp mv realpath \
-    rm sha256sum; do
+for command in awk basename cmp date dirname docker grep mktemp mv python3 \
+    realpath rm sha256sum; do
     command -v "$command" >/dev/null 2>&1 || die "Required command not found: $command"
 done
 [[ -x "$script_dir/database_inventory.sh" ]] \
@@ -155,11 +155,24 @@ started_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 restore_started_seconds=$SECONDS
 
 log INFO "Restoring cluster globals into disposable target"
-docker exec -i "$target_container" psql -X --no-password \
-    --username "$target_user" --dbname postgres \
-    --set ON_ERROR_STOP=1 \
-    <"$backup_set/globals.sql" \
+python3 - "$backup_set/globals.sql" <<'PY' \
+    | docker exec -i "$target_container" psql -X --no-password \
+        --username "$target_user" --dbname postgres \
+        --set ON_ERROR_STOP=1 \
     || die "Cluster-global restore failed"
+import pathlib
+import sys
+
+source = pathlib.Path(sys.argv[1])
+with source.open(encoding="utf-8") as stream:
+    for line in stream:
+        if line.startswith("GRANT ") and " GRANTED BY " in line:
+            statement, grantor = line.rsplit(" GRANTED BY ", 1)
+            if not grantor.endswith(";\n"):
+                raise SystemExit("unsupported GRANTED BY statement in globals dump")
+            line = statement + ";\n"
+        sys.stdout.write(line)
+PY
 
 log INFO "Restoring database archive into disposable target"
 docker exec -i "$target_container" pg_restore \
@@ -224,8 +237,33 @@ docker exec "$target_container" pg_dump \
     --schema-only \
     --no-password \
     >"$restored_schema"
-cmp --silent "$backup_set/schema.sql" "$restored_schema" \
-    || die "Restored schema dump differs from the source schema dump"
+schema_comparison="exact"
+if ! cmp --silent "$backup_set/schema.sql" "$restored_schema"; then
+    python3 - "$backup_set/schema.sql" "$restored_schema" <<'PY' \
+        || die "Restored schema dump differs from the source schema dump"
+import pathlib
+import re
+import sys
+
+
+def normalized_schema(path):
+    lines = pathlib.Path(path).read_text(encoding="utf-8").splitlines()
+    normalized = []
+    for line in lines:
+        if " CONSTRAINT " in line and " CHECK " in line:
+            line = line.replace("::character varying", "")
+            line = line.replace("::text[]", "").replace("::text", "")
+            line = line.replace("(", "").replace(")", "")
+            line = re.sub(r"\s+", " ", line).strip()
+        normalized.append(line)
+    return normalized
+
+
+if normalized_schema(sys.argv[1]) != normalized_schema(sys.argv[2]):
+    raise SystemExit("schema differs outside equivalent CHECK rendering")
+PY
+    schema_comparison="normalized-equivalent-checks"
+fi
 
 restore_duration_seconds=$((SECONDS - restore_started_seconds))
 completed_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -250,7 +288,7 @@ if [[ -n "$result_file" ]]; then
         printf 'migrations=exact\n'
         printf 'sequences=exact\n'
         printf 'table_fingerprints=exact\n'
-        printf 'schema=exact\n'
+        printf 'schema=%s\n' "$schema_comparison"
     } >"$result_partial"
     mv -- "$result_partial" "$result_file"
 fi

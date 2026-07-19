@@ -1,4 +1,5 @@
 import hashlib
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -137,6 +138,22 @@ class LegacyBaseToolingTests(TestCase):
         baseline = export_legacy_base(self.root, **options)
         return load_legacy_baseline(self.root, baseline.manifest_sha256)
 
+    def test_export_canonicalizes_json_float_capability_metadata(self):
+        configuration = dict(self.bootstrap.runtime_configuration)
+        configuration["presentation_threshold"] = 1.05
+        baseline = self.export(
+            capabilities=(
+                replace(self.bootstrap, runtime_configuration=configuration),
+            )
+        )
+        member = next(
+            item for item in baseline.document["members"] if item["capability"]
+        )
+        self.assertEqual(
+            member["capability"]["runtime_configuration"]["presentation_threshold"],
+            1.05,
+        )
+
     def domain_snapshot(self):
         return {
             "watersheds": list(
@@ -231,6 +248,18 @@ class LegacyBaseToolingTests(TestCase):
             release.attempts.get().status,
             DataReleaseAttempt.Status.ROLLED_BACK,
         )
+
+        readopted = adopt_legacy_base(
+            baseline,
+            actor_identifier="synthetic-operator",
+            application_git_commit="3" * 40,
+            reviewed_plan_sha256="4" * 64,
+        )
+        active.refresh_from_db()
+        self.assertEqual(readopted, release)
+        self.assertEqual(active.state, ActiveDataRelease.State.ACTIVE)
+        self.assertEqual(RunCapability.objects.count(), 1)
+        self.assertEqual(self.domain_snapshot(), before)
 
     def test_fingerprint_mismatch_rolls_back_all_adoption_state(self):
         baseline = self.export()
@@ -371,3 +400,64 @@ class LegacyBaseToolingTests(TestCase):
             assign_reviewed_identities(self.assignments[:1])
         self.assertEqual(self.domain_snapshot(), before)
         self.assertFalse(WatershedIdentity.objects.exists())
+
+    def test_reviewed_identity_assignment_rekeys_provisional_rows(self):
+        provisional = []
+        for watershed, provisional_key in zip(
+            Watershed.objects.order_by("runid"),
+            ("legacy-watershed-two", "legacy-watershed-one"),
+            strict=True,
+        ):
+            collection, _ = WatershedCollection.objects.get_or_create(
+                key="provisional"
+            )
+            identity = WatershedIdentity.objects.create(
+                watershed_key=provisional_key,
+                collection=collection,
+            )
+            WatershedRunAlias.objects.create(
+                runid=watershed.runid,
+                watershed_identity=identity,
+                is_current=True,
+            )
+            watershed.logical_watershed = identity
+            watershed.save(update_fields=("logical_watershed",))
+            Subcatchment.objects.filter(watershed=watershed).update(
+                logical_watershed=identity
+            )
+            Channel.objects.filter(watershed=watershed).update(
+                logical_watershed=identity
+            )
+            provisional.append(identity.pk)
+
+        assign_reviewed_identities(self.assignments)
+
+        for assignment, identity_pk in zip(
+            self.assignments, provisional, strict=True
+        ):
+            watershed = Watershed.objects.get(runid=assignment.runid)
+            self.assertEqual(watershed.logical_watershed_id, identity_pk)
+            self.assertEqual(
+                watershed.logical_watershed.watershed_key,
+                assignment.watershed_key,
+            )
+            self.assertEqual(
+                watershed.logical_watershed.collection_id,
+                assignment.collection_key,
+            )
+            self.assertEqual(
+                set(watershed.logical_watershed.run_aliases.values_list(
+                    "runid", flat=True
+                )),
+                {assignment.runid, *assignment.aliases},
+            )
+            self.assertFalse(
+                Subcatchment.objects.filter(watershed=watershed)
+                .exclude(logical_watershed_id=identity_pk)
+                .exists()
+            )
+            self.assertFalse(
+                Channel.objects.filter(watershed=watershed)
+                .exclude(logical_watershed_id=identity_pk)
+                .exists()
+            )

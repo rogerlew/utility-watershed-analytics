@@ -109,24 +109,78 @@ def assign_reviewed_identities(assignments):
         len({item.watershed_key for item in assignments}) == len(assignments),
         "Reviewed watershed keys are duplicated.",
     )
+    watersheds = {
+        watershed.runid: watershed
+        for watershed in Watershed.objects.select_for_update(of=("self",))
+        .select_related("logical_watershed")
+        .order_by("runid")
+    }
+    existing_identities = {
+        watershed.logical_watershed_id: watershed.logical_watershed
+        for watershed in watersheds.values()
+        if watershed.logical_watershed_id is not None
+    }
+    _require(
+        len(existing_identities)
+        == sum(row.logical_watershed_id is not None for row in watersheds.values()),
+        "Serving watersheds do not have distinct identity rows.",
+    )
+    target_keys = {assignment.watershed_key for assignment in assignments}
+    conflicting_identities = WatershedIdentity.objects.filter(
+        watershed_key__in=target_keys
+    ).exclude(pk__in=existing_identities)
+    _require(
+        not conflicting_identities.exists(),
+        "Reviewed watershed key belongs to an unrelated identity.",
+    )
+    for runid, watershed in watersheds.items():
+        if watershed.logical_watershed_id is None:
+            continue
+        assignment = by_runid[runid]
+        identity = watershed.logical_watershed
+        existing_aliases = set(
+            identity.run_aliases.values_list("runid", flat=True)
+        )
+        expected_aliases = {assignment.runid, *assignment.aliases}
+        _require(
+            existing_aliases.issubset(expected_aliases),
+            "Existing aliases differ from the reviewed assignment.",
+        )
+        _require(
+            not existing_aliases
+            or identity.run_aliases.filter(
+                runid=assignment.runid, is_current=True
+            ).exists(),
+            "Existing identity current alias differs from the serving run.",
+        )
+    for identity in existing_identities.values():
+        assignment = by_runid[identity.current_watershed.runid]
+        if identity.watershed_key != assignment.watershed_key:
+            identity.watershed_key = f"review-{identity.pk.hex}"
+            identity.save(update_fields=("watershed_key",))
     for assignment in assignments:
         _require(
             STABLE_KEY.fullmatch(assignment.collection_key)
             and STABLE_KEY.fullmatch(assignment.watershed_key),
             "Reviewed identity contains an invalid stable key.",
         )
-        watershed = Watershed.objects.select_for_update().get(runid=assignment.runid)
+        watershed = watersheds[assignment.runid]
         collection, _ = WatershedCollection.objects.get_or_create(
             key=assignment.collection_key
         )
-        identity = WatershedIdentity.objects.filter(
-            watershed_key=assignment.watershed_key
-        ).first()
+        identity = watershed.logical_watershed
         if identity is None:
             identity = WatershedIdentity.objects.create(
                 watershed_key=assignment.watershed_key,
                 collection=collection,
             )
+        elif (
+            identity.watershed_key != assignment.watershed_key
+            or identity.collection_id != collection.pk
+        ):
+            identity.watershed_key = assignment.watershed_key
+            identity.collection = collection
+            identity.save(update_fields=("watershed_key", "collection"))
         _require(
             identity.collection_id == collection.pk
             and watershed.logical_watershed_id in {None, identity.pk},
@@ -143,7 +197,7 @@ def assign_reviewed_identities(assignments):
             )
         )
         _require(
-            not current_aliases or current_aliases == expected_aliases,
+            current_aliases.issubset(expected_aliases),
             "Existing aliases differ from the reviewed assignment.",
         )
         for alias in sorted(expected_aliases):
@@ -497,7 +551,7 @@ def export_legacy_base(
                     "durable_base_uri": template.durable_base_uri,
                     "index_uri": index["uri"],
                     "index_sha256": index["sha256"],
-                    "runtime_configuration": configuration,
+                    "runtime_configuration": _semantic_value(configuration),
                 }
             )
             capability = {
@@ -511,12 +565,18 @@ def export_legacy_base(
                 "runtime_configuration": configuration,
             }
             capability_documents.append(
-                {
-                    "collection_key": identity.collection_id,
-                    "watershed_key": identity.watershed_key,
-                    "runid": watershed.runid,
-                    **{key: value for key, value in capability.items() if key != "index_role"},
-                }
+                _semantic_value(
+                    {
+                        "collection_key": identity.collection_id,
+                        "watershed_key": identity.watershed_key,
+                        "runid": watershed.runid,
+                        **{
+                            key: value
+                            for key, value in capability.items()
+                            if key != "index_role"
+                        },
+                    }
+                )
             )
         fingerprints = {role: value["sha256"] for role, value in artifacts.items()}
         members.append(
@@ -539,7 +599,7 @@ def export_legacy_base(
                             "watershed_key": identity.watershed_key,
                             "runid": watershed.runid,
                             "artifacts": fingerprints,
-                            "capability": capability,
+                            "capability": _semantic_value(capability),
                         }
                     ),
                     "metadata": artifacts["metadata"]["sha256"],
@@ -643,7 +703,9 @@ def _create_ledger(baseline, *, create_identities, include_capabilities):
     release = DataRelease.objects.create(
         release_id=document["release_id"],
         manifest_sha256=baseline.manifest_sha256,
-        release_fingerprint=canonical_sha256({"members": document["members"]}),
+        release_fingerprint=canonical_sha256(
+            {"members": _semantic_value(document["members"])}
+        ),
         domain_fingerprint=document["domain_fingerprint"],
         supported_migration=document["supported_migration"],
         materializer_image_digest=document["materializer"]["image_digest"],
@@ -712,6 +774,100 @@ def _create_ledger(baseline, *, create_identities, include_capabilities):
     return release
 
 
+def _restore_existing_ledger_capabilities(baseline):
+    document = baseline.document
+    _require(DataRelease.objects.count() == 1, "Retained legacy ledger set differs.")
+    release = DataRelease.objects.select_for_update().get(
+        pk=document["release_id"]
+    )
+    counts = document["counts"]
+    _require(
+        release.status == DataRelease.Status.VALIDATED
+        and release.manifest_sha256 == baseline.manifest_sha256
+        and release.release_fingerprint
+        == canonical_sha256({"members": _semantic_value(document["members"])})
+        and release.domain_fingerprint == document["domain_fingerprint"]
+        and release.supported_migration == document["supported_migration"]
+        and release.materializer_git_commit
+        == document["materializer"]["git_commit"]
+        and release.materializer_image_digest
+        == document["materializer"]["image_digest"]
+        and (
+            release.actual_watersheds,
+            release.actual_subcatchments,
+            release.actual_channels,
+        )
+        == (
+            counts["watersheds"],
+            counts["subcatchments"],
+            counts["channels"],
+        ),
+        "Retained legacy release differs from the baseline.",
+    )
+    _require(not RunCapability.objects.exists(), "Retained capabilities are not empty.")
+    run_states = {row.runid: row for row in release.run_states.all()}
+    _require(
+        set(run_states) == {member["runid"] for member in document["members"]},
+        "Retained run-state membership differs.",
+    )
+    for member in document["members"]:
+        identity = _identity_for_member(member, create_identities=False)
+        run_state = run_states[member["runid"]]
+        fingerprints = member["fingerprints"]
+        capability = member["capability"]
+        _require(
+            run_state.collection_id == identity.collection_id
+            and run_state.watershed_identity_id == identity.pk
+            and run_state.run_fingerprint == fingerprints["run"]
+            and run_state.metadata_fingerprint == fingerprints["metadata"]
+            and run_state.geometry_fingerprint == fingerprints["geometry"]
+            and run_state.subcatchment_fingerprint == fingerprints["subcatchments"]
+            and run_state.channel_fingerprint == fingerprints["channels"]
+            and run_state.hillslope_fingerprint == fingerprints["hillslopes"]
+            and run_state.soil_fingerprint == fingerprints["soils"]
+            and run_state.landuse_fingerprint == fingerprints["landuse"]
+            and run_state.capability_fingerprint
+            == (capability["capability_fingerprint"] if capability else None)
+            and run_state.actual_subcatchments == member["counts"]["subcatchments"]
+            and run_state.actual_channels == member["counts"]["channels"],
+            "Retained run state differs from the baseline.",
+        )
+        observed_lineage = {
+            row.role: {
+                "uri": row.uri,
+                "sha256": row.sha256,
+                "bytes": row.byte_size,
+                "media_type": row.media_type,
+            }
+            for row in run_state.artifacts.all()
+        }
+        _require(
+            observed_lineage == member["artifacts"],
+            "Retained artifact lineage differs from the baseline.",
+        )
+        if capability:
+            row = RunCapability(
+                run_state=run_state,
+                watershed_identity=identity,
+                capability_type=capability["capability_type"],
+                mode=capability["mode"],
+                durable_base_uri=capability["durable_base_uri"],
+                index_uri=capability["index_uri"],
+                index_sha256=capability["index_sha256"],
+                capability_fingerprint=capability["capability_fingerprint"],
+                runtime_configuration=capability["runtime_configuration"],
+            )
+            try:
+                row.full_clean()
+                validate_runtime_configuration(row)
+                row.save()
+            except Exception as error:
+                raise LegacyBaseError(
+                    "Retained capability bootstrap is invalid."
+                ) from error
+    return release
+
+
 @transaction.atomic
 def install_baseline_ledger(baseline):
     _verify_baseline(baseline)
@@ -769,12 +925,15 @@ def adopt_legacy_base(
         and Watershed.objects.exists(),
         "Adoption requires EMPTY with populated serving rows.",
     )
-    _require(not DataRelease.objects.exists(), "Adoption requires an unmanaged ledger.")
     serving_runids = set(Watershed.objects.values_list("runid", flat=True))
     baseline_runids = {member["runid"] for member in baseline.document["members"]}
     _require(serving_runids == baseline_runids, "Serving membership differs from the baseline.")
-    release = _create_ledger(
-        baseline, create_identities=False, include_capabilities=True
+    release = (
+        _restore_existing_ledger_capabilities(baseline)
+        if DataRelease.objects.exists()
+        else _create_ledger(
+            baseline, create_identities=False, include_capabilities=True
+        )
     )
     fingerprints = compute_serving_fingerprints(release)
     _require(

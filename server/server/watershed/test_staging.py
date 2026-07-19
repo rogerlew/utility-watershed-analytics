@@ -254,6 +254,25 @@ class StagingCapacityAndLoadTests(TestCase):
         with TemporaryDirectory() as directory:
             self.assertGreater(available_bytes(directory), 0)
 
+    def test_capacity_accepts_bigint_budget_components(self):
+        _, _, release, _, _ = create_release(1)
+        attempt = begin_staging(release)
+        large_budget = SpaceBudget(
+            924_759_445,
+            1_849_518_890,
+            924_759_445,
+            0,
+            924_759_445,
+            924_759_445,
+        )
+        state = open_staging(
+            attempt,
+            budget=large_budget,
+            observed_available_bytes=large_budget.required_bytes,
+        )
+        self.assertEqual(state.required_bytes, large_budget.required_bytes)
+        self.assertEqual(state.status, DataReleaseStagingState.Status.LOADING)
+
     def test_one_byte_short_fails_attempt_before_writing_rows(self):
         _, _, release, _, _ = create_release(1)
         attempt = begin_staging(release)
