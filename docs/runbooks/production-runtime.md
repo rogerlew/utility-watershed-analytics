@@ -1,6 +1,6 @@
 # Production Runtime Contract
 
-Status: DB27A additive compatibility schema/code deployed and verified;
+Status: DB30B retained legacy release active with self-hosted artifact serving;
 DB05 named-volume database identity retained; fork-owned deployment operational
 
 This contract documents the installed production target. `forest1` is
@@ -43,16 +43,20 @@ DB27A cleanly fast-forwarded production fork `main` to reviewed commit
 `0011_capability_runtime_types`, and retained the exact DB05 database
 container/image/volume identity. Ordinary application access uses
 `uwa_runtime_login`; one-shot migration access uses `uwa_migration_login`.
-The release ledger remains `EMPTY`, public legacy data is unchanged, and
-protected workflow run `29667975905` independently rebuilt, tested, and
-deployed the exact source. Fresh encrypted rollback snapshot `08321397...` is
-stored in the authorized `forest1:/wc1` backup repository.
+DB30B subsequently activated retained legacy release `2026-07-18.30` by exact
+manifest after installing the self-hosted artifact route. Public legacy data is
+unchanged; the only release-state additions are the active pointer, adoption
+attempt metadata, and the three reviewed durable capabilities. The exact DB05
+database container, image, and named volume remain unchanged. DB30B's fresh
+encrypted rollback snapshot and immutable artifact namespace are stored on the
+authorized operator-owned `forest1:/wc1` infrastructure.
 
 ## Target socket contract
 
 | Service | Compose access | Host publication | Intended reachability |
 | --- | --- | --- | --- |
 | Caddy | ports 80 and 443 | public 80/443 | public and operator paths allowed by host firewall |
+| Artifact origin | forest1 `100.87.36.38:18080` | Tailscale only | wepp3 proxy and forest1 verification only |
 | Django server | `server:8000` | none | Compose peers only through Caddy |
 | PostgreSQL | `db:5432` | none | Compose peers and `docker exec`; no localhost, Tailscale, or public socket |
 | Frontend build | one-shot volume writer | none | no network listener |
@@ -62,6 +66,21 @@ Tailscale address, and the public interface and record firewall assumptions.
 Unexpected application host publication is a hold. DB05 removed the historical
 PostgreSQL publication during the named-volume cutover. PostgreSQL and Django
 now have no host listeners; only Caddy publishes 80/443.
+
+## Artifact route persistence
+
+DB30B routes only `firewisewatersheds.org/artifacts/v1/production/*` through
+the production Caddy container to the read-only forest1 origin. The canonical
+architecture, verification, update, and recovery procedures are in the
+[self-hosted artifact-serving runbook](artifact-serving.md).
+
+Production uses a root-owned mode-`0600` Caddyfile and Compose override under
+`/etc/utility-watershed-analytics`, rather than depending only on the current
+checkout. The override mounts that Caddyfile at `/etc/caddy/Caddyfile`
+read-only. A systemd drop-in calls the protected ensure helper after start and
+on reload under the exclusive operations lock, recreates only application
+services with `--no-deps`, and asserts the exact mount. The public Caddy socket
+remains the only public host listener; the forest1 origin is Tailscale-only.
 
 The repository `compose.prod.yml` declares the final Compose-managed
 `postgres_data` mount. Its canonical production name is

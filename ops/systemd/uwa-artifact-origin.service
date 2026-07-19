@@ -1,0 +1,18 @@
+[Unit]
+Description=Utility Watershed Analytics private artifact origin
+Documentation=file:/workdir/utility-watershed-analytics/docs/runbooks/artifact-serving.md
+After=default.target
+
+[Service]
+Type=simple
+ExecStartPre=%h/.local/lib/utility-watershed-analytics/generate_artifact_origin_caddy.py --manifest /wc1/utility-watershed-analytics-artifacts/v1/production/objects/sha256/bb/bb9729bc1907f9f81c1e5f52728f889dcf5a129d911ebda454b9d2d5658caea5 --expected-manifest-sha256 bb9729bc1907f9f81c1e5f52728f889dcf5a129d911ebda454b9d2d5658caea5 --artifact-root /wc1/utility-watershed-analytics-artifacts/v1/production --listen-address 100.87.36.38:18080 --allowed-ip 100.74.181.119 --allowed-ip 100.87.36.38 --output %h/.config/utility-watershed-analytics/artifact-origin.Caddyfile
+ExecStart=/usr/bin/docker run --rm --name uwa-artifact-origin --pull never --network host --read-only --user 1000:1000 --mount type=bind,src=/wc1/utility-watershed-analytics-artifacts,dst=/srv,readonly --mount type=bind,src=%h/.config/utility-watershed-analytics/artifact-origin.Caddyfile,dst=/etc/caddy/Caddyfile,readonly --tmpfs /config:rw,noexec,nosuid,nodev,size=1m,uid=1000,gid=1000 --tmpfs /data:rw,noexec,nosuid,nodev,size=1m,uid=1000,gid=1000 sha256:a4ef43ffa2b91c00698ba20caced449418d1e678f50034083882969de8c45f6e caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+ExecStop=-/usr/bin/docker stop --time 10 uwa-artifact-origin
+Restart=always
+RestartSec=5
+TimeoutStartSec=2m
+TimeoutStopSec=30s
+UMask=0077
+
+[Install]
+WantedBy=default.target

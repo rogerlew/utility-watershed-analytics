@@ -873,8 +873,9 @@ cycle. Production adoption passed database and in-process API validation, but
 the required real materialized Gate Creek query failed closed because the
 declared public artifact URI returned frontend HTML rather than the retained
 checksum-addressed object. The rehearsed rollback restored coherent `EMPTY`
-and verified legacy fallback without changing serving rows. DB30A is held only
-on public serving of the existing operator-owned artifact namespace.
+and verified legacy fallback without changing serving rows. DB30B subsequently
+closed that serving hold and re-adopted the unchanged exact baseline; DB30A is
+complete with its original rollback history preserved.
 
 #### DB30B — Self-hosted public artifact serving
 
@@ -894,6 +895,17 @@ Suggested slug: `db30b-self-hosted-public-artifact-serving`
 - **Failure rule:** remove or disable only the new serving route, execute the
   rehearsed DB30A rollback if adoption occurred, prove coherent `EMPTY` and
   legacy fallback, and hold.
+
+**Execution result:** DB30B installed a rootless, read-only forest1 origin on a
+Tailscale-only listener and an exact-path wepp3 Caddy proxy with protected
+systemd/Compose persistence; no provider was selected or used. A fresh
+encrypted backup passed independent forest1 checks. The first adoption exposed
+an API route-ordering defect and invoked the exact DB30A rollback to coherent
+`EMPTY`; after restoring service and correcting the fallback route, the second
+adoption activated the unchanged manifest. Exact public manifest, TIFF,
+Parquet, media, and range reads, Gate Creek materialized output, both Sooke
+capabilities, canonical reload, bounded Caddy restart, fingerprints, and
+cleanup passed without changing serving-domain rows or database identity.
 
 #### DB31 — First target manifest and clean build
 

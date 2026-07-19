@@ -1,0 +1,4 @@
+services:
+  caddy:
+    volumes:
+      - /etc/utility-watershed-analytics/artifact-proxy.Caddyfile:/etc/caddy/Caddyfile:ro

@@ -1,0 +1,9 @@
+{
+  "adoption_plan_sha256": "994b8c96a0ba54068dba84fa70ec7c0ecadeeb57766f14423ed9c2921855db0b",
+  "compose_override_sha256": "e07abadc6a127df07dd2bee7759f6aa76d6fa59fffae3ab1e64079b42e82cdcf",
+  "ensure_script_sha256": "070a5c7ad7e5d69f7852a1ea0dcc43d2a1d2479caf2145c00e8b477c37031e54",
+  "manifest_sha256": "bb9729bc1907f9f81c1e5f52728f889dcf5a129d911ebda454b9d2d5658caea5",
+  "protected_caddy_sha256": "9c5f4a8aeb24e1f6dffd94d4e210b90b40b1e19bce1513f6056d147b84689831",
+  "schema_version": 1,
+  "systemd_dropin_sha256": "1b6e524d73dfebb255251980b4bb314ef641cdd01f0e54f2452ae95b00eabe45"
+}

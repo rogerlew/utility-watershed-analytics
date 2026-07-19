@@ -1,6 +1,6 @@
 # DB30A — Production legacy-base capture and adoption
 
-Status: `EXECUTED-HOLD-PUBLIC-ARTIFACT-SERVING`
+Status: `EXECUTED-COMPLETE`
 
 Date: 2026-07-18
 
@@ -201,16 +201,13 @@ Legitimate holds include `EXECUTED-HOLD-PREFLIGHT`, `-BACKUP`, `-IDENTITY`,
 
 ### Terminal disposition
 
-- Final status: `EXECUTED-HOLD-PUBLIC-ARTIFACT-SERVING`
-- Exit criteria disposition: all capture, backup, restore, export, rebuild,
-  adoption, rollback, fallback, integrity, and cleanup gates passed; active
-  durable capability serving did not.
-- Blocker, if held: the declared public artifact namespace does not serve the
-  operator-owned checksum-addressed bytes retained under `forest1:/wc1`.
-- First follow-on action, if held: DB30B should expose that existing namespace
-  read-only, prove exact representative manifest/TIFF/Parquet reads, and then
-  re-adopt the retained reviewed baseline by its exact manifest hash.
-- Successor package: DB30B; DB31 remains blocked until DB30B closes DB30A.
+- Final status: `EXECUTED-COMPLETE`
+- Exit criteria disposition: DB30A initially ended on the recorded public-
+  artifact-serving hold after its exact rollback. DB30B closed that hold on
+  2026-07-19 by exposing the retained namespace read-only, proving exact public
+  reads, and re-adopting this unchanged manifest with all three capabilities.
+- Blocker, if held: none; the historical hold and rollback remain recorded.
+- Successor package: DB30B completed; DB31 requires separate dispatch.
 
 ## Closeout checklist
 

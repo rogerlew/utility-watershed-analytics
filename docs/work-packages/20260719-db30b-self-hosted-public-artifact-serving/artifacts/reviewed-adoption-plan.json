@@ -1,0 +1,18 @@
+{
+  "application_git_commit": "5b358c14fffa258f5ec9f1ab55d3645b225888c1",
+  "artifact_origin": "forest1:/wc1/utility-watershed-analytics-artifacts/v1/production",
+  "artifact_origin_caddy_image": "sha256:a4ef43ffa2b91c00698ba20caced449418d1e678f50034083882969de8c45f6e",
+  "artifact_origin_generator_sha256": "67614bcc9ab66e0c29b538af0401c8458b02fe24c3250727526a2225d7535533",
+  "artifact_origin_service_sha256": "3d4b2157910fcd0e97304d5645894e7b9109fd13371c1f4d807735d218dd45b8",
+  "backup_set_sha256": "5cb052ae33e3d91f8035143c0a3bc690a26fc9b43a67d681f557a7995d504b4b",
+  "backup_snapshot_id": "0d970414ff92497f75ba0ad5bc32f41b61482ab3a5fcbfa3da38858b63886afe",
+  "db30a_manifest_sha256": "bb9729bc1907f9f81c1e5f52728f889dcf5a129d911ebda454b9d2d5658caea5",
+  "db30a_plan_sha256": "276b57ac1eb6b11b4a607cb8140bb86229ebef11040e3fd2a1f9772472e4275c",
+  "executor_image_digest": "sha256:9c902ab226daf0d848bd3fa2012495e5375a036c5b5adcd645974eafb9c4215c",
+  "production_caddy_sha256": "9c5f4a8aeb24e1f6dffd94d4e210b90b40b1e19bce1513f6056d147b84689831",
+  "production_dropin_sha256": "c90edc0aac197d3690dd69ccd105aa7c3365a28bdb4c5d6c060bbdc49cccb0ca",
+  "production_reload_script_sha256": "79505f927b975df3a3172c628aa10245266125759cdb421beb87c640e7ddb0c2",
+  "public_base_uri": "https://firewisewatersheds.org/artifacts/v1/production",
+  "release_id": "2026-07-18.30",
+  "schema_version": 1
+}

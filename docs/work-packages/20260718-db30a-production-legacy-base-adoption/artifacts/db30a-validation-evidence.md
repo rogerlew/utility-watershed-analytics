@@ -120,3 +120,15 @@ Terminal status: `EXECUTED-HOLD-PUBLIC-ARTIFACT-SERVING`.
   is DB30B: serve the operator-owned `forest1:/wc1` content-addressed namespace
   at its already-declared public URI, prove exact representative data reads,
   then re-adopt this retained baseline by its existing manifest hash.
+
+## DB30B closure
+
+DB30A's terminal hold above accurately describes its 2026-07-18 execution.
+DB30B closed that hold on 2026-07-19: it installed the bounded self-hosted
+forest1-to-wepp3 artifact route, verified exact public manifest/TIFF/Parquet
+reads and range behavior, and re-adopted the unchanged manifest
+`bb9729bc1907f9f81c1e5f52728f889dcf5a129d911ebda454b9d2d5658caea5`.
+The release is `ACTIVE`, all three reviewed materialized capabilities pass,
+and serving-domain rows and fingerprints remain unchanged. DB30A is therefore
+closed `EXECUTED-COMPLETE`; DB30B evidence owns the serving implementation and
+retry history.

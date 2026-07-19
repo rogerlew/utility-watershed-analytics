@@ -5,14 +5,26 @@
 firewisewatersheds.org, unstable.wepp.cloud {
     root * /app/client/build
 
-    route {
-        # Proxy API/admin/backend routes to Django
-        @backend path /api/* /admin/* /silk/*
-        reverse_proxy @backend server:8000
+    @artifacts {
+        host firewisewatersheds.org
+        path /artifacts/v1/production/*
+    }
 
-        # Serve frontend files
-        try_files {path} /index.html
-        file_server
+    handle @artifacts {
+        uri strip_prefix /artifacts
+        reverse_proxy http://100.87.36.38:18080
+    }
+
+    handle {
+        route {
+            # Proxy API/admin/backend routes to Django
+            @backend path /api/* /admin/* /silk/*
+            reverse_proxy @backend server:8000
+
+            # Serve frontend files
+            try_files {path} /index.html
+            file_server
+        }
     }
     
     # Security headers
