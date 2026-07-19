@@ -212,7 +212,10 @@ and DB27A production compatibility schema/code rollout are complete. Production
 is at migration `0011` on reviewed fork `main` commit `5b358c1`, uses distinct
 least-privilege runtime and migration principals, retains its exact database
 identity and `EMPTY` release state, and has a fresh verified encrypted backup
-on `forest1:/wc1`. DB28 is the next recommended package.
+on `forest1:/wc1`. DB28 locked the exact Gate Creek and 31-member Victoria
+ordinary inputs plus the verified Gate Creek, Sooke09, and Sooke15 RHESSys
+assets in the operator-owned `forest1:/wc1` artifact store without production
+access or activation. DB29 is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

@@ -239,7 +239,7 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
     kind = value.get("kind")
     if kind == "batch":
         required = common | {"master_url", "source_templates"}
-        optional.add("enrichment")
+        optional.update({"enrichment", "master_identity"})
     elif kind == "standalone":
         required = common
     else:
@@ -292,6 +292,23 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
                 raise SourceDescriptorError("each source template must contain {runid} exactly once")
             normalized_templates[role] = template
         descriptor["source_templates"] = normalized_templates
+        if "master_identity" in value:
+            identity = value["master_identity"]
+            if not isinstance(identity, dict):
+                raise SourceDescriptorError("master_identity must be an object")
+            _require_exact_keys(
+                identity,
+                required={"location", "prefix"},
+                label="master_identity",
+            )
+            if identity["location"] not in {"feature-id", "properties-runid"}:
+                raise SourceDescriptorError("master_identity location is unsupported")
+            descriptor["master_identity"] = {
+                "location": identity["location"],
+                "prefix": _require_string(
+                    identity["prefix"], "master_identity prefix", maximum=255
+                ),
+            }
         if "enrichment" in value:
             descriptor["enrichment"] = _enrichment_descriptor(
                 value["enrichment"],
@@ -474,12 +491,23 @@ def _bounds(pairs: Iterable[tuple[float, float]]) -> list[float]:
 def _batch_features(
     master: dict[str, Any],
     members: list[dict[str, Any]],
+    master_identity: dict[str, str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     by_runid = {}
+    location = (
+        master_identity["location"] if master_identity is not None else "properties-runid"
+    )
+    prefix = master_identity["prefix"] if master_identity is not None else ""
     for feature in master["features"]:
-        runid = feature["properties"].get("runid")
+        runid = (
+            feature.get("id")
+            if location == "feature-id"
+            else feature["properties"].get("runid")
+        )
         if not isinstance(runid, str) or not runid:
             raise SourceMembershipError("batch master feature is missing runid")
+        if prefix and not runid.startswith(prefix):
+            continue
         if runid in by_runid:
             raise SourceMembershipError("batch master contains a duplicate runid")
         by_runid[runid] = feature
@@ -790,7 +818,11 @@ def prepare_sources(
                 except enrichment.NasaEnrichmentError as error:
                     raise SourceFormatError(f"NASA enrichment failed: {error.code}") from error
                 master_document = enrichment_result.document
-            master_features = _batch_features(master_document, descriptor["members"])
+            master_features = _batch_features(
+                master_document,
+                descriptor["members"],
+                descriptor.get("master_identity"),
+            )
 
         parsed_geojson = {}
         for request in requests:

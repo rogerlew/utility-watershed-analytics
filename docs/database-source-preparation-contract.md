@@ -30,6 +30,13 @@ represented by its exact URL; the preparer does not derive or guess a name.
 The stable identity map is authority. DB17 does not normalize a suffix into a
 stable key or accept a newly discovered member implicitly.
 
+DB28 adds one closed batch-master identity option for a broader public
+FeatureCollection: an exact top-level feature-ID location and an exact run-ID
+prefix. The preparer filters only that prefix and still requires the resulting
+set to equal the complete reviewed member map. This supports the public
+Firewise Watersheds aggregate without treating unrelated collections as extra
+Victoria members or inferring stable keys.
+
 ## 2. Exact source resolution
 
 For a batch, the master must be a non-empty GeoJSON FeatureCollection. Every

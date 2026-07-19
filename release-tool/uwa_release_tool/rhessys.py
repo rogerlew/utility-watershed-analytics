@@ -112,6 +112,17 @@ def _name(value: Any, label: str) -> str:
     return result
 
 
+def _column_name(value: Any, label: str) -> str:
+    return _string(value, label, 255)
+
+
+def _scenario_key(value: Any, label: str) -> str:
+    result = _string(value, label, 96)
+    if not re.fullmatch(r"^[A-Za-z_][A-Za-z0-9_-]{0,95}$", result):
+        raise RhessysDescriptorError(f"{label} is invalid")
+    return result
+
+
 def _sha256(value: Any, label: str) -> str:
     result = _string(value, label, 64)
     if not SHA256_PATTERN.fullmatch(result):
@@ -200,6 +211,7 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
             "scenarios",
             "spatial_inputs",
             "parquets",
+            "geometries",
             "geotiffs",
         },
         "descriptor",
@@ -227,7 +239,9 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
         variables = [_name(item, "scenario variable") for item in variables]
         if len(variables) != len(set(variables)):
             raise RhessysDescriptorError("scenario variables must be unique")
-        scenarios.append({"key": _key(raw["key"], "scenario key"), "variables": variables})
+        scenarios.append(
+            {"key": _scenario_key(raw["key"], "scenario key"), "variables": variables}
+        )
     if len({item["key"] for item in scenarios}) != len(scenarios):
         raise RhessysDescriptorError("scenario keys must be unique")
 
@@ -264,6 +278,8 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
             raw,
             {
                 "role",
+                "dataset_key",
+                "scenario",
                 "source_url",
                 "source_sha256",
                 "source_bytes",
@@ -279,6 +295,9 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
         role = raw["role"]
         if role not in {"basin", "hillslope", "patch"}:
             raise RhessysDescriptorError("parquet role is unsupported")
+        scenario = _scenario_key(raw["scenario"], "parquet scenario")
+        if scenario not in {item["key"] for item in scenarios}:
+            raise RhessysDescriptorError("parquet scenario is undeclared")
         raw_columns = raw["columns"]
         if not isinstance(raw_columns, list) or not raw_columns:
             raise RhessysDescriptorError("parquet columns must be non-empty")
@@ -290,7 +309,12 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
             physical_type = _string(column["physical_type"], "parquet physical_type", 32)
             if physical_type not in PARQUET_TYPES.values():
                 raise RhessysDescriptorError("parquet physical_type is unsupported")
-            columns.append({"name": _name(column["name"], "parquet column name"), "physical_type": physical_type})
+            columns.append(
+                {
+                    "name": _column_name(column["name"], "parquet column name"),
+                    "physical_type": physical_type,
+                }
+            )
         column_names = [column["name"] for column in columns]
         if len(column_names) != len(set(column_names)):
             raise RhessysDescriptorError("parquet column names must be unique")
@@ -324,6 +348,8 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
             raise RhessysDescriptorError("parquet year_range is invalid")
         parquets.append(
             {
+                "dataset_key": _key(raw["dataset_key"], "parquet dataset_key"),
+                "scenario": scenario,
                 "role": role,
                 **_asset_source(raw, "parquet"),
                 "geometry_revision": _sha256(raw["geometry_revision"], "parquet geometry_revision"),
@@ -334,8 +360,82 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
                 "required_for_activation": _boolean(raw["required_for_activation"], "parquet required flag"),
             }
         )
-    if len({item["role"] for item in parquets}) != len(parquets):
-        raise RhessysDescriptorError("parquet roles must be unique")
+    if len({item["dataset_key"] for item in parquets}) != len(parquets):
+        raise RhessysDescriptorError("parquet dataset keys must be unique")
+    parquet_coordinates = [
+        (item["scenario"], item["role"], variable["name"])
+        for item in parquets
+        for variable in item["variables"]
+    ]
+    if len(parquet_coordinates) != len(set(parquet_coordinates)):
+        raise RhessysDescriptorError("parquet query coordinates overlap")
+    scenario_variables = {item["key"]: set(item["variables"]) for item in scenarios}
+    if any(
+        not {variable["name"] for variable in item["variables"]}.issubset(
+            scenario_variables[item["scenario"]]
+        )
+        for item in parquets
+    ):
+        raise RhessysDescriptorError("parquet variable is absent from its scenario")
+
+    raw_geometries = value["geometries"]
+    if not isinstance(raw_geometries, list):
+        raise RhessysDescriptorError("geometries must be an array")
+    geometries = []
+    scenario_keys = {item["key"] for item in scenarios}
+    for raw in raw_geometries:
+        if not isinstance(raw, dict):
+            raise RhessysDescriptorError("geometry must be an object")
+        _exact(
+            raw,
+            {
+                "scale",
+                "scenarios",
+                "source_url",
+                "source_sha256",
+                "source_bytes",
+                "geometry_revision",
+                "source_crs",
+                "required_for_activation",
+            },
+            "geometry",
+        )
+        if raw["scale"] not in {"hillslope", "patch"}:
+            raise RhessysDescriptorError("geometry scale is unsupported")
+        geometry_scenarios = raw["scenarios"]
+        if not isinstance(geometry_scenarios, list) or not geometry_scenarios:
+            raise RhessysDescriptorError("geometry scenarios must be non-empty")
+        geometry_scenarios = [
+            _scenario_key(item, "geometry scenario") for item in geometry_scenarios
+        ]
+        if len(geometry_scenarios) != len(set(geometry_scenarios)):
+            raise RhessysDescriptorError("geometry scenarios must be unique")
+        if not set(geometry_scenarios).issubset(scenario_keys):
+            raise RhessysDescriptorError("geometry scenario is undeclared")
+        source_crs = _string(raw["source_crs"], "geometry source_crs", 16)
+        if not re.fullmatch(r"EPSG:[0-9]{4,6}", source_crs):
+            raise RhessysDescriptorError("geometry source_crs is invalid")
+        geometries.append(
+            {
+                "scale": raw["scale"],
+                "scenarios": geometry_scenarios,
+                **_asset_source(raw, "geometry"),
+                "geometry_revision": _sha256(
+                    raw["geometry_revision"], "geometry geometry_revision"
+                ),
+                "source_crs": source_crs,
+                "required_for_activation": _boolean(
+                    raw["required_for_activation"], "geometry required flag"
+                ),
+            }
+        )
+    geometry_coordinates = [
+        (item["scale"], scenario)
+        for item in geometries
+        for scenario in item["scenarios"]
+    ]
+    if len(geometry_coordinates) != len(set(geometry_coordinates)):
+        raise RhessysDescriptorError("geometry query coordinates overlap")
 
     raw_geotiffs = value["geotiffs"]
     if not isinstance(raw_geotiffs, list):
@@ -351,7 +451,7 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
         )
         geotiffs.append(
             {
-                "scenario": _key(raw["scenario"], "geotiff scenario"),
+                "scenario": _scenario_key(raw["scenario"], "geotiff scenario"),
                 "variable": _name(raw["variable"], "geotiff variable"),
                 **_asset_source(raw, "geotiff"),
                 "geometry_revision": _sha256(raw["geometry_revision"], "geotiff geometry_revision"),
@@ -369,8 +469,12 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
     }
     if mode in {"precomputed", "both"} and set(pairs) != expected_pairs:
         raise RhessysDescriptorError("precomputed geotiffs do not exactly cover declared scenarios")
-    if mode in {"dynamic", "both"} and (not spatial_inputs or not parquets):
-        raise RhessysDescriptorError("dynamic mode requires spatial inputs and parquets")
+    if mode in {"dynamic", "both"} and (
+        not spatial_inputs or not parquets or not geometries
+    ):
+        raise RhessysDescriptorError(
+            "dynamic mode requires spatial inputs, parquets, and geometries"
+        )
     parquet_variables = {
         variable["name"]
         for parquet in parquets
@@ -382,13 +486,22 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
         raise RhessysDescriptorError("dynamic scenarios declare a variable absent from Parquet")
     if mode == "dynamic" and geotiffs:
         raise RhessysDescriptorError("dynamic mode cannot declare precomputed geotiffs")
-    if mode == "precomputed" and (spatial_inputs or parquets):
+    required_geometry = {
+        (item["role"], item["scenario"])
+        for item in parquets
+        if item["role"] in {"hillslope", "patch"}
+    }
+    if mode in {"dynamic", "both"} and not required_geometry.issubset(
+        set(geometry_coordinates)
+    ):
+        raise RhessysDescriptorError("dynamic query geometry is undeclared")
+    if mode == "precomputed" and (spatial_inputs or parquets or geometries):
         raise RhessysDescriptorError("precomputed mode cannot declare dynamic assets")
 
     geometry_revision = _sha256(value["geometry_revision"], "geometry_revision")
     if any(
         asset["geometry_revision"] != geometry_revision
-        for asset in [*spatial_inputs, *parquets, *geotiffs]
+        for asset in [*spatial_inputs, *parquets, *geometries, *geotiffs]
     ):
         raise RhessysDescriptorError("RHESSys asset geometry revision differs from the capability")
 
@@ -405,6 +518,7 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
         "scenarios": scenarios,
         "spatial_inputs": spatial_inputs,
         "parquets": parquets,
+        "geometries": geometries,
         "geotiffs": geotiffs,
     }
 
@@ -566,7 +680,9 @@ def _read_schema_element(reader: _CompactReader) -> dict[str, Any]:
                 raise RhessysFormatError("Parquet column name is not UTF-8") from error
         else:
             reader.skip(compact_type, boolean)
-    if not name or not NAME_PATTERN.fullmatch(name):
+    if not name or len(name) > 255 or any(
+        ord(character) < 32 or ord(character) == 127 for character in name
+    ):
         raise RhessysFormatError("Parquet schema element name is invalid")
     return {"name": name, "type": physical_type}
 
@@ -584,20 +700,35 @@ def inspect_geotiff(content: bytes) -> dict[str, Any]:
     if count == 0 or count > 256 or ifd_offset + 2 + count * 12 + 4 > len(content):
         raise RhessysFormatError("GeoTIFF IFD is invalid")
     tags = {}
+    required_tags = {
+        256,
+        257,
+        273,
+        277,
+        279,
+        324,
+        325,
+        33550,
+        33922,
+        34264,
+        34735,
+        42113,
+    }
     for index in range(count):
         offset = ifd_offset + 2 + index * 12
         tag, value_type, value_count = struct.unpack_from(f"{endian}HHI", content, offset)
-        tags[tag] = _tiff_values(content, endian, value_type, value_count, offset + 8)
+        if tag in required_tags:
+            tags[tag] = _tiff_values(
+                content, endian, value_type, value_count, offset + 8
+            )
     try:
         width = int(tags[256][0])
         height = int(tags[257][0])
         bands = int(tags.get(277, [1])[0])
-        scale = tags[33550]
-        tie = tags[33922]
         geokeys = [int(item) for item in tags[34735]]
     except (KeyError, IndexError, TypeError, ValueError) as error:
         raise RhessysFormatError("GeoTIFF lacks required structural tags") from error
-    if width <= 0 or height <= 0 or bands <= 0 or len(scale) < 2 or len(tie) < 6 or len(geokeys) < 4:
+    if width <= 0 or height <= 0 or bands <= 0 or len(geokeys) < 4:
         raise RhessysFormatError("GeoTIFF structural metadata is invalid")
     crs_code = None
     key_count = geokeys[3]
@@ -609,9 +740,36 @@ def inspect_geotiff(content: bytes) -> dict[str, Any]:
             crs_code = value
     if crs_code is None:
         raise RhessysFormatError("GeoTIFF has no direct EPSG key")
-    origin_x = float(tie[3]) - float(tie[0]) * float(scale[0])
-    origin_y = float(tie[4]) + float(tie[1]) * float(scale[1])
-    bounds = [origin_x, origin_y - height * float(scale[1]), origin_x + width * float(scale[0]), origin_y]
+    scale = tags.get(33550)
+    tie = tags.get(33922)
+    transform = tags.get(34264)
+    if scale is not None and tie is not None and len(scale) >= 2 and len(tie) >= 6:
+        origin_x = float(tie[3]) - float(tie[0]) * float(scale[0])
+        origin_y = float(tie[4]) + float(tie[1]) * float(scale[1])
+        bounds = [
+            origin_x,
+            origin_y - height * float(scale[1]),
+            origin_x + width * float(scale[0]),
+            origin_y,
+        ]
+    elif transform is not None and len(transform) == 16:
+        matrix = [float(item) for item in transform]
+        if any(
+            not math.isfinite(item) for item in matrix
+        ) or not (
+            matrix[1] == matrix[2] == matrix[4] == matrix[6] == 0
+            and matrix[0] > 0
+            and matrix[5] < 0
+            and matrix[15] == 1
+        ):
+            raise RhessysFormatError(
+                "GeoTIFF transformation is not a supported axis-aligned grid"
+            )
+        x_values = [matrix[3], matrix[3] + width * matrix[0]]
+        y_values = [matrix[7], matrix[7] + height * matrix[5]]
+        bounds = [min(x_values), min(y_values), max(x_values), max(y_values)]
+    else:
+        raise RhessysFormatError("GeoTIFF lacks supported georeferencing tags")
     offsets = tags.get(273) or tags.get(324)
     byte_counts = tags.get(279) or tags.get(325)
     if not offsets or not byte_counts or len(offsets) != len(byte_counts):
@@ -625,6 +783,8 @@ def inspect_geotiff(content: bytes) -> dict[str, Any]:
         try:
             raw_nodata = tags[42113][0].rstrip("\x00")
             nodata = float(raw_nodata)
+            if math.isnan(nodata):
+                nodata = None
         except (AttributeError, ValueError) as error:
             raise RhessysFormatError("GeoTIFF nodata value is invalid") from error
     return {
@@ -659,10 +819,19 @@ def _requests(descriptor: dict[str, Any]) -> list[AssetRequest]:
     for family, assets in (
         ("spatial-input", descriptor["spatial_inputs"]),
         ("parquet", descriptor["parquets"]),
+        ("geometry", descriptor["geometries"]),
         ("geotiff", descriptor["geotiffs"]),
     ):
         for asset in assets:
-            key = asset.get("role") or f'{asset["scenario"]}:{asset["variable"]}'
+            key = (
+                asset.get("dataset_key")
+                or asset.get("role")
+                or (
+                    f'{asset["scale"]}:{",".join(asset["scenarios"])}'
+                    if family == "geometry"
+                    else f'{asset["scenario"]}:{asset["variable"]}'
+                )
+            )
             requests.append(
                 AssetRequest(family, key, asset["source_url"], asset["source_sha256"], asset["source_bytes"])
             )
@@ -705,6 +874,46 @@ def _same_raster(expected: dict[str, Any], observed: dict[str, Any]) -> bool:
         and expected["nodata"] == observed["nodata"]
         and all(math.isclose(float(left), float(right), rel_tol=0, abs_tol=1e-9) for left, right in zip(expected["bounds"], observed["bounds"], strict=True))
     )
+
+
+def inspect_geometry(content: bytes) -> dict[str, int]:
+    try:
+        document = json.loads(content)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise RhessysFormatError("geometry is not valid UTF-8 GeoJSON") from error
+    if not isinstance(document, dict) or document.get("type") != "FeatureCollection":
+        raise RhessysFormatError("geometry must be a GeoJSON FeatureCollection")
+    features = document.get("features")
+    if not isinstance(features, list) or not features:
+        raise RhessysFormatError("geometry FeatureCollection must be non-empty")
+
+    coordinate_count = 0
+
+    def inspect_coordinates(value: Any) -> None:
+        nonlocal coordinate_count
+        if not isinstance(value, list) or not value:
+            raise RhessysFormatError("geometry coordinates are empty or invalid")
+        if isinstance(value[0], (int, float)) and not isinstance(value[0], bool):
+            if len(value) < 2 or any(
+                not isinstance(item, (int, float))
+                or isinstance(item, bool)
+                or not math.isfinite(item)
+                for item in value[:2]
+            ):
+                raise RhessysFormatError("geometry coordinate is invalid")
+            coordinate_count += 1
+            return
+        for child in value:
+            inspect_coordinates(child)
+
+    for feature in features:
+        if not isinstance(feature, dict) or feature.get("type") != "Feature":
+            raise RhessysFormatError("geometry feature is invalid")
+        geometry = feature.get("geometry")
+        if not isinstance(geometry, dict) or "coordinates" not in geometry:
+            raise RhessysFormatError("geometry feature lacks geometry")
+        inspect_coordinates(geometry["coordinates"])
+    return {"feature_count": len(features), "coordinate_count": coordinate_count}
 
 
 def removed_capabilities(previous: list[str], current: list[str]) -> list[str]:
@@ -774,6 +983,8 @@ def prepare_capability(
                 raise RhessysIntegrityError("RHESSys source size or SHA-256 differs")
             if request.family == "parquet":
                 inspections[key] = inspect_parquet(content)
+            elif request.family == "geometry":
+                inspections[key] = inspect_geometry(content)
             else:
                 inspections[key] = inspect_geotiff(content)
             published[key] = _publish_verified(client, path)
@@ -801,17 +1012,35 @@ def prepare_capability(
             )
         parquet_index = []
         for asset in descriptor["parquets"]:
-            key = ("parquet", asset["role"], asset["source_url"])
+            key = ("parquet", asset["dataset_key"], asset["source_url"])
             if inspections[key]["columns"] != asset["columns"]:
                 raise RhessysFormatError("Parquet physical schema differs from its declaration")
             parquet_index.append(
                 {
+                    "dataset_key": asset["dataset_key"],
+                    "scenario": asset["scenario"],
                     "role": asset["role"],
                     "artifact": _reference(base_uri, published[key], "application/vnd.apache.parquet"),
                     "spatial_id_field": asset["spatial_id_field"],
                     "columns": asset["columns"],
                     "variables": asset["variables"],
                     "year_range": asset["year_range"],
+                    "required_for_activation": asset["required_for_activation"],
+                }
+            )
+        geometry_index = []
+        for asset in descriptor["geometries"]:
+            asset_key = f'{asset["scale"]}:{",".join(asset["scenarios"])}'
+            key = ("geometry", asset_key, asset["source_url"])
+            geometry_index.append(
+                {
+                    "scale": asset["scale"],
+                    "scenarios": asset["scenarios"],
+                    "artifact": _reference(
+                        base_uri, published[key], "application/geo+json"
+                    ),
+                    "source_crs": asset["source_crs"],
+                    "feature_count": inspections[key]["feature_count"],
                     "required_for_activation": asset["required_for_activation"],
                 }
             )
@@ -845,6 +1074,7 @@ def prepare_capability(
             "scenarios": descriptor["scenarios"],
             "spatial_inputs": spatial_index,
             "parquets": parquet_index,
+            "geometries": geometry_index,
             "geotiffs": geotiff_index,
         }
         index_bytes = canonical_json(index)

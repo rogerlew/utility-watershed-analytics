@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "standalone",
+  "collection_key": "gate-creek",
+  "source_revision": "weppcloud-20260718",
+  "created_at": "2026-07-19T01:48:07Z",
+  "members": [
+    {
+      "watershed_key": "gate-creek",
+      "runid": "aversive-forestry",
+      "display_name": "Gate Creek",
+      "aliases": [],
+      "sources": {
+        "boundary": "https://wepp.cloud/weppcloud/runs/aversive-forestry/disturbed9002_wbt/download/dem/wbt/bound.WGS.geojson",
+        "subcatchments": "https://wepp.cloud/weppcloud/runs/aversive-forestry/disturbed9002_wbt/download/dem/wbt/subcatchments.WGS.geojson",
+        "channels": "https://wepp.cloud/weppcloud/runs/aversive-forestry/disturbed9002_wbt/download/dem/wbt/channels.WGS.geojson",
+        "hillslopes": "https://wepp.cloud/weppcloud/runs/aversive-forestry/disturbed9002_wbt/download/watershed/hillslopes.parquet",
+        "soils": "https://wepp.cloud/weppcloud/runs/aversive-forestry/disturbed9002_wbt/download/soils/soils.parquet",
+        "landuse": "https://wepp.cloud/weppcloud/runs/aversive-forestry/disturbed9002_wbt/download/landuse/landuse.parquet"
+      }
+    }
+  ]
+}

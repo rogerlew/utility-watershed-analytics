@@ -182,6 +182,23 @@ class SourcePreparationTests(unittest.TestCase):
         self.assertEqual(replay.index_artifact.digest, result.index_artifact.digest)
         self.assertEqual(replay.receipt_bytes, result.receipt_bytes)
 
+    def test_reviewed_feature_id_prefix_filters_a_broader_public_master(self):
+        descriptor = batch_descriptor()
+        descriptor["master_identity"] = {
+            "location": "feature-id",
+            "prefix": "run-",
+        }
+        master = json.loads(geojson(feature("run-north"), feature("run-south", 0.2)))
+        for feature_document in master["features"]:
+            feature_document["id"] = feature_document["properties"].pop("runid")
+        unrelated = feature("unrelated")
+        unrelated["id"] = unrelated["properties"].pop("runid")
+        master["features"].append(unrelated)
+        mapping = batch_mapping(descriptor)
+        mapping[MASTER_URL] = sources.canonical_json(master)
+        result, _ = self.prepare(descriptor, mapping)
+        self.assertEqual(result.member_count, 2)
+
     def test_standalone_publishes_one_exact_member(self):
         descriptor = standalone_descriptor()
         result, _ = self.prepare(descriptor, standalone_mapping(descriptor))

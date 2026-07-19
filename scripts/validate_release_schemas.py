@@ -189,9 +189,9 @@ def validate_rhessys_capability_index(document: dict[str, Any]) -> None:
         "RHESSys spatial input role",
     )
     require_unique(
-        (item["role"] for item in document["parquets"]),
+        (item["dataset_key"] for item in document["parquets"]),
         "duplicate-parquet-role",
-        "RHESSys parquet role",
+        "RHESSys parquet dataset key",
     )
     for item in document["parquets"]:
         require_unique(
@@ -229,6 +229,36 @@ def validate_rhessys_capability_index(document: dict[str, Any]) -> None:
             "RHESSys GeoTIFF assets do not exactly cover declared scenarios",
         )
     if document["mode"] in {"dynamic", "both"}:
+        scenario_keys = {item["key"] for item in document["scenarios"]}
+        require(
+            all(item["scenario"] in scenario_keys for item in document["parquets"]),
+            "missing-dynamic-variable",
+            "RHESSys Parquet scenario is undeclared",
+        )
+        coordinates = [
+            (item["scenario"], item["role"], variable["name"])
+            for item in document["parquets"]
+            for variable in item["variables"]
+        ]
+        require_unique(
+            coordinates,
+            "duplicate-parquet-role",
+            "RHESSys Parquet query coordinate",
+        )
+        geometry_coordinates = {
+            (geometry["scale"], scenario)
+            for geometry in document["geometries"]
+            for scenario in geometry["scenarios"]
+        }
+        require(
+            all(
+                item["role"] == "basin"
+                or (item["role"], item["scenario"]) in geometry_coordinates
+                for item in document["parquets"]
+            ),
+            "missing-dynamic-variable",
+            "RHESSys dynamic query geometry is absent",
+        )
         expected_variables = {
             variable
             for scenario in document["scenarios"]

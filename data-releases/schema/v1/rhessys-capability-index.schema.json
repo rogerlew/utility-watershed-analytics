@@ -15,6 +15,7 @@
     "scenarios",
     "spatial_inputs",
     "parquets",
+    "geometries",
     "geotiffs"
   ],
   "properties": {
@@ -51,7 +52,7 @@
         "additionalProperties": false,
         "required": ["key", "variables"],
         "properties": {
-          "key": {"$ref": "#/$defs/key"},
+          "key": {"$ref": "#/$defs/scenarioKey"},
           "variables": {
             "type": "array",
             "minItems": 1,
@@ -92,6 +93,12 @@
         "$ref": "#/$defs/parquetAsset"
       }
     },
+    "geometries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/geometryAsset"
+      }
+    },
     "geotiffs": {
       "type": "array",
       "items": {
@@ -120,6 +127,9 @@
             "minItems": 1
           },
           "parquets": {
+            "minItems": 1
+          },
+          "geometries": {
             "minItems": 1
           }
         }
@@ -152,6 +162,12 @@
     "key": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 96
+    },
+    "scenarioKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,95}$",
       "minLength": 1,
       "maxLength": 96
     },
@@ -193,6 +209,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "dataset_key",
+        "scenario",
         "role",
         "artifact",
         "spatial_id_field",
@@ -202,6 +220,12 @@
         "required_for_activation"
       ],
       "properties": {
+        "dataset_key": {
+          "$ref": "#/$defs/key"
+        },
+        "scenario": {
+          "$ref": "#/$defs/scenarioKey"
+        },
         "role": {
           "enum": [
             "basin",
@@ -226,7 +250,9 @@
             "properties": {
               "name": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+                "minLength": 1,
+                "maxLength": 255,
+                "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
               },
               "physical_type": {
                 "enum": [
@@ -272,6 +298,42 @@
         }
       }
     },
+    "geometryAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scale",
+        "scenarios",
+        "artifact",
+        "source_crs",
+        "feature_count",
+        "required_for_activation"
+      ],
+      "properties": {
+        "scale": {
+          "enum": ["hillslope", "patch"]
+        },
+        "scenarios": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/scenarioKey"}
+        },
+        "artifact": {
+          "$ref": "artifact-reference.schema.json"
+        },
+        "source_crs": {
+          "type": "string",
+          "pattern": "^EPSG:[0-9]{4,6}$"
+        },
+        "feature_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "required_for_activation": {
+          "type": "boolean"
+        }
+      }
+    },
     "geotiffAsset": {
       "type": "object",
       "additionalProperties": false,
@@ -291,7 +353,7 @@
           "$ref": "artifact-reference.schema.json"
         },
         "scenario": {
-          "$ref": "#/$defs/key"
+          "$ref": "#/$defs/scenarioKey"
         },
         "variable": {
           "type": "string",

@@ -11,5 +11,6 @@
   ],
   "spatial_inputs": [],
   "parquets": [],
+  "geometries": [],
   "geotiffs": []
 }

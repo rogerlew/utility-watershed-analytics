@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import struct
 import sys
 import tempfile
@@ -63,15 +64,31 @@ def parquet_bytes(columns: list[tuple[str, int]] | None = None) -> bytes:
     return b"PAR1\x01\x02" + bytes(footer) + len(footer).to_bytes(4, "little") + b"PAR1"
 
 
-def geotiff_bytes(*, epsg: int = 4326, corrupt_sample: bool = False) -> bytes:
+def geotiff_bytes(
+    *,
+    epsg: int = 4326,
+    corrupt_sample: bool = False,
+    transform_only: bool = False,
+    nodata: str = "-9999",
+) -> bytes:
     width = 2
     height = 2
     external_values = {
         33550: struct.pack("<3d", 1.0, 1.0, 0.0),
         33922: struct.pack("<6d", 0.0, 0.0, 0.0, 10.0, 20.0, 0.0),
         34735: struct.pack("<8H", 1, 1, 0, 1, 3072, 0, 1, epsg),
-        42113: b"-9999\x00",
+        42113: nodata.encode() + b"\x00",
     }
+    if transform_only:
+        external_values.pop(33550)
+        external_values.pop(33922)
+        external_values[34264] = struct.pack(
+            "<16d",
+            1.0, 0.0, 0.0, 10.0,
+            0.0, -1.0, 0.0, 20.0,
+            0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        )
     tag_specs = [
         (256, 4, 1, width),
         (257, 4, 1, height),
@@ -82,15 +99,20 @@ def geotiff_bytes(*, epsg: int = 4326, corrupt_sample: bool = False) -> bytes:
         (277, 3, 1, 1),
         (278, 4, 1, height),
         (279, 4, 1, width * height),
-        (33550, 12, 3, None),
-        (33922, 12, 6, None),
-        (34735, 3, 8, None),
-        (42113, 2, 6, None),
     ]
+    if transform_only:
+        tag_specs.append((34264, 12, 16, None))
+    else:
+        tag_specs.extend(((33550, 12, 3, None), (33922, 12, 6, None)))
+    tag_specs.extend([
+        (34735, 3, 8, None),
+        (42113, 2, len(external_values[42113]), None),
+        (65000, 5, 1, 0),
+    ])
     external_start = 8 + 2 + len(tag_specs) * 12 + 4
     offsets = {}
     external = bytearray()
-    for tag in (33550, 33922, 34735, 42113):
+    for tag in external_values:
         offsets[tag] = external_start + len(external)
         external.extend(external_values[tag])
     pixel_offset = external_start + len(external)
@@ -110,6 +132,25 @@ def geotiff_bytes(*, epsg: int = 4326, corrupt_sample: bool = False) -> bytes:
     output.extend(external)
     output.extend(b"\x01\x02\x03\x04")
     return bytes(output)
+
+
+def geometry_bytes() -> bytes:
+    return json.dumps(
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"hillID": 1},
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[10.0, 20.0], [11.0, 20.0], [10.0, 21.0], [10.0, 20.0]]],
+                    },
+                }
+            ],
+        },
+        separators=(",", ":"),
+    ).encode()
 
 
 class MappingFetcher:
@@ -136,11 +177,13 @@ def fixture() -> tuple[dict, dict[str, bytes]]:
     spatial = geotiff_bytes()
     burned = geotiff_bytes()
     unburned = geotiff_bytes()
+    geometry = geometry_bytes()
     mapping = {
         "https://source.example.test/spatial.tif": spatial,
         "https://source.example.test/basin.parquet": parquet,
         "https://source.example.test/burned.tif": burned,
         "https://source.example.test/unburned.tif": unburned,
+        "https://source.example.test/hillslopes.geojson": geometry,
     }
     raster = {
         "crs": "EPSG:4326",
@@ -173,6 +216,8 @@ def fixture() -> tuple[dict, dict[str, bytes]]:
         ],
         "parquets": [
             {
+                "dataset_key": "burned-basin",
+                "scenario": "burned",
                 "role": "basin",
                 **source_fields("https://source.example.test/basin.parquet", parquet),
                 "spatial_id_field": "basin_id",
@@ -183,6 +228,17 @@ def fixture() -> tuple[dict, dict[str, bytes]]:
                 ],
                 "variables": [{"name": "streamflow", "units": "mm"}],
                 "year_range": [1980, 2020],
+                "required_for_activation": True,
+            }
+        ],
+        "geometries": [
+            {
+                "scale": "hillslope",
+                "scenarios": ["burned", "unburned"],
+                **source_fields(
+                    "https://source.example.test/hillslopes.geojson", geometry
+                ),
+                "source_crs": "EPSG:4326",
                 "required_for_activation": True,
             }
         ],
@@ -216,6 +272,9 @@ class RhessysInspectionTests(unittest.TestCase):
         self.assertEqual(result["crs"], "EPSG:4326")
         self.assertEqual(result["bounds"], [10.0, 18.0, 12.0, 20.0])
         self.assertEqual(result["sample_bytes_read"], 1)
+        transformed = rhessys.inspect_geotiff(geotiff_bytes(transform_only=True))
+        self.assertEqual(transformed["bounds"], [10.0, 18.0, 12.0, 20.0])
+        self.assertIsNone(rhessys.inspect_geotiff(geotiff_bytes(nodata="NaN "))["nodata"])
 
     def test_corrupt_parquet_and_geotiff_are_rejected(self):
         with self.assertRaises(rhessys.RhessysFormatError):
@@ -236,9 +295,19 @@ class RhessysDescriptorTests(unittest.TestCase):
         precomputed["mode"] = "precomputed"
         precomputed["spatial_inputs"] = []
         precomputed["parquets"] = []
+        precomputed["geometries"] = []
         self.assertEqual(
             rhessys.validate_descriptor(precomputed)["mode"], "precomputed"
         )
+
+    def test_deployed_uppercase_underscore_scenario_ids_are_supported(self):
+        descriptor, _ = fixture()
+        descriptor["scenarios"][0]["key"] = "Pspread_fire_1yr_change"
+        descriptor["parquets"][0]["scenario"] = "Pspread_fire_1yr_change"
+        descriptor["geometries"][0]["scenarios"][0] = "Pspread_fire_1yr_change"
+        descriptor["geotiffs"][0]["scenario"] = "Pspread_fire_1yr_change"
+        normalized = rhessys.validate_descriptor(descriptor)
+        self.assertEqual(normalized["scenarios"][0]["key"], "Pspread_fire_1yr_change")
 
     def test_missing_and_partial_scenarios_are_rejected(self):
         descriptor, _ = fixture()
@@ -287,10 +356,10 @@ class RhessysPreparationTests(unittest.TestCase):
             artifact_base_uri=ARTIFACT_BASE,
             fetcher=fetcher,
         )
-        self.assertEqual(fetcher.calls, 4)
+        self.assertEqual(fetcher.calls, 5)
         self.assertEqual(first.index["mode"], "both")
         self.assertEqual(len(first.index["scenarios"]), 2)
-        self.assertEqual(first.source_count, 4)
+        self.assertEqual(first.source_count, 5)
         replay_fetcher = MappingFetcher({})
         replay = rhessys.prepare_capability(
             descriptor,
@@ -317,6 +386,14 @@ class RhessysPreparationTests(unittest.TestCase):
                 artifact_base_uri=ARTIFACT_BASE,
                 fetcher=MappingFetcher(mapping),
             )
+
+    def test_overlapping_parquet_query_coordinates_are_rejected(self):
+        descriptor, _ = fixture()
+        duplicate = copy.deepcopy(descriptor["parquets"][0])
+        duplicate["dataset_key"] = "other-burned-basin"
+        descriptor["parquets"].append(duplicate)
+        with self.assertRaisesRegex(rhessys.RhessysDescriptorError, "coordinates overlap"):
+            rhessys.validate_descriptor(descriptor)
 
         descriptor, mapping = fixture()
         wrong_crs = geotiff_bytes(epsg=3857)

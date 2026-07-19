@@ -12,7 +12,7 @@ Implementation order and bounded execution records are maintained in the
 [forward roadmap](ROADMAP.md) and
 [work-package catalog](work-packages/README.md).
 
-Last updated: 2026-07-16
+Last updated: 2026-07-18
 
 ## Scope and authority
 
@@ -42,10 +42,10 @@ Lifecycle terms:
 
 | Dataset | Canonical run ID or prefix | Lifecycle | Production database | RHESSys assets | Required action |
 | --- | --- | --- | --- | --- | --- |
-| Gate Creek | `aversive-forestry` | Retain | Present | Observed in WEPPcloud: spatial inputs plus dynamic scenario Parquets for `S1`, `S2`, and `S4b` | Retain the database row; copy, index, and verify the RHESSys assets in durable project storage. |
+| Gate Creek | `aversive-forestry` | Retain | Present | DB28 copied and indexed the observed spatial inputs plus dynamic scenario Parquets for `S1`, `S2`, and `S4b` in `forest1:/wc1` | Retain the database row; production capability activation remains pending. |
 | Mill Creek | `some-oligopoly` | Replace | Not present as of 2026-07-16 | Must be re-vendored to durable project storage | Configure and load the new standalone run, publish the required RHESSys assets durably, verify them, and then retire the former run. |
 | Former Mill Creek | `mdobre-invincible-scarab` | Retire | Present as of 2026-07-16 | Unavailable; the run is believed to have been removed by the deletion TTL | Remove from the database only after `some-oligopoly` is loaded and validated. Do not treat this run as a recoverable source. |
-| Victoria, BC | `batch;;victoria-ca-2026-sbs;;<member>` | Retain | Present; 31 members | WEPPcloud output maps are confirmed for `Sooke09` and `Sooke15` only | Retain the batch; copy and verify those assets in durable project storage. Do not infer RHESSys availability for other members. |
+| Victoria, BC | `batch;;victoria-ca-2026-sbs;;<member>` | Retain | Present; 31 members | DB28 copied and indexed the confirmed `Sooke09` and `Sooke15` output maps in `forest1:/wc1` | Retain the batch; production capability activation remains pending. Do not infer RHESSys availability for other members. |
 | NASA ROSES, current | `batch;;nasa-roses-2026-sbs;;<member>` | Retire | Present; 93 members | None recorded | Replace with the 202606 PSBS batch after enrichment and load validation. |
 | NASA ROSES, successor | `batch;;nasa-roses-202606-psbs;;<member>` | Replace | Not present as of 2026-07-16 | None recorded | Enrich its resources GeoJSON as specified below, configure the loader, load it, validate it, and then retire the old NASA batch. |
 | Bremerton | `batch;;bremerton-2026-psbs;;<member>` | Add | Not present as of 2026-07-16 | None recorded | Add the batch to loader configuration and load it after validating its resources GeoJSON and per-run products. |
@@ -54,6 +54,13 @@ The full Victoria batch identifier is
 `batch;;victoria-ca-2026-sbs;;<member>`. Shortened forms such as
 `batch;;victoria-ca-2026` are descriptive only and must not be stored as run
 IDs.
+
+DB28 locks the exact 31-member mapping in
+`data-releases/locked-inputs/db28/victoria-member-index.json`: `Council`,
+`Deception`, `Goldstream`, `Leech`, `Sooke01` through `Sooke04`, and `Sooke06`
+through `Sooke28`. `Sooke05` exists in the local source tree but is absent from
+the authoritative public production inventory and is explicitly excluded. Do
+not infer membership from local directory names.
 
 ## Stable identity assignments
 
@@ -78,23 +85,24 @@ authority rules are in the
 RHESSys capability is associated with the external run, not a database column.
 The authoritative RHESSys-enabled run list is therefore:
 
-| Run ID | Watershed | Supported product form | Status verified 2026-07-16 |
+| Run ID | Watershed | Supported product form | Status verified 2026-07-18 |
 | --- | --- | --- | --- |
-| `aversive-forestry` | Gate Creek | Spatial-input GeoTIFFs; scenario, basin, hillslope, and patch Parquets used for dynamic maps and time series | Observed available in WEPPcloud. Durable copy and capability activation remain pending. The precomputed `rhessys/maps/` directory is not required. |
+| `aversive-forestry` | Gate Creek | Spatial-input GeoTIFFs; scenario, basin, hillslope, and patch Parquets used for dynamic maps and time series | DB28 verified an immutable durable copy and exact capability index for `S1`, `S2`, and `S4b`. Production capability activation remains pending. The precomputed `rhessys/maps/` directory is not required. |
 | `some-oligopoly` | Mill Creek | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | Pending durable re-vendoring and verification. |
-| `batch;;victoria-ca-2026-sbs;;Sooke09` | Sooke09 | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | Observed available in WEPPcloud, including baseline, fire/thinning change, and one-year difference products. Durable copy remains pending. |
-| `batch;;victoria-ca-2026-sbs;;Sooke15` | Sooke15 | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | Observed available in WEPPcloud, including baseline and fire/thinning change products. Durable copy remains pending. |
+| `batch;;victoria-ca-2026-sbs;;Sooke09` | Sooke09 | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | DB28 verified an immutable durable copy and exact 7-scenario, 56-map capability index. Production capability activation remains pending. |
+| `batch;;victoria-ca-2026-sbs;;Sooke15` | Sooke15 | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | DB28 verified an immutable durable copy and exact 5-scenario, 40-map capability index. Production capability activation remains pending. |
 
 No other production run should be described as RHESSys-enabled without adding
 it to this table after its required external assets have been verified.
 No declared capability is ready for release activation until its immutable
 asset index and project-controlled durable copy have also been verified.
 
-DB19 implements the synthetic preparation and validation mechanics in the
+DB19 implements the preparation and validation mechanics in the
 [RHESSys artifact preparation contract](database-rhessys-artifact-tooling-contract.md).
-It did not inspect or copy any real inventory asset, so every pending durable
-copy and activation statement in this table remains unchanged. DB30 owns the
-real locked descriptors and `/wc1` publication.
+DB28 applied those mechanics to the real Gate Creek, Sooke09, and Sooke15
+assets and published their locked inputs under the operator-owned
+`forest1:/wc1` artifact namespace. DB28 did not activate a production release
+or change public serving configuration.
 
 ### Mill Creek re-vendoring acceptance criteria
 

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "batch",
+  "collection_key": "victoria-ca",
+  "source_revision": "public-api-2e5a58909a0c-20260718",
+  "created_at": "2026-07-19T01:48:07Z",
+  "master_url": "https://firewisewatersheds.org/api/watershed/",
+  "master_identity": {
+    "location": "feature-id",
+    "prefix": "batch;;victoria-ca-2026-sbs;;"
+  },
+  "source_templates": {
+    "subcatchments": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/dem/wbt/subcatchments.WGS.geojson",
+    "channels": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/dem/wbt/channels.WGS.geojson",
+    "hillslopes": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/watershed/hillslopes.parquet",
+    "soils": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/soils/soils.parquet",
+    "landuse": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/landuse/landuse.parquet"
+  },
+  "members": [
+    {"watershed_key": "victoria-ca-council", "runid": "batch;;victoria-ca-2026-sbs;;Council", "display_name": "Council", "aliases": []},
+    {"watershed_key": "victoria-ca-deception", "runid": "batch;;victoria-ca-2026-sbs;;Deception", "display_name": "Deception", "aliases": []},
+    {"watershed_key": "victoria-ca-goldstream", "runid": "batch;;victoria-ca-2026-sbs;;Goldstream", "display_name": "Goldstream", "aliases": []},
+    {"watershed_key": "victoria-ca-leech", "runid": "batch;;victoria-ca-2026-sbs;;Leech", "display_name": "Leech", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke01", "runid": "batch;;victoria-ca-2026-sbs;;Sooke01", "display_name": "Sooke01", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke02", "runid": "batch;;victoria-ca-2026-sbs;;Sooke02", "display_name": "Sooke02", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke03", "runid": "batch;;victoria-ca-2026-sbs;;Sooke03", "display_name": "Sooke03", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke04", "runid": "batch;;victoria-ca-2026-sbs;;Sooke04", "display_name": "Sooke04", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke06", "runid": "batch;;victoria-ca-2026-sbs;;Sooke06", "display_name": "Sooke06", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke07", "runid": "batch;;victoria-ca-2026-sbs;;Sooke07", "display_name": "Sooke07", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke08", "runid": "batch;;victoria-ca-2026-sbs;;Sooke08", "display_name": "Sooke08", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke09", "runid": "batch;;victoria-ca-2026-sbs;;Sooke09", "display_name": "Sooke09", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke10", "runid": "batch;;victoria-ca-2026-sbs;;Sooke10", "display_name": "Sooke10", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke11", "runid": "batch;;victoria-ca-2026-sbs;;Sooke11", "display_name": "Sooke11", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke12", "runid": "batch;;victoria-ca-2026-sbs;;Sooke12", "display_name": "Sooke12", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke13", "runid": "batch;;victoria-ca-2026-sbs;;Sooke13", "display_name": "Sooke13", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke14", "runid": "batch;;victoria-ca-2026-sbs;;Sooke14", "display_name": "Sooke14", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke15", "runid": "batch;;victoria-ca-2026-sbs;;Sooke15", "display_name": "Sooke15", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke16", "runid": "batch;;victoria-ca-2026-sbs;;Sooke16", "display_name": "Sooke16", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke17", "runid": "batch;;victoria-ca-2026-sbs;;Sooke17", "display_name": "Sooke17", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke18", "runid": "batch;;victoria-ca-2026-sbs;;Sooke18", "display_name": "Sooke18", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke19", "runid": "batch;;victoria-ca-2026-sbs;;Sooke19", "display_name": "Sooke19", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke20", "runid": "batch;;victoria-ca-2026-sbs;;Sooke20", "display_name": "Sooke20", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke21", "runid": "batch;;victoria-ca-2026-sbs;;Sooke21", "display_name": "Sooke21", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke22", "runid": "batch;;victoria-ca-2026-sbs;;Sooke22", "display_name": "Sooke22", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke23", "runid": "batch;;victoria-ca-2026-sbs;;Sooke23", "display_name": "Sooke23", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke24", "runid": "batch;;victoria-ca-2026-sbs;;Sooke24", "display_name": "Sooke24", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke25", "runid": "batch;;victoria-ca-2026-sbs;;Sooke25", "display_name": "Sooke25", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke26", "runid": "batch;;victoria-ca-2026-sbs;;Sooke26", "display_name": "Sooke26", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke27", "runid": "batch;;victoria-ca-2026-sbs;;Sooke27", "display_name": "Sooke27", "aliases": []},
+    {"watershed_key": "victoria-ca-sooke28", "runid": "batch;;victoria-ca-2026-sbs;;Sooke28", "display_name": "Sooke28", "aliases": []}
+  ]
+}

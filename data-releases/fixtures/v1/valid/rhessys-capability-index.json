@@ -24,6 +24,8 @@
   ],
   "parquets": [
     {
+      "dataset_key": "burned-basin",
+      "scenario": "burned",
       "role": "basin",
       "artifact": {
         "uri": "https://artifacts.example.test/rhessys/example-north/basin.parquet",
@@ -42,6 +44,22 @@
         {"name": "streamflow", "units": "mm"}
       ],
       "year_range": [1980, 2020],
+      "required_for_activation": true
+    }
+  ],
+  "geometries": [
+    {
+      "scale": "hillslope",
+      "scenarios": ["burned"],
+      "artifact": {
+        "uri": "https://artifacts.example.test/rhessys/example-north/hillslopes.geojson",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "bytes": 4096,
+        "media_type": "application/geo+json",
+        "verified": true
+      },
+      "source_crs": "EPSG:4326",
+      "feature_count": 1,
       "required_for_activation": true
     }
   ],
