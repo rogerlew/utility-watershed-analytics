@@ -197,7 +197,7 @@ canonical lock and protected runtime are installed, application rollback and
 safe unit behavior passed, and canonical locked snapshot `4361efe3...` is
 verified. Production uses the DB05 named database volume while the exact
 anonymous source remains held and prune-prohibited. Temporary sudo was removed.
-DB04 is repository-complete but not deployed to production. The S1 contract
+DB04 guardrails are deployed to production through DB27A. The S1 contract
 freeze, DB10A local infrastructure acceptance, DB11–DB12 release-tool and
 artifact-client foundations, DB13 stable identity expansion, and DB14 domain
 integrity, DB15 release-ledger foundations, DB16 staging/recovery, DB17 strict
@@ -207,9 +207,12 @@ materialization, DB21 clean-build validation/reproducibility, and DB21A
 legacy-base export/adoption tooling are complete. DB22 base-aware planning and
 exact inverse generation is complete; DB23 atomic desired-state reconciliation
 and DB24 reconciler resilience are complete; DB25 deployment serialization,
-DB26 production database orchestration, and DB27 protected workflow, roles,
-and status are complete. DB27A production compatibility schema/code rollout is
-the next recommended package and requires its separate production authority.
+DB26 production database orchestration, DB27 protected workflow/roles/status,
+and DB27A production compatibility schema/code rollout are complete. Production
+is at migration `0011` on reviewed fork `main` commit `5b358c1`, uses distinct
+least-privilege runtime and migration principals, retains its exact database
+identity and `EMPTY` release state, and has a fresh verified encrypted backup
+on `forest1:/wc1`. DB28 is the next recommended package.
 
 ## Execution environments and Wave 0 readiness
 

@@ -1,7 +1,7 @@
 # Production Runtime Contract
 
-Status: DB05 named-volume runtime installed, reboot-verified, and published;
-DB03A fork-owned deployment runner online and idle
+Status: DB27A additive compatibility schema/code deployed and verified;
+DB05 named-volume database identity retained; fork-owned deployment operational
 
 This contract documents the installed production target. `forest1` is
 development. `wepp3` is production and must
@@ -18,7 +18,7 @@ in a work package.
   root, non-symlink, mode `0600`
 - Migration environment target:
   `/etc/utility-watershed-analytics/migration.env`, owned by root, non-symlink,
-  mode `0600`; DB25 defines it, but DB27A owns production provisioning
+  mode `0600`; provisioned by DB27A for `uwa_migration_login`
 - Database identity:
   `/etc/utility-watershed-analytics/database-identity`, owned by root,
   non-symlink, mode `0600`
@@ -37,6 +37,16 @@ the checkout; a checksummed mode-`0600` copy remains in protected DB05 evidence.
 Fail-closed identity checks prevent an old Compose file from silently replacing
 the database. Exact sanitized DB03 evidence is in
 [`wepp3-convergence-evidence.md`](../work-packages/20260716-db03-production-runtime-convergence/artifacts/wepp3-convergence-evidence.md).
+
+DB27A cleanly fast-forwarded production fork `main` to reviewed commit
+`5b358c1`, applied additive migrations through
+`0011_capability_runtime_types`, and retained the exact DB05 database
+container/image/volume identity. Ordinary application access uses
+`uwa_runtime_login`; one-shot migration access uses `uwa_migration_login`.
+The release ledger remains `EMPTY`, public legacy data is unchanged, and
+protected workflow run `29667975905` independently rebuilt, tested, and
+deployed the exact source. Fresh encrypted rollback snapshot `08321397...` is
+stored in the authorized `forest1:/wc1` backup repository.
 
 ## Target socket contract
 
@@ -103,15 +113,21 @@ The Actions workflow creates `.env.production-runtime` with `umask 077`,
 and creates a separate `.env.production-migration` from its separately scoped
 secret. It validates both mode-`0600` files and shreds each in an `always()`
 cleanup step. A cancelled runner must still be audited for either leftover file
-before its next job. DB25 repository code expects the migration secret; do not
-dispatch production deployment until DB27A has provisioned the corresponding
-least-privilege database identity and protected secret.
+before its next job. DB27A provisioned the corresponding least-privilege
+database identity and protected secret, and its protected deployment passed.
 
 Application deployment runs migrations once with the migration file, then
 checks active-release compatibility before replacing workers. Normal container
 startup runs `migrate --check`; it never applies migrations. The accepted role,
 rotation, and compatibility details are in the
 [deployment serialization contract](../database-deployment-serialization-contract.md).
+
+The exact pre-DB27A application requires its prior administrative database
+credential because legacy Silk middleware writes telemetry. Its sole retained
+rollback environment is root-owned, directory mode `0700`, file mode `0600`,
+at `/etc/utility-watershed-analytics/rollback/runtime.env.pre-db27a`. Keep it
+only for the accepted exact-code rollback window, then remove it as an explicit
+authorized housekeeping action. Never use it for normal runtime.
 
 ## Host-wide lock
 
