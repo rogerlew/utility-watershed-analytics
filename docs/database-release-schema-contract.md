@@ -78,7 +78,9 @@ declared matrix. These fields participate in DB09 capability fingerprints.
 
 Transformation records pin every input, the output, code commit, configuration
 hash, join keys, field authority decisions, and counts. Field decisions are
-unique and outputs cannot reuse an input checksum. Validation reports use
+unique. Output may equal the first authoritative input only after the
+transformation-specific preservation proof; it cannot reuse any
+non-authoritative input checksum. Validation reports use
 sanitized summaries, unique check codes, ordered timestamps, and an overall
 status consistent with their checks.
 

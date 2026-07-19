@@ -85,6 +85,13 @@ Canonical serialization and the descriptor's fixed timestamp make the output,
 report, lineage, member index, and receipt byte-identical when replayed from
 DB12 objects. Receipt replay performs no upstream read.
 
+The canonical output may equal the normalized target artifact when every
+approved target value already equals the checksum-pinned enrichment source.
+That idempotent result is accepted only after the same exact join, field,
+membership, run-ID, geometry, and preservation checks pass; the lineage still
+records both inputs, the shared target/output digest, and the validation
+report. Reusing the broader enrichment source itself as output remains fatal.
+
 ## 5. Successor boundary
 
 DB18's accepted evidence uses synthetic public fixtures only. It does not

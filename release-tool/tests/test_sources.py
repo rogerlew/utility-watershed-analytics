@@ -39,6 +39,14 @@ def feature(runid: str, offset: float = 0.0) -> dict:
     }
 
 
+def child_feature(runid: str, role: str, offset: float = 0.0) -> dict:
+    document = feature(runid, offset)
+    document["properties"].update(TopazID=1, WeppID=2)
+    if role == "channels":
+        document["properties"]["Order"] = 3
+    return document
+
+
 def geojson(*features: dict) -> bytes:
     return sources.canonical_json({"type": "FeatureCollection", "features": list(features)})
 
@@ -106,7 +114,11 @@ def batch_mapping(descriptor: dict | None = None) -> dict[str, bytes]:
         runid = member["runid"]
         for role in ROLES:
             url = descriptor["source_templates"][role].replace("{runid}", runid)
-            mapping[url] = geojson(feature(runid)) if role in {"subcatchments", "channels"} else parquet()
+            mapping[url] = (
+                geojson(child_feature(runid, role))
+                if role in {"subcatchments", "channels"}
+                else parquet()
+            )
     return mapping
 
 
@@ -114,7 +126,11 @@ def standalone_mapping(descriptor: dict | None = None) -> dict[str, bytes]:
     descriptor = descriptor or standalone_descriptor()
     member = descriptor["members"][0]
     return {
-        url: geojson(feature(member["runid"])) if role in sources.GEOJSON_ROLES else parquet()
+        url: (
+            geojson(child_feature(member["runid"], role))
+            if role in sources.GEOJSON_ROLES
+            else parquet()
+        )
         for role, url in member["sources"].items()
     }
 
@@ -199,6 +215,75 @@ class SourcePreparationTests(unittest.TestCase):
         result, _ = self.prepare(descriptor, mapping)
         self.assertEqual(result.member_count, 2)
 
+    def test_reviewed_property_map_binds_source_features_to_current_runids(self):
+        descriptor = batch_descriptor()
+        descriptor["master_identity"] = {
+            "location": "properties-map",
+            "property": "source_code",
+            "mapping": {"N": "run-north", "S": "run-south"},
+        }
+        north = feature("historical-north")
+        north["properties"]["source_code"] = "N"
+        south = feature("historical-south", 0.2)
+        south["properties"]["source_code"] = "S"
+        mapping = batch_mapping(descriptor)
+        mapping[MASTER_URL] = geojson(north, south)
+
+        result, _ = self.prepare(descriptor, mapping)
+
+        self.assertEqual(
+            [member["runid"] for member in result.index["members"]],
+            ["run-north", "run-south"],
+        )
+        for member in result.index["members"]:
+            metadata = self.client.fetch(member["artifacts"]["metadata"]["sha256"])
+            properties = json.loads(metadata.path.read_bytes())["source_properties"]
+            self.assertEqual(properties["runid"], member["runid"])
+
+    def test_reviewed_property_map_rejects_source_membership_drift(self):
+        descriptor = batch_descriptor()
+        descriptor["master_identity"] = {
+            "location": "properties-map",
+            "property": "source_code",
+            "mapping": {"N": "run-north", "S": "run-south"},
+        }
+        north = feature("historical-north")
+        north["properties"]["source_code"] = "N"
+        mapping = batch_mapping(descriptor)
+        mapping[MASTER_URL] = geojson(north)
+        with self.assertRaises(sources.SourceMembershipError):
+            self.prepare(descriptor, mapping)
+
+        extra = feature("historical-extra")
+        extra["properties"]["source_code"] = "X"
+        mapping[MASTER_URL] = geojson(north, extra)
+        with self.assertRaises(sources.SourceMembershipError):
+            self.prepare(descriptor, mapping)
+
+    def test_reviewed_property_map_accepts_only_explicit_exclusions(self):
+        descriptor = batch_descriptor()
+        descriptor["master_identity"] = {
+            "location": "properties-map",
+            "property": "source_code",
+            "mapping": {"N": "run-north", "S": "run-south"},
+            "excluded": ["X"],
+        }
+        documents = []
+        for source_code, runid in (
+            ("N", "historical-north"),
+            ("S", "historical-south"),
+            ("X", "historical-excluded"),
+        ):
+            document = feature(runid)
+            document["properties"]["source_code"] = source_code
+            documents.append(document)
+        mapping = batch_mapping(descriptor)
+        mapping[MASTER_URL] = geojson(*documents)
+
+        result, _ = self.prepare(descriptor, mapping)
+
+        self.assertEqual(result.member_count, 2)
+
     def test_standalone_publishes_one_exact_member(self):
         descriptor = standalone_descriptor()
         result, _ = self.prepare(descriptor, standalone_mapping(descriptor))
@@ -208,6 +293,21 @@ class SourcePreparationTests(unittest.TestCase):
         self.assertEqual(member["watershed_key"], "standalone")
         self.assertEqual(member["expected"]["subcatchments"], 1)
         self.assertEqual(member["expected"]["channels"], 1)
+
+    def test_multipart_children_count_materialized_business_entities(self):
+        descriptor = batch_descriptor()
+        mapping = batch_mapping(descriptor)
+        runid = descriptor["members"][0]["runid"]
+        sub_url = descriptor["source_templates"]["subcatchments"].replace(
+            "{runid}", runid
+        )
+        first = child_feature(runid, "subcatchments")
+        second = child_feature(runid, "subcatchments", 0.01)
+        mapping[sub_url] = geojson(first, second)
+
+        result, _ = self.prepare(descriptor, mapping)
+
+        self.assertEqual(result.index["members"][0]["expected"]["subcatchments"], 1)
 
     def test_empty_batch_result_is_fatal_before_index_publication(self):
         mapping = batch_mapping()

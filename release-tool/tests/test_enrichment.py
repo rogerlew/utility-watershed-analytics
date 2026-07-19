@@ -137,7 +137,18 @@ def preparation_fixture() -> tuple[dict, dict[str, bytes]]:
         for role in roles:
             url = descriptor["source_templates"][role].replace("{runid}", member["runid"])
             mapping[url] = (
-                sources.canonical_json(feature_collection(target_feature("A", "child")))
+                sources.canonical_json(
+                    feature_collection(
+                        {
+                            **target_feature("A", "child"),
+                            "properties": {
+                                "TopazID": 1,
+                                "WeppID": 2,
+                                **({"Order": 3} if role == "channels" else {}),
+                            },
+                        }
+                    )
+                )
                 if role in {"subcatchments", "channels"}
                 else parquet()
             )
@@ -310,6 +321,34 @@ class NasaPreparationIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(replay.index_bytes, result.index_bytes)
         self.assertEqual(replay.receipt_bytes, result.receipt_bytes)
+
+    def test_preparation_accepts_already_enriched_target_as_idempotent(self):
+        descriptor, mapping = preparation_fixture()
+        descriptor["members"] = descriptor["members"][:1]
+        target = target_feature("A", "A")
+        current_runid = target["properties"]["runid"]
+        target["properties"].update(source_properties("A"))
+        target["properties"]["runid"] = current_runid
+        target["properties"]["target_only"] = "target-A"
+        mapping[MASTER_URL] = sources.canonical_json(feature_collection(target))
+        mapping[ENRICHMENT_URL] = sources.canonical_json(
+            feature_collection(source_feature("A"))
+        )
+        enrichment_bytes = mapping[ENRICHMENT_URL]
+        descriptor["enrichment"]["source_sha256"] = hashlib.sha256(
+            enrichment_bytes
+        ).hexdigest()
+        descriptor["enrichment"]["source_bytes"] = len(enrichment_bytes)
+
+        result = sources.prepare_sources(
+            descriptor,
+            client=self.client,
+            artifact_base_uri=ARTIFACT_BASE,
+            fetcher=MappingFetcher(mapping),
+        )
+
+        lineage = self.artifact_json(result.index["members"][0]["transformation_lineage"])
+        self.assertEqual(lineage["inputs"][0]["sha256"], lineage["output"]["sha256"])
 
     def test_source_size_and_checksum_mismatch_fail_before_index(self):
         descriptor, mapping = preparation_fixture()

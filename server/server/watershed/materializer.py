@@ -325,11 +325,30 @@ def _child_records(member, artifact, *, model):
     source, layer = _open_single_layer(artifact)
     role = artifact.lineage.role
     mapping = SUBCATCHMENT_MAPPING if model is StagedSubcatchment else CHANNEL_MAPPING
+    entities = {}
     for feature in layer:
         values = {
             target: _integer_feature_field(feature, source_field, role)
             for target, source_field in mapping.items()
         }
+        key = (
+            (values["topazid"],)
+            if model is StagedSubcatchment
+            else (values["topazid"], values["weppid"], values["order"])
+        )
+        entity = entities.setdefault(key, {"values": values, "polygons": []})
+        if entity["values"] != values:
+            raise MaterializationError(f"{role} multipart identity fields conflict.")
+        geometry = _exported_exact_geometry(
+            feature,
+            role,
+            _normalized_geometry(feature, role),
+        )
+        entity["polygons"].extend(list(geometry))
+    for entity in entities.values():
+        geometry = MultiPolygon(*entity["polygons"])
+        if geometry.empty or not geometry.valid:
+            raise MaterializationError(f"{role} merged geometry is invalid.")
         yield {
             "run_state": member.run_state,
             "watershed_identity": member.run_state.watershed_identity,
@@ -338,12 +357,8 @@ def _child_records(member, artifact, *, model):
                 if model is StagedSubcatchment
                 else member.run_state.channel_fingerprint
             ),
-            **values,
-            "geom": _exported_exact_geometry(
-                feature,
-                role,
-                _normalized_geometry(feature, role),
-            ),
+            **entity["values"],
+            "geom": geometry,
             "attributes": {},
         }
     artifact.assert_unchanged()

@@ -37,6 +37,18 @@ set to equal the complete reviewed member map. This supports the public
 Firewise Watersheds aggregate without treating unrelated collections as extra
 Victoria members or inferring stable keys.
 
+DB30 adds one second closed identity option for BatchRunner resources whose
+source features do not contain their current full run IDs. A descriptor names
+one exact string property and provides a complete explicit source-value to
+reviewed-run-ID map. The map values must equal the reviewed member set and be
+unique. Preparation requires the source feature values to equal the map keys
+plus any explicitly reviewed excluded values exactly, rejects missing,
+unlisted, null, duplicate, or overlapping mapped/excluded values, deep-copies
+each included feature, and changes only its `properties.runid` to the mapped
+current run ID. Excluded features do not produce members or child requests.
+This is an explicit source binding, not a runtime template language or stable-
+key inference.
+
 ## 2. Exact source resolution
 
 For a batch, the master must be a non-empty GeoJSON FeatureCollection. Every
@@ -66,6 +78,13 @@ DB21 owns dataset-specific column, type, join, CRS, and semantic validation.
 The preparer computes boundary bounds plus subcatchment and channel counts. It
 creates deterministic metadata JSON for each member and, for batches, a
 canonical one-feature boundary artifact from the locked master.
+
+Child counts represent materialized business entities rather than raw
+multipart feature records. Subcatchment parts group by `TopazID` and must agree
+on `WeppID`; channel parts group by `(TopazID, WeppID, Order)`. Missing,
+non-integer, or conflicting identity fields are fatal. DB20 merges each exact
+group into one multipolygon row, so DB21 Parquet row counts and joins are
+checked against the same identities that the database will contain.
 
 ## 4. Immutable publication
 

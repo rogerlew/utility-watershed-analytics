@@ -282,11 +282,13 @@ def validate_transformation_lineage(document: dict[str, Any]) -> None:
         "duplicate-field-decision",
         "transformation field decision",
     )
-    input_hashes = {artifact["sha256"] for artifact in document["inputs"]}
+    non_authoritative_input_hashes = {
+        artifact["sha256"] for artifact in document["inputs"][1:]
+    }
     require(
-        document["output"]["sha256"] not in input_hashes,
+        document["output"]["sha256"] not in non_authoritative_input_hashes,
         "output-reuses-input",
-        "transformation output must not reuse an input checksum",
+        "transformation output must not reuse a non-authoritative input checksum",
     )
 
 

@@ -2,6 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 
 import pyarrow as arrow
 import pyarrow.parquet as parquet
@@ -12,6 +13,7 @@ from server.watershed.materializer import (
     CapabilityDeclaration,
     MaterializationError,
     MaterializationMember,
+    _child_records,
     build_and_activate_empty_release,
     stage_locked_release,
 )
@@ -316,6 +318,37 @@ class MaterializerFixtureMixin:
 
 
 class StrictEmptyMaterializerTests(MaterializerFixtureMixin, TestCase):
+
+    def test_multipart_subcatchment_features_merge_by_business_identity(self):
+        path = self._write_json(
+            "multipart-subcatchments.geojson",
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {"TopazID": 1, "WeppID": 101},
+                        "geometry": polygon(offset),
+                    }
+                    for offset in (1, 3)
+                ],
+            },
+        )
+        artifact = SimpleNamespace(
+            path=path,
+            lineage=SimpleNamespace(role="subcatchments"),
+            assert_unchanged=lambda: None,
+        )
+        member = SimpleNamespace(run_state=SimpleNamespace(
+            watershed_identity=SimpleNamespace(),
+            subcatchment_fingerprint=digest("subcatchments"),
+        ))
+
+        records = list(_child_records(member, artifact, model=StagedSubcatchment))
+
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["topazid"], 1)
+        self.assertEqual(len(records[0]["geom"]), 2)
 
     def test_multi_run_mixed_source_build_is_exact_and_bounded(self):
         release, members = self._release()

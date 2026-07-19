@@ -1,0 +1,50 @@
+{
+  "authentication": {
+    "secret_ref": "WEPPCLOUD_JWT_TOKEN"
+  },
+  "collection_key": "bremerton",
+  "created_at": "2026-07-19T04:15:00Z",
+  "kind": "batch",
+  "master_identity": {
+    "excluded": [
+      "Bremerton04"
+    ],
+    "location": "properties-map",
+    "mapping": {
+      "Bremerton01": "batch;;bremerton-2026-psbs;;bremerton01",
+      "Bremerton02": "batch;;bremerton-2026-psbs;;bremerton02",
+      "Bremerton03": "batch;;bremerton-2026-psbs;;bremerton03"
+    },
+    "property": "name"
+  },
+  "master_url": "https://wepp.cloud/weppcloud/batch/bremerton-2026-psbs/download/resources/bremerton-watersheds.wgs.geojson",
+  "members": [
+    {
+      "aliases": [],
+      "display_name": "Bremerton01",
+      "runid": "batch;;bremerton-2026-psbs;;bremerton01",
+      "watershed_key": "bremerton-01"
+    },
+    {
+      "aliases": [],
+      "display_name": "Bremerton02",
+      "runid": "batch;;bremerton-2026-psbs;;bremerton02",
+      "watershed_key": "bremerton-02"
+    },
+    {
+      "aliases": [],
+      "display_name": "Bremerton03",
+      "runid": "batch;;bremerton-2026-psbs;;bremerton03",
+      "watershed_key": "bremerton-03"
+    }
+  ],
+  "schema_version": 1,
+  "source_revision": "wepp1-20260718-fb4197530ebc317e",
+  "source_templates": {
+    "channels": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/dem/wbt/channels.WGS.geojson",
+    "hillslopes": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/watershed/hillslopes.parquet",
+    "landuse": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/landuse/landuse.parquet",
+    "soils": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/soils/soils.parquet",
+    "subcatchments": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/dem/wbt/subcatchments.WGS.geojson"
+  }
+}

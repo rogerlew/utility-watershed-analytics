@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import math
@@ -296,19 +297,71 @@ def validate_descriptor(value: Any) -> dict[str, Any]:
             identity = value["master_identity"]
             if not isinstance(identity, dict):
                 raise SourceDescriptorError("master_identity must be an object")
-            _require_exact_keys(
-                identity,
-                required={"location", "prefix"},
-                label="master_identity",
-            )
-            if identity["location"] not in {"feature-id", "properties-runid"}:
+            if identity.get("location") == "properties-map":
+                _require_exact_keys(
+                    identity,
+                    required={"location", "property", "mapping"},
+                    optional={"excluded"},
+                    label="master_identity",
+                )
+                property_name = _require_string(
+                    identity["property"], "master_identity property", maximum=255
+                )
+                mapping = identity["mapping"]
+                if not isinstance(mapping, dict) or not mapping:
+                    raise SourceDescriptorError("master_identity mapping must be non-empty")
+                normalized_mapping = {
+                    _require_string(source_id, "master_identity source value"): _require_string(
+                        runid, "master_identity mapped runid"
+                    )
+                    for source_id, runid in mapping.items()
+                }
+                if len(set(normalized_mapping.values())) != len(normalized_mapping):
+                    raise SourceDescriptorError("master_identity mapped runids must be unique")
+                if set(normalized_mapping.values()) != set(runids):
+                    raise SourceDescriptorError(
+                        "master_identity mapped runids differ from reviewed members"
+                    )
+                excluded = identity.get("excluded", [])
+                if not isinstance(excluded, list):
+                    raise SourceDescriptorError("master_identity excluded must be an array")
+                normalized_excluded = [
+                    _require_string(source_id, "master_identity excluded value")
+                    for source_id in excluded
+                ]
+                if len(normalized_excluded) != len(set(normalized_excluded)):
+                    raise SourceDescriptorError("master_identity excluded values must be unique")
+                if set(normalized_excluded) & set(normalized_mapping):
+                    raise SourceDescriptorError(
+                        "master_identity excluded values overlap the mapping"
+                    )
+                normalized_identity = {
+                    "location": "properties-map",
+                    "property": property_name,
+                    "mapping": normalized_mapping,
+                }
+                if "excluded" in identity:
+                    normalized_identity["excluded"] = normalized_excluded
+                descriptor["master_identity"] = normalized_identity
+                identity = None
+            else:
+                _require_exact_keys(
+                    identity,
+                    required={"location", "prefix"},
+                    label="master_identity",
+                )
+            if identity is not None and identity["location"] not in {
+                "feature-id",
+                "properties-runid",
+            }:
                 raise SourceDescriptorError("master_identity location is unsupported")
-            descriptor["master_identity"] = {
-                "location": identity["location"],
-                "prefix": _require_string(
-                    identity["prefix"], "master_identity prefix", maximum=255
-                ),
-            }
+            if identity is not None:
+                descriptor["master_identity"] = {
+                    "location": identity["location"],
+                    "prefix": _require_string(
+                        identity["prefix"], "master_identity prefix", maximum=255
+                    ),
+                }
         if "enrichment" in value:
             descriptor["enrichment"] = _enrichment_descriptor(
                 value["enrichment"],
@@ -488,12 +541,66 @@ def _bounds(pairs: Iterable[tuple[float, float]]) -> list[float]:
     return [min(longitudes), min(latitudes), max(longitudes), max(latitudes)]
 
 
+def _integer_identity(value: Any, label: str) -> int:
+    if isinstance(value, bool):
+        raise SourceFormatError(f"{label} must be an integer")
+    try:
+        result = int(value)
+    except (TypeError, ValueError, OverflowError) as error:
+        raise SourceFormatError(f"{label} must be an integer") from error
+    if isinstance(value, float) and not value.is_integer():
+        raise SourceFormatError(f"{label} must be an integer")
+    return result
+
+
+def _child_entity_count(document: dict[str, Any], role: str) -> int:
+    entities: dict[tuple[int, ...], tuple[int, ...]] = {}
+    for feature in document["features"]:
+        properties = feature["properties"]
+        topazid = _integer_identity(properties.get("TopazID"), f"{role} TopazID")
+        weppid = _integer_identity(properties.get("WeppID"), f"{role} WeppID")
+        if role == "subcatchments":
+            key = (topazid,)
+            identity = (topazid, weppid)
+        else:
+            order = _integer_identity(properties.get("Order"), f"{role} Order")
+            key = (topazid, weppid, order)
+            identity = key
+        previous = entities.setdefault(key, identity)
+        if previous != identity:
+            raise SourceFormatError(f"{role} multipart identity fields conflict")
+    return len(entities)
+
+
 def _batch_features(
     master: dict[str, Any],
     members: list[dict[str, Any]],
     master_identity: dict[str, str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     by_runid = {}
+    if master_identity is not None and master_identity["location"] == "properties-map":
+        property_name = master_identity["property"]
+        mapping = master_identity["mapping"]
+        excluded = set(master_identity.get("excluded", []))
+        observed_source_ids = set()
+        for feature in master["features"]:
+            source_id = feature["properties"].get(property_name)
+            if not isinstance(source_id, str) or not source_id:
+                raise SourceMembershipError("batch master feature is missing mapped identity")
+            if source_id in observed_source_ids:
+                raise SourceMembershipError("batch master contains a duplicate mapped identity")
+            observed_source_ids.add(source_id)
+            runid = mapping.get(source_id)
+            if runid is None:
+                if source_id in excluded:
+                    continue
+                raise SourceMembershipError("batch master contains an unmapped identity")
+            normalized_feature = copy.deepcopy(feature)
+            normalized_feature["properties"]["runid"] = runid
+            by_runid[runid] = normalized_feature
+        if observed_source_ids != set(mapping) | excluded:
+            raise SourceMembershipError("batch master is missing a mapped identity")
+        return by_runid
     location = (
         master_identity["location"] if master_identity is not None else "properties-runid"
     )
@@ -624,13 +731,12 @@ def _publish_enrichment_artifacts(
     descriptor: dict[str, Any],
     requests: list[SourceRequest],
     published_sources: dict[tuple[str, str, str], PublishResult],
+    target_artifact: PublishResult,
     target_document: dict[str, Any],
     source_document: dict[str, Any],
     result: enrichment.NasaEnrichmentResult,
 ) -> dict[str, Any]:
-    master_request = next(request for request in requests if request.role == "master")
     enrichment_request = next(request for request in requests if request.role == "enrichment")
-    target_artifact = published_sources[master_request.key]
     source_artifact = published_sources[enrichment_request.key]
     enriched_artifact = _publish_bytes(
         client,
@@ -638,8 +744,8 @@ def _publish_enrichment_artifacts(
         "nasa-202606-enriched-master.geojson",
         canonical_json(result.document),
     )
-    if enriched_artifact.digest in {target_artifact.digest, source_artifact.digest}:
-        raise SourceIntegrityError("enrichment output reuses an input artifact")
+    if enriched_artifact.digest == source_artifact.digest:
+        raise SourceIntegrityError("enrichment output reuses the enrichment source artifact")
     target_count = len(target_document["features"])
     source_runid_count = sum(
         "runid" in feature["properties"] for feature in source_document["features"]
@@ -796,6 +902,16 @@ def prepare_sources(
                 label="batch master",
             )
             master_document = target_master_document
+            master_features = _batch_features(
+                master_document,
+                descriptor["members"],
+                descriptor.get("master_identity"),
+            )
+            if descriptor.get("master_identity", {}).get("location") == "properties-map":
+                normalized_features = list(master_features.values())
+                target_master_document = copy.deepcopy(target_master_document)
+                target_master_document["features"] = normalized_features
+                master_document = target_master_document
             if "enrichment" in descriptor:
                 enrichment_request = next(
                     request for request in requests if request.role == "enrichment"
@@ -818,11 +934,7 @@ def prepare_sources(
                 except enrichment.NasaEnrichmentError as error:
                     raise SourceFormatError(f"NASA enrichment failed: {error.code}") from error
                 master_document = enrichment_result.document
-            master_features = _batch_features(
-                master_document,
-                descriptor["members"],
-                descriptor.get("master_identity"),
-            )
+                master_features = _batch_features(master_document, descriptor["members"])
 
         parsed_geojson = {}
         for request in requests:
@@ -855,6 +967,15 @@ def prepare_sources(
 
         transformation_lineage_reference = None
         if enrichment_result is not None:
+            master_request = next(request for request in requests if request.role == "master")
+            target_artifact = published_sources[master_request.key]
+            if descriptor.get("master_identity", {}).get("location") == "properties-map":
+                target_artifact = _publish_bytes(
+                    client,
+                    root,
+                    "normalized-target-master.geojson",
+                    canonical_json(target_master_document),
+                )
             transformation_lineage_reference = _publish_enrichment_artifacts(
                 client=client,
                 root=root,
@@ -862,6 +983,7 @@ def prepare_sources(
                 descriptor=descriptor,
                 requests=requests,
                 published_sources=published_sources,
+                target_artifact=target_artifact,
                 target_document=target_master_document,
                 source_document=enrichment_source_document,
                 result=enrichment_result,
@@ -941,7 +1063,7 @@ def prepare_sources(
                 )
                 if role in {"subcatchments", "channels"}:
                     document, _ = parsed_geojson[request.key]
-                    counts[role] = len(document["features"])
+                    counts[role] = _child_entity_count(document, role)
 
             index_member = {
                 "watershed_key": member["watershed_key"],

@@ -1,0 +1,964 @@
+{
+  "authentication": {
+    "secret_ref": "WEPPCLOUD_JWT_TOKEN"
+  },
+  "collection_key": "nasa-roses",
+  "created_at": "2026-07-19T04:15:00Z",
+  "enrichment": {
+    "code_git_commit": "0b75d58c3796495fe03334765b418b625705b6e6",
+    "source_bytes": 8935440,
+    "source_sha256": "be152890a8436d931f962b6eabe32287935d8da5303c5f532985ec835e8954ce",
+    "source_url": "https://bucket.bearhive.duckdns.org/WWS_Watersheds_HUC10_Merged.geojson",
+    "type": "nasa-202606-wws-code",
+    "validator_image_digest": "sha256:fa7ed8fe30f5faa9535ad6f41c728bebc8c091b39139fd3fe29b3feeaa133ced"
+  },
+  "kind": "batch",
+  "master_identity": {
+    "location": "properties-map",
+    "mapping": {
+      "OR,WA_100": "batch;;nasa-roses-202606-psbs;;OR,WA-100",
+      "OR,WA_101": "batch;;nasa-roses-202606-psbs;;OR,WA-101",
+      "OR,WA_102": "batch;;nasa-roses-202606-psbs;;OR,WA-102",
+      "OR,WA_103": "batch;;nasa-roses-202606-psbs;;OR,WA-103",
+      "OR,WA_99": "batch;;nasa-roses-202606-psbs;;OR,WA-99",
+      "OR_10": "batch;;nasa-roses-202606-psbs;;OR-10",
+      "OR_108": "batch;;nasa-roses-202606-psbs;;OR-108",
+      "OR_11": "batch;;nasa-roses-202606-psbs;;OR-11",
+      "OR_12": "batch;;nasa-roses-202606-psbs;;OR-12",
+      "OR_123": "batch;;nasa-roses-202606-psbs;;OR-123",
+      "OR_125": "batch;;nasa-roses-202606-psbs;;OR-125",
+      "OR_126": "batch;;nasa-roses-202606-psbs;;OR-126",
+      "OR_13": "batch;;nasa-roses-202606-psbs;;OR-13",
+      "OR_138": "batch;;nasa-roses-202606-psbs;;OR-138",
+      "OR_14": "batch;;nasa-roses-202606-psbs;;OR-14",
+      "OR_141": "batch;;nasa-roses-202606-psbs;;OR-141",
+      "OR_149": "batch;;nasa-roses-202606-psbs;;OR-149",
+      "OR_15": "batch;;nasa-roses-202606-psbs;;OR-15",
+      "OR_151": "batch;;nasa-roses-202606-psbs;;OR-151",
+      "OR_154": "batch;;nasa-roses-202606-psbs;;OR-154",
+      "OR_16": "batch;;nasa-roses-202606-psbs;;OR-16",
+      "OR_160": "batch;;nasa-roses-202606-psbs;;OR-160",
+      "OR_164": "batch;;nasa-roses-202606-psbs;;OR-164",
+      "OR_165": "batch;;nasa-roses-202606-psbs;;OR-165",
+      "OR_167": "batch;;nasa-roses-202606-psbs;;OR-167",
+      "OR_168": "batch;;nasa-roses-202606-psbs;;OR-168",
+      "OR_17": "batch;;nasa-roses-202606-psbs;;OR-17",
+      "OR_18": "batch;;nasa-roses-202606-psbs;;OR-18",
+      "OR_184": "batch;;nasa-roses-202606-psbs;;OR-184",
+      "OR_185": "batch;;nasa-roses-202606-psbs;;OR-185",
+      "OR_188": "batch;;nasa-roses-202606-psbs;;OR-188",
+      "OR_19": "batch;;nasa-roses-202606-psbs;;OR-19",
+      "OR_191": "batch;;nasa-roses-202606-psbs;;OR-191",
+      "OR_194": "batch;;nasa-roses-202606-psbs;;OR-194",
+      "OR_195": "batch;;nasa-roses-202606-psbs;;OR-195",
+      "OR_20": "batch;;nasa-roses-202606-psbs;;OR-20",
+      "OR_202": "batch;;nasa-roses-202606-psbs;;OR-202",
+      "OR_204": "batch;;nasa-roses-202606-psbs;;OR-204",
+      "OR_205": "batch;;nasa-roses-202606-psbs;;OR-205",
+      "OR_206": "batch;;nasa-roses-202606-psbs;;OR-206",
+      "OR_207": "batch;;nasa-roses-202606-psbs;;OR-207",
+      "OR_21": "batch;;nasa-roses-202606-psbs;;OR-21",
+      "OR_22": "batch;;nasa-roses-202606-psbs;;OR-22",
+      "OR_23": "batch;;nasa-roses-202606-psbs;;OR-23",
+      "OR_24": "batch;;nasa-roses-202606-psbs;;OR-24",
+      "OR_25": "batch;;nasa-roses-202606-psbs;;OR-25",
+      "OR_26": "batch;;nasa-roses-202606-psbs;;OR-26",
+      "OR_27": "batch;;nasa-roses-202606-psbs;;OR-27",
+      "OR_28": "batch;;nasa-roses-202606-psbs;;OR-28",
+      "OR_30": "batch;;nasa-roses-202606-psbs;;OR-30",
+      "OR_33": "batch;;nasa-roses-202606-psbs;;OR-33",
+      "OR_39": "batch;;nasa-roses-202606-psbs;;OR-39",
+      "OR_40": "batch;;nasa-roses-202606-psbs;;OR-40",
+      "OR_41": "batch;;nasa-roses-202606-psbs;;OR-41",
+      "OR_44": "batch;;nasa-roses-202606-psbs;;OR-44",
+      "OR_45": "batch;;nasa-roses-202606-psbs;;OR-45",
+      "OR_47": "batch;;nasa-roses-202606-psbs;;OR-47",
+      "OR_48": "batch;;nasa-roses-202606-psbs;;OR-48",
+      "OR_5": "batch;;nasa-roses-202606-psbs;;OR-5",
+      "OR_51": "batch;;nasa-roses-202606-psbs;;OR-51",
+      "OR_6": "batch;;nasa-roses-202606-psbs;;OR-6",
+      "OR_60": "batch;;nasa-roses-202606-psbs;;OR-60",
+      "OR_7": "batch;;nasa-roses-202606-psbs;;OR-7",
+      "OR_8": "batch;;nasa-roses-202606-psbs;;OR-8",
+      "OR_9": "batch;;nasa-roses-202606-psbs;;OR-9",
+      "OR_93": "batch;;nasa-roses-202606-psbs;;OR-93",
+      "WA_10": "batch;;nasa-roses-202606-psbs;;WA-10",
+      "WA_106": "batch;;nasa-roses-202606-psbs;;WA-106",
+      "WA_117": "batch;;nasa-roses-202606-psbs;;WA-117",
+      "WA_141": "batch;;nasa-roses-202606-psbs;;WA-141",
+      "WA_155": "batch;;nasa-roses-202606-psbs;;WA-155",
+      "WA_156": "batch;;nasa-roses-202606-psbs;;WA-156",
+      "WA_162": "batch;;nasa-roses-202606-psbs;;WA-162",
+      "WA_163": "batch;;nasa-roses-202606-psbs;;WA-163",
+      "WA_174": "batch;;nasa-roses-202606-psbs;;WA-174",
+      "WA_18": "batch;;nasa-roses-202606-psbs;;WA-18",
+      "WA_19": "batch;;nasa-roses-202606-psbs;;WA-19",
+      "WA_25": "batch;;nasa-roses-202606-psbs;;WA-25",
+      "WA_26": "batch;;nasa-roses-202606-psbs;;WA-26",
+      "WA_30": "batch;;nasa-roses-202606-psbs;;WA-30",
+      "WA_36": "batch;;nasa-roses-202606-psbs;;WA-36",
+      "WA_37": "batch;;nasa-roses-202606-psbs;;WA-37",
+      "WA_38": "batch;;nasa-roses-202606-psbs;;WA-38",
+      "WA_39": "batch;;nasa-roses-202606-psbs;;WA-39",
+      "WA_50": "batch;;nasa-roses-202606-psbs;;WA-50",
+      "WA_57": "batch;;nasa-roses-202606-psbs;;WA-57",
+      "WA_77": "batch;;nasa-roses-202606-psbs;;WA-77",
+      "WA_78": "batch;;nasa-roses-202606-psbs;;WA-78",
+      "WA_79": "batch;;nasa-roses-202606-psbs;;WA-79",
+      "WA_80": "batch;;nasa-roses-202606-psbs;;WA-80",
+      "WA_81": "batch;;nasa-roses-202606-psbs;;WA-81",
+      "WA_82": "batch;;nasa-roses-202606-psbs;;WA-82",
+      "WA_9": "batch;;nasa-roses-202606-psbs;;WA-9"
+    },
+    "property": "WWS_Code"
+  },
+  "master_url": "https://wepp.cloud/weppcloud/batch/nasa-roses-202606-psbs/download/resources/WWS_Watersheds_HUC10_psbs_102026.geojson",
+  "members": [
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-154",
+        "batch;;nasa-roses-2025;;or-154"
+      ],
+      "display_name": "ONTARIO, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-154",
+      "watershed_key": "nasa-roses-or-154"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-20",
+        "batch;;nasa-roses-2025;;or-20"
+      ],
+      "display_name": "JOSEPH, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-20",
+      "watershed_key": "nasa-roses-or-20"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-194",
+        "batch;;nasa-roses-2025;;or-194"
+      ],
+      "display_name": "LAKESHORE WTR & DEVELOP CO-OP",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-194",
+      "watershed_key": "nasa-roses-or-194"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR,WA-99",
+        "batch;;nasa-roses-2025;;or,wa-99"
+      ],
+      "display_name": "STEVENSON WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR,WA-99",
+      "watershed_key": "nasa-roses-or-wa-99"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR,WA-100",
+        "batch;;nasa-roses-2025;;or,wa-100"
+      ],
+      "display_name": "STEVENSON WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR,WA-100",
+      "watershed_key": "nasa-roses-or-wa-100"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR,WA-101",
+        "batch;;nasa-roses-2025;;or,wa-101"
+      ],
+      "display_name": "STEVENSON WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR,WA-101",
+      "watershed_key": "nasa-roses-or-wa-101"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR,WA-102",
+        "batch;;nasa-roses-2025;;or,wa-102"
+      ],
+      "display_name": "STEVENSON WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR,WA-102",
+      "watershed_key": "nasa-roses-or-wa-102"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR,WA-103",
+        "batch;;nasa-roses-2025;;or,wa-103"
+      ],
+      "display_name": "MAPLE HILL WATER SERVICES",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR,WA-103",
+      "watershed_key": "nasa-roses-or-wa-103"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-174",
+        "batch;;nasa-roses-2025;;wa-174"
+      ],
+      "display_name": "KLICKITAT SALMON HATCHERY",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-174",
+      "watershed_key": "nasa-roses-wa-174"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-204",
+        "batch;;nasa-roses-2025;;or-204"
+      ],
+      "display_name": "MONUMENT, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-204",
+      "watershed_key": "nasa-roses-or-204"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-202",
+        "batch;;nasa-roses-2025;;or-202"
+      ],
+      "display_name": "YOUNG LIFE",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-202",
+      "watershed_key": "nasa-roses-or-202"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-6",
+        "batch;;nasa-roses-2025;;or-6"
+      ],
+      "display_name": "PORTLAND BUREAU OF WATER WORKS",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-6",
+      "watershed_key": "nasa-roses-or-6"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-9",
+        "batch;;nasa-roses-2025;;or-9"
+      ],
+      "display_name": "PGE BEAVER GENERATING STATION",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-9",
+      "watershed_key": "nasa-roses-or-9"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-12",
+        "batch;;nasa-roses-2025;;or-12"
+      ],
+      "display_name": "RAINIER WATER DEPARTMENT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-12",
+      "watershed_key": "nasa-roses-or-12"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-93",
+        "batch;;nasa-roses-2025;;or-93"
+      ],
+      "display_name": "RAINIER WATER DEPARTMENT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-93",
+      "watershed_key": "nasa-roses-or-93"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-25",
+        "batch;;nasa-roses-2025;;wa-25"
+      ],
+      "display_name": "CATHLAMET WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-25",
+      "watershed_key": "nasa-roses-wa-25"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-16",
+        "batch;;nasa-roses-2025;;or-16"
+      ],
+      "display_name": "ROW RIVER VALLEY WATER DIST",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-16",
+      "watershed_key": "nasa-roses-or-16"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-13",
+        "batch;;nasa-roses-2025;;or-13"
+      ],
+      "display_name": "CORVALLIS, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-13",
+      "watershed_key": "nasa-roses-or-13"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-41",
+        "batch;;nasa-roses-2025;;or-41"
+      ],
+      "display_name": "ALBANY, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-41",
+      "watershed_key": "nasa-roses-or-41"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-5",
+        "batch;;nasa-roses-2025;;or-5"
+      ],
+      "display_name": "EUGENE WATER & ELECTRIC BOARD",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-5",
+      "watershed_key": "nasa-roses-or-5"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-184",
+        "batch;;nasa-roses-2025;;or-184"
+      ],
+      "display_name": "SPRINGFIELD UTILITY BOARD",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-184",
+      "watershed_key": "nasa-roses-or-184"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-17",
+        "batch;;nasa-roses-2025;;or-17"
+      ],
+      "display_name": "BREITENBUSH HOT SPRINGS",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-17",
+      "watershed_key": "nasa-roses-or-17"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-21",
+        "batch;;nasa-roses-2025;;or-21"
+      ],
+      "display_name": "DETROIT WATER SYSTEM",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-21",
+      "watershed_key": "nasa-roses-or-21"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-33",
+        "batch;;nasa-roses-2025;;or-33"
+      ],
+      "display_name": "SALEM PUBLIC WORKS",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-33",
+      "watershed_key": "nasa-roses-or-33"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-45",
+        "batch;;nasa-roses-2025;;or-45"
+      ],
+      "display_name": "STAYTON WATER SUPPLY",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-45",
+      "watershed_key": "nasa-roses-or-45"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-207",
+        "batch;;nasa-roses-2025;;or-207"
+      ],
+      "display_name": "JEFFERSON, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-207",
+      "watershed_key": "nasa-roses-or-207"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-30",
+        "batch;;nasa-roses-2025;;or-30"
+      ],
+      "display_name": "DALLAS, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-30",
+      "watershed_key": "nasa-roses-or-30"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-206",
+        "batch;;nasa-roses-2025;;or-206"
+      ],
+      "display_name": "MONMOUTH, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-206",
+      "watershed_key": "nasa-roses-or-206"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-11",
+        "batch;;nasa-roses-2025;;or-11"
+      ],
+      "display_name": "WILLAMINA, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-11",
+      "watershed_key": "nasa-roses-or-11"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-22",
+        "batch;;nasa-roses-2025;;or-22"
+      ],
+      "display_name": "SILVERTON, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-22",
+      "watershed_key": "nasa-roses-or-22"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-23",
+        "batch;;nasa-roses-2025;;or-23"
+      ],
+      "display_name": "SILVERTON, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-23",
+      "watershed_key": "nasa-roses-or-23"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-9",
+        "batch;;nasa-roses-2025;;wa-9"
+      ],
+      "display_name": "BOISTFORT VALLEY",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-9",
+      "watershed_key": "nasa-roses-wa-9"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-10",
+        "batch;;nasa-roses-2025;;wa-10"
+      ],
+      "display_name": "BOISTFORT VALLEY",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-10",
+      "watershed_key": "nasa-roses-wa-10"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-79",
+        "batch;;nasa-roses-2025;;wa-79"
+      ],
+      "display_name": "PE ELL TOWN OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-79",
+      "watershed_key": "nasa-roses-wa-79"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-80",
+        "batch;;nasa-roses-2025;;wa-80"
+      ],
+      "display_name": "PE ELL TOWN OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-80",
+      "watershed_key": "nasa-roses-wa-80"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-81",
+        "batch;;nasa-roses-2025;;wa-81"
+      ],
+      "display_name": "PE ELL TOWN OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-81",
+      "watershed_key": "nasa-roses-wa-81"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-26",
+        "batch;;nasa-roses-2025;;wa-26"
+      ],
+      "display_name": "CHEHALIS WATER DEPARTMENT",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-26",
+      "watershed_key": "nasa-roses-wa-26"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-106",
+        "batch;;nasa-roses-2025;;wa-106"
+      ],
+      "display_name": "CHEHALIS RV PARK",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-106",
+      "watershed_key": "nasa-roses-wa-106"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-77",
+        "batch;;nasa-roses-2025;;wa-77"
+      ],
+      "display_name": "TRANSALTA CENTRALIA GENERATION",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-77",
+      "watershed_key": "nasa-roses-wa-77"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-78",
+        "batch;;nasa-roses-2025;;wa-78"
+      ],
+      "display_name": "TRANSALTA CENTRALIA GENERATION",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-78",
+      "watershed_key": "nasa-roses-wa-78"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-24",
+        "batch;;nasa-roses-2025;;or-24"
+      ],
+      "display_name": "SEASIDE WATER DEPARTMENT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-24",
+      "watershed_key": "nasa-roses-or-24"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-44",
+        "batch;;nasa-roses-2025;;or-44"
+      ],
+      "display_name": "SEASIDE WATER DEPARTMENT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-44",
+      "watershed_key": "nasa-roses-or-44"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-108",
+        "batch;;nasa-roses-2025;;or-108"
+      ],
+      "display_name": "ARCH CAPE WATER SERVICE DISTRICT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-108",
+      "watershed_key": "nasa-roses-or-108"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-125",
+        "batch;;nasa-roses-2025;;or-125"
+      ],
+      "display_name": "ARCH CAPE WATER SERVICE DISTRICT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-125",
+      "watershed_key": "nasa-roses-or-125"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-18",
+        "batch;;nasa-roses-2025;;or-18"
+      ],
+      "display_name": "BERNDT CREEK WATER CORP",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-18",
+      "watershed_key": "nasa-roses-or-18"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-40",
+        "batch;;nasa-roses-2025;;or-40"
+      ],
+      "display_name": "TIMBER WATER ASSOCIATION",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-40",
+      "watershed_key": "nasa-roses-or-40"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-51",
+        "batch;;nasa-roses-2025;;or-51"
+      ],
+      "display_name": "VERNONIA, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-51",
+      "watershed_key": "nasa-roses-or-51"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-205",
+        "batch;;nasa-roses-2025;;or-205"
+      ],
+      "display_name": "JEWELL SD #8",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-205",
+      "watershed_key": "nasa-roses-or-205"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-27",
+        "batch;;nasa-roses-2025;;or-27"
+      ],
+      "display_name": "KERNVILLE-GLENEDEN-LINCOLN BCH W D",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-27",
+      "watershed_key": "nasa-roses-or-27"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-39",
+        "batch;;nasa-roses-2025;;or-39"
+      ],
+      "display_name": "LINCOLN CITY WATER DISTRICT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-39",
+      "watershed_key": "nasa-roses-or-39"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-138",
+        "batch;;nasa-roses-2025;;or-138"
+      ],
+      "display_name": "SILETZ, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-138",
+      "watershed_key": "nasa-roses-or-138"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-149",
+        "batch;;nasa-roses-2025;;or-149"
+      ],
+      "display_name": "NEWPORT, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-149",
+      "watershed_key": "nasa-roses-or-149"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-151",
+        "batch;;nasa-roses-2025;;or-151"
+      ],
+      "display_name": "TOLEDO WATER UTILITIES",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-151",
+      "watershed_key": "nasa-roses-or-151"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-164",
+        "batch;;nasa-roses-2025;;or-164"
+      ],
+      "display_name": "LINCOLN CITY WATER DISTRICT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-164",
+      "watershed_key": "nasa-roses-or-164"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-165",
+        "batch;;nasa-roses-2025;;or-165"
+      ],
+      "display_name": "KERNVILLE-GLENEDEN-LINC BCH WD",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-165",
+      "watershed_key": "nasa-roses-or-165"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-168",
+        "batch;;nasa-roses-2025;;or-168"
+      ],
+      "display_name": "LINCOLN CITY WATER DISTRICT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-168",
+      "watershed_key": "nasa-roses-or-168"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-123",
+        "batch;;nasa-roses-2025;;or-123"
+      ],
+      "display_name": "YACHATS, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-123",
+      "watershed_key": "nasa-roses-or-123"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-141",
+        "batch;;nasa-roses-2025;;or-141"
+      ],
+      "display_name": "YACHATS, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-141",
+      "watershed_key": "nasa-roses-or-141"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-167",
+        "batch;;nasa-roses-2025;;or-167"
+      ],
+      "display_name": "YACHATS, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-167",
+      "watershed_key": "nasa-roses-or-167"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-14",
+        "batch;;nasa-roses-2025;;or-14"
+      ],
+      "display_name": "SOUTH COAST WATER DIST INC",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-14",
+      "watershed_key": "nasa-roses-or-14"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-47",
+        "batch;;nasa-roses-2025;;or-47"
+      ],
+      "display_name": "ALDERWOOD WATER DEVELOPMENT CO",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-47",
+      "watershed_key": "nasa-roses-or-47"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-8",
+        "batch;;nasa-roses-2025;;or-8"
+      ],
+      "display_name": "USFS WOLF CREEK JOB CORPS",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-8",
+      "watershed_key": "nasa-roses-or-8"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-191",
+        "batch;;nasa-roses-2025;;or-191"
+      ],
+      "display_name": "LITTLE RIVER CHRISTIAN CAMP",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-191",
+      "watershed_key": "nasa-roses-or-191"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-19",
+        "batch;;nasa-roses-2025;;or-19"
+      ],
+      "display_name": "UMPQUA BASIN WATER ASSOCIATION",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-19",
+      "watershed_key": "nasa-roses-or-19"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-60",
+        "batch;;nasa-roses-2025;;or-60"
+      ],
+      "display_name": "SUTHERLIN, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-60",
+      "watershed_key": "nasa-roses-or-60"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-188",
+        "batch;;nasa-roses-2025;;or-188"
+      ],
+      "display_name": "TIMBER RIVER RV PARK",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-188",
+      "watershed_key": "nasa-roses-or-188"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-28",
+        "batch;;nasa-roses-2025;;or-28"
+      ],
+      "display_name": "MILO ACADEMY",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-28",
+      "watershed_key": "nasa-roses-or-28"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-26",
+        "batch;;nasa-roses-2025;;or-26"
+      ],
+      "display_name": "CANYONVILLE, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-26",
+      "watershed_key": "nasa-roses-or-26"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-126",
+        "batch;;nasa-roses-2025;;or-126"
+      ],
+      "display_name": "MILO ACADEMY",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-126",
+      "watershed_key": "nasa-roses-or-126"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-195",
+        "batch;;nasa-roses-2025;;or-195"
+      ],
+      "display_name": "CANYONVILLE CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-195",
+      "watershed_key": "nasa-roses-or-195"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-25",
+        "batch;;nasa-roses-2025;;or-25"
+      ],
+      "display_name": "ROSEBURG FOREST PROD-DILLARD",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-25",
+      "watershed_key": "nasa-roses-or-25"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-48",
+        "batch;;nasa-roses-2025;;or-48"
+      ],
+      "display_name": "MYRTLE CREEK, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-48",
+      "watershed_key": "nasa-roses-or-48"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-185",
+        "batch;;nasa-roses-2025;;or-185"
+      ],
+      "display_name": "ON THE RIVER RV PARK",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-185",
+      "watershed_key": "nasa-roses-or-185"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-7",
+        "batch;;nasa-roses-2025;;or-7"
+      ],
+      "display_name": "OAKLAND, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-7",
+      "watershed_key": "nasa-roses-or-7"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-10",
+        "batch;;nasa-roses-2025;;or-10"
+      ],
+      "display_name": "SUTHERLIN, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-10",
+      "watershed_key": "nasa-roses-or-10"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-15",
+        "batch;;nasa-roses-2025;;or-15"
+      ],
+      "display_name": "LANGLOIS WATER DISTRICT",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-15",
+      "watershed_key": "nasa-roses-or-15"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;OR-160",
+        "batch;;nasa-roses-2025;;or-160"
+      ],
+      "display_name": "ROGUE RIVER, CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;OR-160",
+      "watershed_key": "nasa-roses-or-160"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-36",
+        "batch;;nasa-roses-2025;;wa-36"
+      ],
+      "display_name": "EATONVILLE WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-36",
+      "watershed_key": "nasa-roses-wa-36"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-37",
+        "batch;;nasa-roses-2025;;wa-37"
+      ],
+      "display_name": "EATONVILLE WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-37",
+      "watershed_key": "nasa-roses-wa-37"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-38",
+        "batch;;nasa-roses-2025;;wa-38"
+      ],
+      "display_name": "EATONVILLE WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-38",
+      "watershed_key": "nasa-roses-wa-38"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-39",
+        "batch;;nasa-roses-2025;;wa-39"
+      ],
+      "display_name": "EATONVILLE WATER DEPT",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-39",
+      "watershed_key": "nasa-roses-wa-39"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-82",
+        "batch;;nasa-roses-2025;;wa-82"
+      ],
+      "display_name": "PORT TOWNSEND CITY OF",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-82",
+      "watershed_key": "nasa-roses-wa-82"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-57",
+        "batch;;nasa-roses-2025;;wa-57"
+      ],
+      "display_name": "PORT ANGELES COMPOSITE",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-57",
+      "watershed_key": "nasa-roses-wa-57"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-30",
+        "batch;;nasa-roses-2025;;wa-30"
+      ],
+      "display_name": "CRESCENT WATER ASSN",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-30",
+      "watershed_key": "nasa-roses-wa-30"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-117",
+        "batch;;nasa-roses-2025;;wa-117"
+      ],
+      "display_name": "LOG CABIN",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-117",
+      "watershed_key": "nasa-roses-wa-117"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-141",
+        "batch;;nasa-roses-2025;;wa-141"
+      ],
+      "display_name": "CAMP DAVID JR",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-141",
+      "watershed_key": "nasa-roses-wa-141"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-18",
+        "batch;;nasa-roses-2025;;wa-18"
+      ],
+      "display_name": "Bullman Beach",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-18",
+      "watershed_key": "nasa-roses-wa-18"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-19",
+        "batch;;nasa-roses-2025;;wa-19"
+      ],
+      "display_name": "Bullman Beach",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-19",
+      "watershed_key": "nasa-roses-wa-19"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-50",
+        "batch;;nasa-roses-2025;;wa-50"
+      ],
+      "display_name": "ISLAND VIEW LUD 9",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-50",
+      "watershed_key": "nasa-roses-wa-50"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-155",
+        "batch;;nasa-roses-2025;;wa-155"
+      ],
+      "display_name": "MERRILL & RING - PYSHT TREE FARM",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-155",
+      "watershed_key": "nasa-roses-wa-155"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-156",
+        "batch;;nasa-roses-2025;;wa-156"
+      ],
+      "display_name": "MERRILL & RING - PYSHT TREE FARM",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-156",
+      "watershed_key": "nasa-roses-wa-156"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-162",
+        "batch;;nasa-roses-2025;;wa-162"
+      ],
+      "display_name": "TRETTEVIKS RV PARK",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-162",
+      "watershed_key": "nasa-roses-wa-162"
+    },
+    {
+      "aliases": [
+        "batch;;nasa-roses-2026-sbs;;WA-163",
+        "batch;;nasa-roses-2025;;wa-163"
+      ],
+      "display_name": "TRETTEVIKS RV PARK",
+      "runid": "batch;;nasa-roses-202606-psbs;;WA-163",
+      "watershed_key": "nasa-roses-wa-163"
+    }
+  ],
+  "schema_version": 1,
+  "source_revision": "wepp1-20260718-54bb501394832ca2",
+  "source_templates": {
+    "channels": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/dem/wbt/channels.WGS.geojson",
+    "hillslopes": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/watershed/hillslopes.parquet",
+    "landuse": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/landuse/landuse.parquet",
+    "soils": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/soils/soils.parquet",
+    "subcatchments": "https://wepp.cloud/weppcloud/runs/{runid}/disturbed_wbt/download/dem/wbt/subcatchments.WGS.geojson"
+  }
+}

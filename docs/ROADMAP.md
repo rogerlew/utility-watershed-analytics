@@ -219,7 +219,12 @@ access or activation. DB29 then locked and replayed the exact successor Mill
 Creek ordinary inputs, but is `EXECUTED-HOLD-RHESSYS-SOURCE`: the confirmed
 successor project has no RHESSys tree, all 56 registered maps are absent, and
 no accepted operator-owned source exists. Supplying or regenerating that map
-tree is the DB29 unblock; DB30 is the next independently executable package.
+tree is the DB29 unblock. DB30 is complete: it locked and replayed the exact
+93-member NASA successor plus the operator-approved Bremerton01–03 set in
+`forest1:/wc1`, proved enrichment lineage and 288 Parquet joins, and records
+Bremerton04 as an explicit exclusion because all five required child products
+are absent. DB30A is the next release-sequence package and retains its separate
+production authority boundary.
 
 ## Execution environments and Wave 0 readiness
 
@@ -826,6 +831,9 @@ Suggested slug: `db30-nasa-bremerton-inputs`
 - **Prove:** counts, identities, geometries, checksums, enrichment lineage,
   expected Parquet joins, and negative membership-drift tests pass from the
   durable artifacts without upstream access.
+- **Completed:** DB30 locked 93 NASA members and the explicitly approved
+  Bremerton01–03 set. Bremerton04 remains in the checksum-locked raw master only
+  as a reviewed exclusion because its five required child products are absent.
 
 #### DB30A — Production legacy-base capture and adoption
 

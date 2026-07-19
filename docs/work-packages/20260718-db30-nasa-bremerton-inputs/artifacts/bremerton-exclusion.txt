@@ -1,0 +1,18 @@
+# DB30 reviewed Bremerton exclusion
+
+Excluded source feature: Bremerton04
+Decision owner: roger
+Decision date: 2026-07-18
+Disposition: leave out of DB30 membership
+
+Required files confirmed absent on wepp1:
+
+runs/bremerton04/dem/wbt/subcatchments.WGS.geojson
+runs/bremerton04/dem/wbt/channels.WGS.geojson
+runs/bremerton04/watershed/hillslopes.parquet
+runs/bremerton04/soils/soils.parquet
+runs/bremerton04/landuse/landuse.parquet
+
+The four-feature source master remains checksum-locked. The accepted
+three-member descriptor names `Bremerton04` as an explicit exclusion so an
+unlisted fourth identity still fails closed.

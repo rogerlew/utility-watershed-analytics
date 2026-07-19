@@ -47,8 +47,8 @@ Lifecycle terms:
 | Former Mill Creek | `mdobre-invincible-scarab` | Retire | Present as of 2026-07-16 | Unavailable; the run is believed to have been removed by the deletion TTL | Remove from the database only after `some-oligopoly` is loaded and validated. Do not treat this run as a recoverable source. |
 | Victoria, BC | `batch;;victoria-ca-2026-sbs;;<member>` | Retain | Present; 31 members | DB28 copied and indexed the confirmed `Sooke09` and `Sooke15` output maps in `forest1:/wc1` | Retain the batch; production capability activation remains pending. Do not infer RHESSys availability for other members. |
 | NASA ROSES, current | `batch;;nasa-roses-2026-sbs;;<member>` | Retire | Present; 93 members | None recorded | Replace with the 202606 PSBS batch after enrichment and load validation. |
-| NASA ROSES, successor | `batch;;nasa-roses-202606-psbs;;<member>` | Replace | Not present as of 2026-07-16 | None recorded | Enrich its resources GeoJSON as specified below, configure the loader, load it, validate it, and then retire the old NASA batch. |
-| Bremerton | `batch;;bremerton-2026-psbs;;<member>` | Add | Not present as of 2026-07-16 | None recorded | Add the batch to loader configuration and load it after validating its resources GeoJSON and per-run products. |
+| NASA ROSES, successor | `batch;;nasa-roses-202606-psbs;;<member>` | Replace | Not present as of 2026-07-16 | None recorded | DB30 locked and replayed the exact enriched 93-member inputs. Build and validate the reviewed release before retiring the old NASA batch. |
+| Bremerton | `batch;;bremerton-2026-psbs;;<member>` | Add | Not present as of 2026-07-16 | None recorded | DB30 locked and replayed Bremerton01–03. Load only that approved set; Bremerton04 is explicitly excluded because all five required child products are absent. |
 
 The full Victoria batch identifier is
 `batch;;victoria-ca-2026-sbs;;<member>`. Shortened forms such as
@@ -62,6 +62,13 @@ through `Sooke28`. `Sooke05` exists in the local source tree but is absent from
 the authoritative public production inventory and is explicitly excluded. Do
 not infer membership from local directory names.
 
+DB30 locks the NASA successor and approved Bremerton mappings in
+`data-releases/locked-inputs/db30/`. Bremerton membership is exactly
+`Bremerton01`, `Bremerton02`, and `Bremerton03`. The raw four-feature master is
+retained by checksum and the descriptor names `Bremerton04` as an explicit
+exclusion; a future source appearance does not add it without a new reviewed
+decision and complete required inputs.
+
 ## Stable identity assignments
 
 DB07 assigns project-controlled collection keys independently of replaceable
@@ -70,8 +77,10 @@ source revisions:
 - Gate Creek: collection and watershed key `gate-creek`;
 - Mill Creek: collection and watershed key `mill-creek` for both the current
   and successor run;
-- NASA ROSES: collection key `nasa-roses`; and
-- Victoria: collection key `victoria-ca`.
+- NASA ROSES: collection key `nasa-roses`;
+- Victoria: collection key `victoria-ca`; and
+- Bremerton: collection key `bremerton`, with reviewed watershed keys
+  `bremerton-01`, `bremerton-02`, and `bremerton-03`.
 
 Batch watershed keys use reviewed member-index mappings. A normalized source
 suffix may propose a key such as `victoria-ca-sooke09`, but suffix, name, HUC,
@@ -192,9 +201,11 @@ The enriched resource is accepted only when:
 
 DB18 implements and synthetically proves the fixed transformation and immutable
 provenance mechanics in the
-[NASA enrichment contract](database-nasa-202606-enrichment-contract.md). It did
-not fetch either real input or update this observed snapshot. DB30 remains the
-owner of real locked membership and artifacts.
+[NASA enrichment contract](database-nasa-202606-enrichment-contract.md). DB30
+then locked the real 93-member target and 395-feature enrichment source,
+recorded 93 matches plus 302 source-only features and zero duplicates,
+preserved every target geometry and current run ID, and proved exact immutable
+replay. It did not update the observed production snapshot.
 
 ## Observed production snapshot
 
