@@ -215,7 +215,11 @@ identity and `EMPTY` release state, and has a fresh verified encrypted backup
 on `forest1:/wc1`. DB28 locked the exact Gate Creek and 31-member Victoria
 ordinary inputs plus the verified Gate Creek, Sooke09, and Sooke15 RHESSys
 assets in the operator-owned `forest1:/wc1` artifact store without production
-access or activation. DB29 is the next recommended package.
+access or activation. DB29 then locked and replayed the exact successor Mill
+Creek ordinary inputs, but is `EXECUTED-HOLD-RHESSYS-SOURCE`: the confirmed
+successor project has no RHESSys tree, all 56 registered maps are absent, and
+no accepted operator-owned source exists. Supplying or regenerating that map
+tree is the DB29 unblock; DB30 is the next independently executable package.
 
 ## Execution environments and Wave 0 readiness
 

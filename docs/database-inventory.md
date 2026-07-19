@@ -43,7 +43,7 @@ Lifecycle terms:
 | Dataset | Canonical run ID or prefix | Lifecycle | Production database | RHESSys assets | Required action |
 | --- | --- | --- | --- | --- | --- |
 | Gate Creek | `aversive-forestry` | Retain | Present | DB28 copied and indexed the observed spatial inputs plus dynamic scenario Parquets for `S1`, `S2`, and `S4b` in `forest1:/wc1` | Retain the database row; production capability activation remains pending. |
-| Mill Creek | `some-oligopoly` | Replace | Not present as of 2026-07-16 | Must be re-vendored to durable project storage | Configure and load the new standalone run, publish the required RHESSys assets durably, verify them, and then retire the former run. |
+| Mill Creek | `some-oligopoly` | Replace | Not present as of 2026-07-16 | DB29 locked the exact ordinary inputs; the successor currently has no RHESSys tree and no accepted `/wc1` map source exists | Supply or regenerate the complete precomputed map tree, resume DB29 capability publication, then configure/load and eventually retire the former run. |
 | Former Mill Creek | `mdobre-invincible-scarab` | Retire | Present as of 2026-07-16 | Unavailable; the run is believed to have been removed by the deletion TTL | Remove from the database only after `some-oligopoly` is loaded and validated. Do not treat this run as a recoverable source. |
 | Victoria, BC | `batch;;victoria-ca-2026-sbs;;<member>` | Retain | Present; 31 members | DB28 copied and indexed the confirmed `Sooke09` and `Sooke15` output maps in `forest1:/wc1` | Retain the batch; production capability activation remains pending. Do not infer RHESSys availability for other members. |
 | NASA ROSES, current | `batch;;nasa-roses-2026-sbs;;<member>` | Retire | Present; 93 members | None recorded | Replace with the 202606 PSBS batch after enrichment and load validation. |
@@ -88,7 +88,7 @@ The authoritative RHESSys-enabled run list is therefore:
 | Run ID | Watershed | Supported product form | Status verified 2026-07-18 |
 | --- | --- | --- | --- |
 | `aversive-forestry` | Gate Creek | Spatial-input GeoTIFFs; scenario, basin, hillslope, and patch Parquets used for dynamic maps and time series | DB28 verified an immutable durable copy and exact capability index for `S1`, `S2`, and `S4b`. Production capability activation remains pending. The precomputed `rhessys/maps/` directory is not required. |
-| `some-oligopoly` | Mill Creek | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | Pending durable re-vendoring and verification. |
+| `some-oligopoly` | Mill Creek | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | `EXECUTED-HOLD-RHESSYS-SOURCE`: DB29 verified the exact `disturbed9002_wbt` ordinary project, but the successor has no `rhessys/` tree, all 56 registered map coordinates return 404, the public catalog is empty, and no accepted `/wc1` source exists. |
 | `batch;;victoria-ca-2026-sbs;;Sooke09` | Sooke09 | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | DB28 verified an immutable durable copy and exact 7-scenario, 56-map capability index. Production capability activation remains pending. |
 | `batch;;victoria-ca-2026-sbs;;Sooke15` | Sooke15 | Precomputed RHESSys output GeoTIFFs under `rhessys/maps/` | DB28 verified an immutable durable copy and exact 5-scenario, 40-map capability index. Production capability activation remains pending. |
 
@@ -123,6 +123,13 @@ Before switching the application from `mdobre-invincible-scarab` to
    `mdobre-invincible-scarab` to `some-oligopoly`.
 6. Remove the former database row only after the new watershed and RHESSys
    views pass validation.
+
+DB29 completed criteria 1 and 2 as an immutable source preparation rather than
+a production load: the exact project is `disturbed9002_wbt`, and the locked
+ordinary member index passes all counts and joins. Criteria 3–6 remain blocked
+by the missing RHESSys source. Application/client references intentionally
+remain on the former run until a non-empty successor capability is locked and
+the later release switch is authorized.
 
 ## NASA 202606 resources enrichment contract
 
