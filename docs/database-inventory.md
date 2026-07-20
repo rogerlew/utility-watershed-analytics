@@ -12,7 +12,7 @@ Implementation order and bounded execution records are maintained in the
 [forward roadmap](ROADMAP.md) and
 [work-package catalog](work-packages/README.md).
 
-Last updated: 2026-07-18
+Last updated: 2026-07-19
 
 ## Scope and authority
 
@@ -68,6 +68,15 @@ DB30 locks the NASA successor and approved Bremerton mappings in
 retained by checksum and the descriptor names `Bremerton04` as an explicit
 exclusion; a future source appearance does not add it without a new reviewed
 decision and complete required inputs.
+
+DB31 freezes the first complete 129-member desired-state candidate at manifest
+SHA-256 `21d8b279d627f4000ca9d2826ec591e07bd611839c88177eb079a39d395988ec`.
+Two independent empty builds passed with domain fingerprint
+`212ca78aa2fff24a75e4ea952b27087dcdc7e6b360010018474581af27d7d386`,
+129 watersheds, 110,270 subcatchments, 46,296 channels, and exactly the three
+reviewed Gate Creek/Sooke capabilities. This is validated candidate state, not
+observed production state; DB32 rehearsal and DB33 authority remain required
+before production activation.
 
 ## Stable identity assignments
 

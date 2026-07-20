@@ -922,6 +922,16 @@ Suggested slug: `db31-first-release-candidate`
   fingerprint; the empty plan is independently keyed; all plans and the
   validation report are retained by hash.
 
+**Execution result:** DB31 verified every accepted DB28–DB30 source locally,
+published deterministic ordered Parquet targets and child-derived containing
+boundaries without changing source objects, and froze manifest `21d8b279...`.
+Two independent 129-member empty builds produced identical domain/capability
+fingerprints and counts and passed application plus Gate/Sooke RHESSYS checks;
+Mill Creek RHESSYS and Bremerton04 remained absent. The exact DB30A base was
+independently rebuilt and fingerprinted before DB09-valid forward, bound
+inverse, and independently keyed EMPTY plans were retained by hash. No
+production, provider, workflow, commit, or push action occurred.
+
 #### DB32 — Full staging deployment rehearsal
 
 Suggested slug: `db32-staging-release-rehearsal`

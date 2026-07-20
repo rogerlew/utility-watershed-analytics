@@ -1,0 +1,74 @@
+{
+  "base_manifest_sha256": "bb9729bc1907f9f81c1e5f52728f889dcf5a129d911ebda454b9d2d5658caea5",
+  "base_release_id": "2026-07-18.30",
+  "canonicalization": {
+    "boundary_hull_buffer_degrees": 1e-9,
+    "boundary_operation": "child-convex-hull-buffer",
+    "geos_version": "3.13.1-CAPI-1.19.2",
+    "pyarrow_version": "22.0.0",
+    "sort_key": "Topaz identity ascending"
+  },
+  "capability_indexes": [
+    {
+      "index_path": "data-releases/locked-inputs/db28/gate-creek-rhessys-index.json",
+      "index_sha256": "bc3786dfd122e1a2de7d2fd824633778b6f4950413d4cb222e79fbc51cf56a87",
+      "receipt_path": "data-releases/locked-inputs/db28/gate-creek-rhessys-receipt.json",
+      "watershed_key": "gate-creek"
+    },
+    {
+      "index_path": "data-releases/locked-inputs/db28/victoria-ca-sooke09-rhessys-index.json",
+      "index_sha256": "c33cb45dbfea306b36549e67392c377b2de9d79804736b7fc449ce082fa8e901",
+      "receipt_path": "data-releases/locked-inputs/db28/victoria-ca-sooke09-rhessys-receipt.json",
+      "watershed_key": "victoria-ca-sooke09"
+    },
+    {
+      "index_path": "data-releases/locked-inputs/db28/victoria-ca-sooke15-rhessys-index.json",
+      "index_sha256": "3bb92194b2c5664c762624f0d3ac09a6550c3b43dbe41efc40df10c1157fdb0e",
+      "receipt_path": "data-releases/locked-inputs/db28/victoria-ca-sooke15-rhessys-receipt.json",
+      "watershed_key": "victoria-ca-sooke15"
+    }
+  ],
+  "created_at": "2026-07-19T19:35:46Z",
+  "excluded_capabilities": ["mill-creek"],
+  "excluded_members": ["Bremerton04"],
+  "materializer": {
+    "git_commit": "22647350b9163587485239af1c28e5430937af49",
+    "image_digest": "sha256:301f91b2a6bba1ead732830e542a51ce5f4fddaae2e862046c38a134fcc5747b"
+  },
+  "member_indexes": [
+    {
+      "display_name": "Gate Creek",
+      "index_path": "data-releases/locked-inputs/db28/gate-creek-member-index.json",
+      "index_sha256": "45f8316b9efc43d92effe6a74ac60851d06b19a881b8d6c25ba328443b073aef",
+      "receipt_path": "data-releases/locked-inputs/db28/gate-creek-source-receipt.json"
+    },
+    {
+      "display_name": "Victoria, BC",
+      "index_path": "data-releases/locked-inputs/db28/victoria-member-index.json",
+      "index_sha256": "fa34c9c77c1be89a0b557027dffe064883df7c0579fea72ad911f009a1911a37",
+      "receipt_path": "data-releases/locked-inputs/db28/victoria-source-receipt.json"
+    },
+    {
+      "display_name": "Mill Creek",
+      "index_path": "data-releases/locked-inputs/db29/mill-creek-member-index.json",
+      "index_sha256": "be3cdd7bd1f517ae410c8622eec15d7b34b7371cba78b05b79835cdc416a189d",
+      "receipt_path": "data-releases/locked-inputs/db29/mill-creek-source-receipt.json"
+    },
+    {
+      "display_name": "NASA ROSES 2026",
+      "index_path": "data-releases/locked-inputs/db30/nasa-member-index.json",
+      "index_sha256": "216dcd73528f2f2498b36b1f9b9108ad55e724915318c2e8b25add935bbb74fe",
+      "receipt_path": "data-releases/locked-inputs/db30/nasa-source-receipt.json"
+    },
+    {
+      "display_name": "Bremerton",
+      "index_path": "data-releases/locked-inputs/db30/bremerton-member-index.json",
+      "index_sha256": "5e16352738f9576ad9c54359f8d89fff57c73ff0cc7ea43241e82998bd91b16f",
+      "receipt_path": "data-releases/locked-inputs/db30/bremerton-source-receipt.json"
+    }
+  ],
+  "release_id": "2026-07-19.31",
+  "schema_version": 1,
+  "supported_migration": "watershed.0011_capability_runtime_types",
+  "validator_image_digest": "sha256:9c902ab226daf0d848bd3fa2012495e5375a036c5b5adcd645974eafb9c4215c"
+}
